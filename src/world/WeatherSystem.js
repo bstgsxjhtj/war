@@ -1,0 +1,151 @@
+import * as THREE from 'three';
+
+// 天气系统：晴/雨/夜/雪/雷暴
+export class WeatherSystem {
+  constructor(scene, sun = null, hemi = null, audio = null) {
+    this.scene = scene;
+    this.sun = sun;
+    this.hemi = hemi;
+    this.audio = audio;
+    this._mode = 'clear';
+    this._modes = ['clear', 'rain', 'night', 'snow', 'storm'];
+    this._rain = null;
+    this._snow = null;
+    this._lightning = null;
+    this._lightningTimer = 0;
+    this._initRain();
+    this._initSnow();
+    this._initLightning();
+  }
+
+  _initRain() {
+    const N = 2000;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 120;
+      pos[i * 3 + 1] = Math.random() * 40;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 120;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this._rainGeo = geo;
+    this._rain = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xaaccee, size: 0.12, transparent: true, opacity: 0.6 }));
+    this._rain.visible = false;
+    this.scene.add(this._rain);
+  }
+
+  _initSnow() {
+    const N = 1500;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 120;
+      pos[i * 3 + 1] = Math.random() * 40;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 120;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this._snowGeo = geo;
+    this._snow = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.8 }));
+    this._snow.visible = false;
+    this.scene.add(this._snow);
+  }
+
+  _initLightning() {
+    this._lightning = new THREE.PointLight(0xb0d0ff, 0, 80);
+    this._lightning.position.set(0, 30, 0);
+    this.scene.add(this._lightning);
+  }
+
+  setMode(mode) {
+    if (this._modes.indexOf(mode) >= 0) {
+      this._mode = mode;
+      this.apply();
+    }
+  }
+
+  toggle() {
+    this._mode = this._modes[(this._modes.indexOf(this._mode) + 1) % this._modes.length];
+    this.apply();
+  }
+
+  get mode() { return this._mode; }
+
+  getCombatEffects() {
+    switch (this._mode) {
+      case 'rain':
+        return { speedMul: 0.85, bowAccuracy: 0.7, staminaRegenMul: 0.9, visibility: 0.8 };
+      case 'snow':
+        return { speedMul: 0.75, bowAccuracy: 0.5, staminaRegenMul: 0.8, visibility: 0.6 };
+      case 'storm':
+        return { speedMul: 0.7, bowAccuracy: 0.4, staminaRegenMul: 0.7, visibility: 0.5 };
+      case 'night':
+        return { speedMul: 1.0, bowAccuracy: 0.6, staminaRegenMul: 1.0, visibility: 0.7 };
+      default:
+        return { speedMul: 1.0, bowAccuracy: 1.0, staminaRegenMul: 1.0, visibility: 1.0 };
+    }
+  }
+
+  apply() {
+    this._rain.visible = false;
+    this._snow.visible = false;
+    this._lightning.intensity = 0;
+    if (this._mode === 'rain') {
+      this._rain.visible = true;
+      if (this.scene.fog) this.scene.fog.density = 0.012;
+      if (this.sun) { this.sun.intensity = 0.7; this.sun.color.setHex(0x8888aa); }
+      if (this.hemi) this.hemi.intensity = 0.4;
+    } else if (this._mode === 'night') {
+      if (this.scene.fog) this.scene.fog.density = 0.006;
+      if (this.sun) { this.sun.intensity = 0.25; this.sun.color.setHex(0x4a5a8a); }
+      if (this.hemi) { this.hemi.intensity = 0.25; this.hemi.color.setHex(0x202038); }
+    } else if (this._mode === 'snow') {
+      this._snow.visible = true;
+      if (this.scene.fog) this.scene.fog.density = 0.015;
+      if (this.sun) { this.sun.intensity = 0.85; this.sun.color.setHex(0xc0d0e0); }
+      if (this.hemi) { this.hemi.intensity = 0.55; this.hemi.color.setHex(0xa0b0c0); }
+    } else if (this._mode === 'storm') {
+      this._rain.visible = true;
+      if (this.scene.fog) this.scene.fog.density = 0.018;
+      if (this.sun) { this.sun.intensity = 0.5; this.sun.color.setHex(0x606080); }
+      if (this.hemi) this.hemi.intensity = 0.3;
+    } else {
+      if (this.scene.fog) this.scene.fog.density = 0.005;
+      if (this.sun) { this.sun.intensity = 1.4; this.sun.color.setHex(0xffe0b0); }
+      if (this.hemi) { this.hemi.intensity = 0.65; this.hemi.color.setHex(0x9ab0d0); }
+    }
+  }
+
+  update(dt) {
+    if (this._rain.visible) {
+      const pos = this._rainGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        let y = pos.getY(i) - 30 * dt;
+        if (y < 0) y = 40;
+        pos.setY(i, y);
+      }
+      pos.needsUpdate = true;
+    }
+    if (this._snow.visible) {
+      const pos = this._snowGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        let y = pos.getY(i) - 4 * dt;
+        let x = pos.getX(i) + Math.sin(y * 2) * 0.5 * dt;
+        if (y < 0) { y = 40; }
+        pos.setY(i, y); pos.setX(i, x);
+      }
+      pos.needsUpdate = true;
+    }
+    if (this._mode === 'storm') {
+      this._lightningTimer -= dt;
+      if (this._lightningTimer <= 0) {
+        this._lightningTimer = 2 + Math.random() * 4;
+        this._lightning.intensity = 8;
+        this._lightning.position.set((Math.random() - 0.5) * 80, 25, (Math.random() - 0.5) * 80);
+        if (this.audio) this.audio.hit(true);
+        setTimeout(() => { this._lightning.intensity = 0; }, 80);
+        setTimeout(() => { this._lightning.intensity = 5; }, 160);
+        setTimeout(() => { this._lightning.intensity = 0; }, 240);
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "ancient-warfare-3d",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "古代冷兵器对战 3D 游戏 (TPS, Three.js)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "ws": "^8.21.3"
+  }
+}
