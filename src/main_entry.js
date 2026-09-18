@@ -403,6 +403,7 @@ async function bootstrap() {
         } else trajectory.hide();
         hud.setWeapon(player.weaponIdx, player.weapons.length);
         hud.setCombo(player);
+        hud.setSkillCooldowns(weaponSkills);
         if (mode.name === '据点') { mode.onTick(dt, combat.characters); hud.setDomination(mode); }
         hud.update(dt);
         if (mode.name === '战役') hud.setMode('战役', campaign.stageInfo);
