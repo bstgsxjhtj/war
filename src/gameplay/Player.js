@@ -154,6 +154,7 @@ export class Player extends Character {
       this._bowRelease = false;
     }
 
+    if (this._weaponSkills) this._weaponSkills.update(dt);
     super.update(dt, terrain, combat, now);
     this.camera.follow(this.position);
   }
