@@ -8,3 +8,11 @@ playwright-report/
 playwright/.cache/
 .DS_Store
 Thumbs.db
+
+# 临时运行日志（vitest/build/playwright 输出重定向）
+v.txt
+b.txt
+vlog.txt
+plog.txt
+hb.txt
+cmt.txt
