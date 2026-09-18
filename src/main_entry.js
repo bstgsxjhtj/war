@@ -9,6 +9,7 @@ import { Terrain } from './world/Terrain.js';
 import { Environment } from './world/Environment.js';
 import { Water } from './world/Water.js';
 import { CombatSystem } from './gameplay/CombatSystem.js';
+import { ComboSystem } from './gameplay/ComboSystem.js';
 import { Player } from './gameplay/Player.js';
 import { AIController } from './gameplay/AIController.js';
 import { HUD } from './ui/HUD.js';
@@ -81,7 +82,8 @@ async function bootstrap() {
   scene.add(supply.group);
   await water.init();
 
-  const combat = new CombatSystem(scene.scene, bus);
+  const comboSys = new ComboSystem(bus);
+  const combat = new CombatSystem(scene.scene, bus, comboSys);
   const hud = new HUD(bus);
   const miniMap = new MiniMap(bus);
   const weaponTrail = new WeaponTrail(scene.scene);
@@ -182,6 +184,8 @@ async function bootstrap() {
     for (const a of ais) scene.remove(a.root);
     ais = [];
     player = new Player(camera, bus);
+    player.setComboSys(comboSys);
+    comboSys.count = 0; comboSys._tier = 0; comboSys._finisher = false;
     player.setWeapons([new Sword(), new Bow(), new Spear(), new Warhammer()]);
     player.setSkill(skills);
     const spawns = MapGenerator.MAPS[currentMapKey].spawns;
@@ -368,6 +372,7 @@ async function bootstrap() {
         for (const a of ais) a.update(ldt, terrain, combat, enemies, now);
         for (const rp of remotes) rp.update(ldt, terrain, combat, now);
         combat.update(ldt, terrain, now);
+        comboSys.update(ldt, now);
         horses.update(ldt);
         formations.update(ldt);
         if (net.connected && player.alive) {
