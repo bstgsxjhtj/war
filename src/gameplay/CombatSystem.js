@@ -1,6 +1,14 @@
 import * as THREE from 'three';
 import { ParticleFX } from '../render/ParticleFX.js';
 
+// 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率（导出供单测引用，构造时复用同一引用）
+export const COUNTER_MATRIX = {
+  HEAVY: { SHIELD: 1.8, SWORD: 1.2 },
+  SPEAR: { SHIELD: 1.5, SWORD: 1.2 },
+  SHIELD: { HEAVY: 1.3 },
+  SWORD: { HEAVY: 1.2 }
+};
+
 // 战斗判定 + 池化特效 + hitstop + 克制矩阵 + AOE + 方向推力
 export class CombatSystem {
   constructor(scene, bus) {
@@ -14,12 +22,7 @@ export class CombatSystem {
     this._tmpTo = new THREE.Vector3();
 
     // 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率
-    this._counterMatrix = {
-      HEAVY: { SHIELD: 1.8, SWORD: 1.2 },
-      SPEAR: { SHIELD: 1.5, SWORD: 1.2 },
-      SHIELD: { HEAVY: 1.3 },
-      SWORD: { HEAVY: 1.2 }
-    };
+    this._counterMatrix = COUNTER_MATRIX;
 
     this._arrowGeo = new THREE.ConeGeometry(0.07, 0.7, 5);
     this._arrowMat = new THREE.MeshStandardMaterial({ color: 0xb98a4a, emissive: 0x2a1808, emissiveIntensity: 0.4 });
