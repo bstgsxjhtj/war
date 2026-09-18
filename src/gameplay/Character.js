@@ -269,6 +269,7 @@ export class Character {
     if (attacker) this.lastAttacker = attacker;
     if (!this.health.alive && this.alive) { this.die(attacker); }
     else if (lost > 0 && this.alive) {
+      if (this._comboSys) this._comboSys.onHurt();
       const recent = (now - this._lastHurtTime) < 0.5;
       const base = heavy ? 0.3 : 0.22;
       this._hurt = recent ? base * 0.5 : base;
