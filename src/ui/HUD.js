@@ -59,6 +59,48 @@ export class HUD {
     this._radar = this.el.querySelector('#radar');
     this._radarCtx = this._radar.getContext('2d');
 
+    this._errEl = document.createElement('div');
+    Object.assign(this._errEl.style, {
+      position: 'fixed', top: '18px', right: '18px', zIndex: '15',
+      fontFamily: 'Segoe UI, sans-serif', fontSize: '14px', color: '#f44',
+      textShadow: '0 0 6px #000', display: 'none', opacity: '0',
+      transition: 'opacity .3s', pointerEvents: 'none', fontWeight: 'bold'
+    });
+    this._errEl.innerHTML = '\u26A0 <span class="err-count">0</span>';
+    document.body.appendChild(this._errEl);
+    this._errCount = 0;
+    this._errTimer = 0;
+    this._errLog = [];
+
+    this._errPanel = document.createElement('div');
+    Object.assign(this._errPanel.style, {
+      position: 'fixed', top: '50px', right: '18px', zIndex: '16',
+      width: '360px', maxHeight: '60vh', overflowY: 'auto', display: 'none',
+      background: 'rgba(15,15,25,.95)', color: '#fbb', fontFamily: 'monospace',
+      fontSize: '11px', padding: '8px', borderRadius: '6px',
+      border: '1px solid #633', boxShadow: '0 0 12px rgba(0,0,0,.6)', whiteSpace: 'pre-wrap'
+    });
+    document.body.appendChild(this._errPanel);
+
+    bus.on('engine.error', ({ err, ts, frame }) => {
+      this._errCount++;
+      this._errLog.push({ msg: err && err.message ? err.message : String(err), ts, frame });
+      if (this._errLog.length > 10) this._errLog.shift();
+      this._errEl.querySelector('.err-count').textContent = this._errCount;
+      this._errEl.style.display = 'block';
+      this._errEl.style.opacity = '1';
+      this._errTimer = 2;
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'F3') {
+        e.preventDefault();
+        const show = this._errPanel.style.display === 'none';
+        this._errPanel.style.display = show ? 'block' : 'none';
+        if (show) this._renderErrLog();
+      }
+    });
+
     this._locklost.addEventListener('click', () => document.querySelector('#app')?.requestPointerLock());
     bus.on('ui.locklost', () => { this._locklost.style.display = 'flex'; });
     bus.on('ui.locked', () => { this._locklost.style.display = 'none'; });
@@ -170,10 +212,21 @@ export class HUD {
     } else this._comboRing.style.border = '2px solid transparent';
   }
   flashKill(msg) { this._kill.textContent = msg; this._kill.style.opacity = '1'; this._killTimer = 1.2; }
+  _renderErrLog() {
+    if (!this._errLog.length) { this._errPanel.textContent = '无错误记录'; return; }
+    this._errPanel.innerHTML = '<div style="color:#f88;font-weight:bold;margin-bottom:4px">最近错误 (frame | msg)</div>' +
+      this._errLog.map(e => `<div>#${e.frame} | ${e.msg}</div>`).join('');
+  }
+
   flash(msg) { this._endLocked = false; this._hint.textContent = msg; }
   flashEnd(msg) { this._endLocked = true; this._hint.textContent = msg; }
   clearHint() { if (!this._endLocked) this._hint.textContent = ''; }
   update(dt) {
+    if (this._errTimer > 0) {
+      this._errTimer -= dt;
+      if (this._errTimer < 0.5) this._errEl.style.opacity = (this._errTimer / 0.5).toString();
+      if (this._errTimer <= 0) this._errEl.style.display = 'none';
+    }
     if (this._killTimer > 0) { this._killTimer -= dt; if (this._killTimer <= 0) this._kill.style.opacity = '0'; }
     if (this._counterTimer > 0) {
       this._counterTimer -= dt;

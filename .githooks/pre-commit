@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+echo "[pre-commit] running vite build + vitest..."
+npx vite build --mode development
+npx vitest run
+echo "[pre-commit] all green, commit allowed."
