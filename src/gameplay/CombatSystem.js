@@ -11,9 +11,10 @@ export const COUNTER_MATRIX = {
 
 // 战斗判定 + 池化特效 + hitstop + 克制矩阵 + AOE + 方向推力
 export class CombatSystem {
-  constructor(scene, bus) {
+  constructor(scene, bus, comboSys = null) {
     this.scene = scene;
     this.bus = bus;
+    this._comboSys = comboSys;
     this.characters = [];
     this.arrows = [];
     this.hitstop = 0;
@@ -137,7 +138,12 @@ export class CombatSystem {
       if (angle <= weapon.arc / 2) {
         const backDot = c.forward.x * attacker.forward.x + c.forward.z * attacker.forward.z;
         const isBackstab = backDot > 0.7;
-        const dmg = baseDmg * this._counterMul(attacker.weapon, c.weapon) * (isBackstab ? 2 : 1);
+        const counterMul = this._counterMul(attacker.weapon, c.weapon);
+        const countered = counterMul > 1.2;
+        const perfect = !!attacker._perfectRebound;
+        if (perfect) attacker._perfectRebound = false;
+        const comboMul = this._comboSys ? this._comboSys.onHit(countered, perfect, now) : 1;
+        const dmg = baseDmg * counterMul * (isBackstab ? 2 : 1) * comboMul;
         const lost = c.takeDamage(dmg, heavy || isBackstab, attacker, now);
         if (lost > 0) {
           this._emitHit(attacker, c, lost, weapon.name, 0xff3322, combo, heavy, now, isBackstab);
