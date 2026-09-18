@@ -146,6 +146,41 @@ export class HUD {
     document.body.appendChild(this._counterEl);
     this._counterTimer = 0;
 
+    this._comboEl = document.createElement('div');
+    this._comboEl.id = 'combo';
+    Object.assign(this._comboEl.style, {
+      position: 'fixed', top: '30%', right: '8%', zIndex: '14',
+      fontFamily: 'Segoe UI, sans-serif', fontSize: '40px', fontWeight: 'bold',
+      color: '#fff', textShadow: '0 0 10px rgba(255,255,255,.6)',
+      pointerEvents: 'none', display: 'none', opacity: '0',
+      transition: 'opacity .2s, transform .2s'
+    });
+    document.body.appendChild(this._comboEl);
+    this._comboTimer = 0;
+    this._comboTier = 0;
+    bus.on('combo.tier', ({ tier, count }) => {
+      this._comboTier = tier;
+      this._comboEl.textContent = count + ' 连击';
+      const colors = ['#fff', '#fff5c8', '#ffd700', '#ff4433'];
+      this._comboEl.style.color = colors[tier] || '#fff';
+      this._comboEl.style.display = 'block';
+      this._comboEl.style.opacity = '1';
+      this._comboEl.style.transform = 'scale(1.2)';
+      setTimeout(() => { this._comboEl.style.transform = 'scale(1)'; }, 100);
+      this._comboTimer = 2;
+    });
+    bus.on('combo.break', () => {
+      this._comboEl.style.opacity = '0';
+      this._comboTimer = 0.3;
+    });
+    bus.on('combo.finisher', () => {
+      this._comboEl.textContent = '终结就绪';
+      this._comboEl.style.color = '#ff4433';
+      this._comboEl.style.display = 'block';
+      this._comboEl.style.opacity = '1';
+      this._comboTimer = 1.5;
+    });
+
     bus.on('combat.counter', ({ attacker, victim, mul }) => {
       const isPlayerAttacker = attacker && attacker.isLocal;
       const isPlayerVictim = victim && victim.isLocal;
@@ -232,6 +267,11 @@ export class HUD {
       this._counterTimer -= dt;
       if (this._counterTimer < 0.5) this._counterEl.style.opacity = (this._counterTimer / 0.5).toString();
       if (this._counterTimer <= 0) { this._counterEl.style.display = 'none'; }
+    }
+    if (this._comboTimer > 0) {
+      this._comboTimer -= dt;
+      if (this._comboTimer < 0.5) this._comboEl.style.opacity = (this._comboTimer / 0.5).toString();
+      if (this._comboTimer <= 0) this._comboEl.style.display = 'none';
     }
     this._radarAcc += dt;
     if (this._player && this._ais && this._radarAcc >= 0.033) {
