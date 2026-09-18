@@ -191,6 +191,17 @@ export class CombatSystem {
     this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage: weapon.damageFor(charge), life: 3.5, attacker, charge });
   }
 
+  spawnPierceArrow(attacker, weapon, charge) {
+    const mesh = new THREE.Mesh(this._arrowGeo, this._arrowMat);
+    mesh.castShadow = true;
+    this._tmpOrigin.copy(attacker.position).add(this._tmpTo.set(0, 1.5, 0)).add(attacker.forward.clone().multiplyScalar(0.7));
+    const vel = attacker.forward.clone().multiplyScalar(weapon.speedFor(charge) * 1.2);
+    vel.y += 1.0;
+    mesh.position.copy(this._tmpOrigin);
+    this.scene.add(mesh);
+    this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage: weapon.damageFor(charge) * 1.5, life: 4, attacker, charge, pierce: 3, hitSet: new Set() });
+  }
+
   update(dt, terrain, now = 0) {
     for (let i = this.arrows.length - 1; i >= 0; i--) {
       const a = this.arrows[i];
