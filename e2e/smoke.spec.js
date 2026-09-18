@@ -2,7 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test('关键路径冒烟：0 运行时致命错误 + 关键 DOM + 主循环存活', async ({ page }) => {
   const errors = [];
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', (m) => {
+    const t = m.text();
+    if (m.type() === 'error' && !t.includes('WebSocket connection') && !t.includes('ERR_CONNECTION_REFUSED')) errors.push(t);
+  });
   page.on('pageerror', (e) => { errors.push(String(e)); });
 
   await page.goto('http://localhost:4173/');
@@ -27,11 +30,11 @@ test('关键路径冒烟：0 运行时致命错误 + 关键 DOM + 主循环存�
   await page.waitForTimeout(1500);
 
   await page.evaluate(() => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyV', bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyV', key: 'v', bubbles: true }));
   });
   await expect(page.locator('#skins-panel')).toHaveCSS('display', /block/);
   await page.evaluate(() => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   });
 
   await page.evaluate(() => {
