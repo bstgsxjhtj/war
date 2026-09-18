@@ -256,6 +256,17 @@ export class HUD {
   flash(msg) { this._endLocked = false; this._hint.textContent = msg; }
   flashEnd(msg) { this._endLocked = true; this._hint.textContent = msg; }
   clearHint() { if (!this._endLocked) this._hint.textContent = ''; }
+  setSkillCooldowns(ws) {
+    if (!ws) return;
+    for (let i = 0; i < 4; i++) {
+      const s = this._skillEls[i];
+      if (!s) continue;
+      const r = ws.cdRemaining(i);
+      if (r > 0) { s.cd.style.display = 'flex'; s.cd.textContent = Math.ceil(r); }
+      else { s.cd.style.display = 'none'; }
+    }
+  }
+
   update(dt) {
     if (this._errTimer > 0) {
       this._errTimer -= dt;
