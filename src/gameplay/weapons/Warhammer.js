@@ -13,6 +13,7 @@ export class Warhammer extends Weapon {
     this.comboLunge = [2.5, 2.0, 4.0];
     this.comboLaunch = [{ y: 0, rot: 0.4 }, { y: 4, rot: 0 }, { y: 8, rot: 0 }];
     this.hitFrame = 0.45;
+    this.skillName = '震地';
   }
   createMesh() {
     const g = new THREE.Group();
@@ -31,4 +32,5 @@ export class Warhammer extends Weapon {
     combat.resolveMelee(attacker, this, (opts.combo | 0), (opts.now ?? 0));
     return { type: AttackType.MELEE };
   }
+  skill(a, c, now) { c.spawnAoE(a.position, 5, 50, a, now); return true; }
 }

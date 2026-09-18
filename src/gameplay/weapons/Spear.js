@@ -13,6 +13,7 @@ export class Spear extends Weapon {
     this.comboLunge = [4.0, 3.0, 4.5];
     this.comboLaunch = [{ y: 0, rot: 0.2 }, { y: 2, rot: 0 }, { y: 0, rot: 0, aoe: 1.5 }];
     this.hitFrame = 0.4;
+    this.skillName = '突刺';
   }
   createMesh() {
     const g = new THREE.Group();
@@ -31,4 +32,5 @@ export class Spear extends Weapon {
     combat.resolveMelee(attacker, this, (opts.combo | 0), (opts.now ?? 0));
     return { type: AttackType.MELEE };
   }
+  skill(a, c, now) { a._lunge(6); c.resolveMelee(a, this, 2, now); return true; }
 }

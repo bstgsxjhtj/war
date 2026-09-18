@@ -11,6 +11,7 @@ export class Bow extends Weapon {
     this.gravity = 9.5;
     this.hitFrame = 0.35;
     this._stringMesh = null;
+    this.skillName = '穿透箭';
   }
 
   damageFor(charge) { return this.damage + 32 * Math.max(0, Math.min(1, charge)); }
@@ -53,4 +54,5 @@ export class Bow extends Weapon {
     combat.spawnArrow(attacker, this, opts.charge ?? 1);
     return { type: AttackType.PROJECTILE };
   }
+  skill(a, c, now) { c.spawnPierceArrow(a, this, 1.0); return true; }
 }

@@ -13,9 +13,13 @@ export class Weapon {
     this.armorPierce = false;
     this.shieldBlock = false;
     this._timer = 0;
+    this.skillCd = 8;
+    this.skillName = '技能';
+    this.skillDesc = '';
   }
 
   get ready() { return this._timer <= 0; }
   tick(dt) { if (this._timer > 0) this._timer -= dt; }
   _perform(_attacker, _combat, _opts) { throw new Error('未实现'); }
+  skill(_attacker, _combat, _now) { return false; }
 }

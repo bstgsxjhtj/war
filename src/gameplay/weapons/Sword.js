@@ -10,6 +10,7 @@ export class Sword extends Weapon {
     this.comboKnock = [1.2, 1.0, 2.6];
     this.comboLunge = [2.8, 2.0, 3.5];
     this.hitFrame = 0.35;
+    this.skillName = '旋斩';
   }
 
   createMesh() {
@@ -37,4 +38,5 @@ export class Sword extends Weapon {
     combat.resolveMelee(attacker, this, (opts.combo | 0), (opts.now ?? 0));
     return { type: AttackType.MELEE };
   }
+  skill(a, c, now) { c.spawnAoE(a.position, 4, 40, a, now); return true; }
 }
