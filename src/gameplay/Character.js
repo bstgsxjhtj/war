@@ -290,6 +290,7 @@ export class Character {
   }
 
   setBus(b) { this._bus = b; }
+  setComboSys(cs) { this._comboSys = cs; }
   setAudio(a) { this._audio = a; }
   setSkill(s) { this._skill = s; if (s) { this.health.maxHp += s.maxHpBonus; this.health.cur = this.health.maxHp; this.stamina.max += s.maxStaminaBonus; this.stamina.cur = this.stamina.max; } }
 
