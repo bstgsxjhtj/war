@@ -181,6 +181,44 @@ export class HUD {
       this._comboTimer = 1.5;
     });
 
+    this._skillEls = [];
+    const skillColors = ['#dfe7ee', '#b98a4a', '#c9a44a', '#7a7a82'];
+    for (let i = 0; i < 4; i++) {
+      const el = document.createElement('div');
+      el.id = 'skill-' + i;
+      Object.assign(el.style, {
+        position: 'fixed', bottom: '12px', right: (12 + i * 56) + 'px', zIndex: '14',
+        width: '48px', height: '48px', borderRadius: '6px',
+        border: '2px solid ' + skillColors[i], background: 'rgba(0,0,0,.4)',
+        fontFamily: 'Segoe UI, sans-serif', fontSize: '11px', color: skillColors[i],
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', pointerEvents: 'none', overflow: 'hidden'
+      });
+      el.textContent = '?';
+      document.body.appendChild(el);
+      const cd = document.createElement('div');
+      Object.assign(cd.style, {
+        position: 'absolute', inset: '0', background: 'rgba(0,0,0,.65)',
+        display: 'none', alignItems: 'center', justifyContent: 'center',
+        fontSize: '16px', fontWeight: 'bold', color: '#fff'
+      });
+      el.appendChild(cd);
+      this._skillEls.push({ el, cd });
+    }
+    bus.on('skill.cast', ({ weaponIdx, name }) => {
+      const s = this._skillEls[weaponIdx];
+      if (!s) return;
+      s.el.textContent = name || '?';
+      s.cd.style.display = 'flex';
+      s.cd.textContent = '8';
+    });
+    bus.on('skill.reject', ({ weaponIdx }) => {
+      const s = this._skillEls[weaponIdx];
+      if (!s) return;
+      s.el.style.transform = 'scale(1.15)';
+      setTimeout(() => { s.el.style.transform = 'scale(1)'; }, 100);
+    });
+
     bus.on('combat.counter', ({ attacker, victim, mul }) => {
       const isPlayerAttacker = attacker && attacker.isLocal;
       const isPlayerVictim = victim && victim.isLocal;
