@@ -1,7 +1,8 @@
 // 时间与帧循环：固定逻辑步长 + 渲染插值，切后台保护
 export class Time {
-  constructor(fixedStep = 1 / 60) {
+  constructor(fixedStep = 1 / 60, bus = null) {
     this.fixedStep = fixedStep;
+    this._bus = bus;
     this._last = performance.now();
     this._acc = 0;
     this.elapsed = 0;
@@ -27,7 +28,12 @@ export class Time {
     this.elapsed += delta;
     let steps = 0;
     while (this._acc >= this.fixedStep) {
-      onFixed(this.fixedStep);
+      try {
+        onFixed(this.fixedStep);
+      } catch (err) {
+        console.error('[Time.tick] frame error', err);
+        if (this._bus) this._bus.emit('engine.error', { err, ts: now, frame: this.frame });
+      }
       this._acc -= this.fixedStep;
       this.frame++;
       if (++steps > this._maxSteps) { this._acc = 0; break; }

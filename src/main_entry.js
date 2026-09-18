@@ -50,7 +50,7 @@ async function bootstrap() {
 
   const bus = new EventBus();
   const state = new GameState(bus);
-  const time = new Time();
+  const time = new Time(1 / 60, bus);
 
   const renderer = new Renderer(canvas);
   const scene = new Scene();
