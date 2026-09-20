@@ -82,6 +82,60 @@ export class MapGenerator {
       },
       spawns: { blue: [{ x: -180, z: 0 }], red: [{ x: 180, z: 0 }] },
     },
+    forest: {
+      name: '密林', size: [320, 200],
+      heightFn: (x, z) => fbm(x * 0.05, z * 0.05) * 1.5 + 0.3,
+      waterFn: () => false,
+      river: { zMin: 999, zMax: 999, depth: 0, flowDir: new THREE.Vector3(0,0,0), flowSpeed: 0 },
+      bridge_: { xMin: 999, xMax: 999 },
+      layout: {
+        trees: 60, rocks: 20, tents: 3, flags: [{ x: -160, z: 0, c: 0x2f5fa8 }, { x: 160, z: 0, c: 0xa83030 }],
+        supply: [{ x: 0, z: 0 }], campfires: [{ x: -140, z: 20 }, { x: 140, z: -20 }], mode: '死斗',
+      },
+      spawns: { blue: [{ x: -160, z: 0 }], red: [{ x: 160, z: 0 }] },
+    },
+    river: {
+      name: '河谷', size: [360, 200],
+      heightFn: (x, z) => {
+        if (z > -12 && z < 12) { if (x > -4 && x < 4) return 0.3; return -1 + Math.sin(x * 0.08) * 0.3; }
+        return fbm(x * 0.06, z * 0.06) * 2 + 0.5;
+      },
+      waterFn: (x, z) => z > -12 && z < 12 && !(x > -4 && x < 4),
+      river: { zMin: -12, zMax: 12, depth: 1.5, flowDir: new THREE.Vector3(1,0,0), flowSpeed: 1.2 },
+      bridge_: { xMin: -4, xMax: 4 },
+      layout: {
+        trees: 30, rocks: 15, tents: 2, flags: [{ x: -160, z: 0, c: 0x2f5fa8 }, { x: 160, z: 0, c: 0xa83030 }],
+        supply: [{ x: 0, z: 20 }], campfires: [{ x: -140, z: 30 }, { x: 140, z: -30 }], bridgeStones: 2, mode: '死斗',
+      },
+      spawns: { blue: [{ x: -160, z: 40 }, { x: -160, z: -40 }], red: [{ x: 160, z: 40 }, { x: 160, z: -40 }] },
+    },
+    snowfield: {
+      name: '雪原', size: [340, 220],
+      heightFn: (x, z) => fbm(x * 0.04, z * 0.04) * 0.8 + 0.2,
+      waterFn: () => false,
+      river: { zMin: 999, zMax: 999, depth: 0, flowDir: new THREE.Vector3(0,0,0), flowSpeed: 0 },
+      bridge_: { xMin: 999, xMax: 999 },
+      layout: {
+        trees: 10, rocks: 25, tents: 2, flags: [{ x: -160, z: 0, c: 0x2f5fa8 }, { x: 160, z: 0, c: 0xa83030 }],
+        supply: [{ x: 0, z: 0 }], campfires: [{ x: -140, z: 20 }, { x: 140, z: -20 }], mode: '死斗',
+      },
+      spawns: { blue: [{ x: -160, z: 0 }], red: [{ x: 160, z: 0 }] },
+    },
+    keep: {
+      name: '要塞', size: [300, 200],
+      heightFn: (x, z) => {
+        if (x < -50 || x > 50) return 8 + fbm(x * 0.1, z * 0.1) * 2;
+        return fbm(x * 0.05, z * 0.05) * 1.5 + 0.3;
+      },
+      waterFn: () => false,
+      river: { zMin: 999, zMax: 999, depth: 0, flowDir: new THREE.Vector3(0,0,0), flowSpeed: 0 },
+      bridge_: { xMin: 999, xMax: 999 },
+      layout: {
+        trees: 15, rocks: 30, tents: 2, flags: [{ x: -140, z: 0, c: 0x2f5fa8 }, { x: 140, z: 0, c: 0xa83030 }],
+        supply: [{ x: 0, z: 0 }], campfires: [{ x: -120, z: 20 }, { x: 120, z: -20 }], towers: 4, mode: '死斗',
+      },
+      spawns: { blue: [{ x: -140, z: 0 }], red: [{ x: 140, z: 0 }] },
+    },
   };
 
   static generate(mapKey) {
