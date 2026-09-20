@@ -55,6 +55,12 @@ test('关键路径冒烟：0 运行时致命错误 + 关键 DOM + 主循环存�
   expect(affixesPanel).toBeGreaterThan(0);
   const achievementsPanel = await page.locator('#achievements-panel').count();
   expect(achievementsPanel).toBeGreaterThan(0);
+  await page.evaluate(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyC', bubbles: true }));
+  });
+  await page.waitForTimeout(200);
+  const hint = await page.locator('#hint').innerText();
+  expect(hint).toMatch(/战役/);
   expect(errors.length).toBe(0);
   const weaponText = await page.locator('#weapon').innerText();
   expect(weaponText).toMatch(/[1].*刀/);
