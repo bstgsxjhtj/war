@@ -171,6 +171,10 @@ async function bootstrap() {
   const weather = new WeatherSystem(scene.scene, scene.sun || null, scene.hemi || null, audio);
   weather.setAudio(audio);
   const settings = new SettingsMenu(bus, audio);
+  bus.on('settings.quality', ({ quality }) => { if (renderer) renderer.setQuality(quality); });
+  bus.on('settings.sensitivity', ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
+  bus.on('settings.difficulty', ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
+  settings.show(); settings.hide();
   bus.on('hud.bossPhase', () => audio.playSound('ultimate'));
   bus.on('combo.tier', (p) => audio.playSound('hit', { combo: p.combo || 0 }));
 

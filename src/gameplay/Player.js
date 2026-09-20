@@ -35,7 +35,7 @@ export class Player extends Character {
     });
     document.addEventListener('mousemove', (e) => {
       if (!this._locked) return;
-      this.camera.look(e.movementX, e.movementY);
+      this.camera.look(e.movementX, e.movementY, 0.0025 * this.lookSensitivity);
     });
     document.addEventListener('mousedown', (e) => {
       if (!this._locked) return;
