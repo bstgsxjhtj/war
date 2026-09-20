@@ -258,8 +258,8 @@ async function bootstrap() {
     const unlocks = progression.unlocks;
     for (let i = 0; i < redLayout.length; i++) {
       let ai;
-      if (i === 0 && unlocks.boss && mode.name !== '训练场') {
-        ai = new BossEnemy({ team: 1, type: 'warlord' });
+      if (i === 0 && campaign.currentStage.bossType && mode.name !== '训练场') {
+        ai = new BossEnemy({ team: 1, type: campaign.currentStage.bossType || 'warlord', mini: campaign.currentStage.mini || false });
       } else if (i === 1 && unlocks.elite && mode.name !== '训练场') {
         ai = new EliteEnemy({ team: 1 });
       } else if (i === 2 && mode.name !== '训练场' && progression.score >= 500) {
