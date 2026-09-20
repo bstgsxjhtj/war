@@ -27,6 +27,7 @@ export class Character {
     this.lastAttacker = null;
 
     this.health = new Health(maxHp);
+    this._baseMaxHp = maxHp;
     this.stamina = new Stamina(100);
     this.weapons = [new Sword(), new Bow()];
     this.weaponIdx = 0;
@@ -293,6 +294,14 @@ export class Character {
   setComboSys(cs) { this._comboSys = cs; }
   setAudio(a) { this._audio = a; }
   setSkill(s) { this._skill = s; if (s) { this.health.maxHp += s.maxHpBonus; this.health.cur = this.health.maxHp; this.stamina.max += s.maxStaminaBonus; this.stamina.cur = this.stamina.max; } }
+
+  setAffixes(a) { this._affixes = a; this._applyAffixMaxHp(); }
+  _applyAffixMaxHp() {
+    if (!this._affixes) return;
+    const bonus = this._affixes.affixBonus(this.weapon, '坚韧');
+    this.health.maxHp = this._baseMaxHp + bonus;
+    if (this.health.cur > this.health.maxHp) this.health.cur = this.health.maxHp;
+  }
 
   update(dt, terrain, combat, now) {
     for (const w of this.weapons) w.tick(dt);
