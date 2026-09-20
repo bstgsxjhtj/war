@@ -127,7 +127,7 @@ describe('CampaignMode', () => {
   it('onTick Boss 阶段触发 enterPhase', () => {
     c.skipTo(4);
     let phased = 0;
-    c.onTick(0.1, { boss: { alive: true, health: { cur: 30, maxHp: 100 }, enterPhase: (p) => { phased = p; } } });
+    c.onTick(0.1, { boss: { alive: true, health: { hp: 30, maxHp: 100 }, enterPhase: (p) => { phased = p; } } });
     expect(phased).toBe(2);
   });
 

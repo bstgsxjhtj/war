@@ -91,7 +91,7 @@ export class CampaignMode {
       if (killed / s.enemyCount >= ev.reinforce) { this._reinforced = true; if (ctx.spawnReinforce) ctx.spawnReinforce(Math.ceil(s.enemyCount * 0.3)); }
     }
     if (ev.bossPhase && ctx.boss && this._bossPhase < 2) {
-      if (ctx.boss.alive && ctx.boss.health && ctx.boss.health.cur / ctx.boss.health.maxHp <= ev.bossPhase) { this._bossPhase = 2; if (ctx.boss.enterPhase) ctx.boss.enterPhase(2); }
+      if (ctx.boss.alive && ctx.boss.health && ctx.boss.health.hp / ctx.boss.health.maxHp <= ev.bossPhase) { this._bossPhase = 2; if (ctx.boss.enterPhase) ctx.boss.enterPhase(2); }
     }
     if (ev.weatherShift && !this._weatherShifted) {
       const progress = ctx.progress || 0;
