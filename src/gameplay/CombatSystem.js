@@ -117,6 +117,8 @@ export class CombatSystem {
     slot.life = 0.9; slot.vy = 1.8;
   }
 
+  setAffixes(a) { this._affixes = a; }
+
   resolveMelee(attacker, weapon, combo, now = 0) {
     let baseDmg = weapon.comboDamage ? (weapon.comboDamage[combo] ?? weapon.damage) : weapon.damage;
     if (attacker._perfectBuff > 0) baseDmg *= 1.5;
