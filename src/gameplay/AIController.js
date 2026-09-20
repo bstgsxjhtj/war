@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { Character } from './Character.js';
 
-// AI：战术层(包抄/撤退/集火) + 反应延迟
 export class AIController extends Character {
   constructor({ team = 1 } = {}) {
     super({ team, isLocal: false, speed: 6.2, maxHp: 90 });
@@ -17,8 +16,23 @@ export class AIController extends Character {
     this._focusTimer = 0;
     this._vDir = new THREE.Vector3();
     this._vFlank = new THREE.Vector3();
+    this._dodgeTimer = 0;
+    this._blockTimer = 0;
+    this._dodgeCd = 0;
+    this._blockCd = 0;
+    this._counterTimer = 0;
+    this._callReinforceCd = 0;
+    this._spotCd = 0;
+    this._isElite = false;
+    this._eliteSkill = null;
+    this._squadId = null;
+    this._squadRole = null;
+    this._aiManager = null;
     this._pickPatrol();
   }
+
+  setAIManager(m) { this._aiManager = m; }
+  setIsElite(v) { this._isElite = v; if (v) this.root.scale.set(1.15, 1.15, 1.15); }
 
   _pickPatrol(center) {
     const base = center || this.position;
@@ -27,8 +41,10 @@ export class AIController extends Character {
     this._patrolTarget.set(base.x + Math.cos(a) * r, 0, base.z + Math.sin(a) * r);
   }
 
-  // 包抄方向：计算友军覆盖角度，从缺口侧接近
   _calcFlankDir(target, allAllies) {
+    if (this._squadRole === 'ranged') {
+      return this._vFlank.subVectors(this.position, target.position).setY(0).normalize();
+    }
     this._vFlank.subVectors(target.position, this.position).setY(0).normalize();
     let cover = 0;
     for (const a of allAllies) {
@@ -38,11 +54,19 @@ export class AIController extends Character {
       if (dot > 0.3) cover += 1;
     }
     if (cover >= 2) {
-      // 已有友军从正面，侧翼包抄
       const perp = new THREE.Vector3(-this._vFlank.z, 0, this._vFlank.x);
       return perp.multiplyScalar(Math.sin(this._strafePhase) > 0 ? 1 : -1);
     }
     return this._vFlank.clone();
+  }
+
+  takeDamage(amount, heavy, attacker, now) {
+    if (this._blockTimer > 0) amount *= 0.3;
+    const lost = super.takeDamage(amount, heavy, attacker, now);
+    if (this._blockTimer > 0 && this.alive && Math.random() < 0.5) {
+      this._counterTimer = 0.3;
+    }
+    return lost;
   }
 
   update(dt, terrain, combat, enemies, now) {
@@ -51,8 +75,19 @@ export class AIController extends Character {
     this._strafePhase += dt * 1.2;
     if (this._swordReactTimer > 0) this._swordReactTimer -= dt;
     this._focusTimer -= dt;
+    if (this._dodgeTimer > 0) this._dodgeTimer -= dt;
+    if (this._blockTimer > 0) this._blockTimer -= dt;
+    if (this._dodgeCd > 0) this._dodgeCd -= dt;
+    if (this._blockCd > 0) this._blockCd -= dt;
+    if (this._callReinforceCd > 0) this._callReinforceCd -= dt;
+    if (this._spotCd > 0) this._spotCd -= dt;
+    if (this._counterTimer > 0) { this._counterTimer -= dt; if (this._swordReactTimer <= 0 && this.weapon && this.weapon.ready) { this.tryAttack(combat, 1); this._swordReactTimer = 0.5; } }
 
-    // 集火协调：每2s选血量最低敌方
+    if (this._isElite && this._eliteSkill === 'enrage' && this.health.ratio < 0.5) {
+      this._swordReactTimer *= 0.5;
+      this._eliteSkill = null;
+    }
+
     if (this._focusTimer <= 0) {
       this._focusTimer = 2;
       let best = null, minHp = Infinity;
@@ -63,7 +98,6 @@ export class AIController extends Character {
       this._focusTarget = best;
     }
 
-    // 撤退：低血量
     if (this.health.ratio < 0.3) {
       this._state = 'retreat';
       let nearest = null, minD = Infinity;
@@ -93,8 +127,8 @@ export class AIController extends Character {
     }
 
     const w = this.weapon;
-    const isBow = w.type === 'projectile';
-    const engageRange = isBow ? 40 : w.range * 0.9;
+    const isBow = w && w.type === 'projectile';
+    const engageRange = isBow ? 40 : (w ? w.range * 0.9 : 12);
 
     if (target) {
       this._reactTimer -= dt;
@@ -104,8 +138,17 @@ export class AIController extends Character {
       this._vDir.normalize();
       this.setLook(Math.atan2(this._vDir.x, this._vDir.z));
 
+      const diff = this._aiManager ? this._aiManager.difficulty() : null;
+      if (this._dodgeCd <= 0 && dist < engageRange && Math.random() < (diff ? diff.dodgeChance : 0)) {
+        this._dodgeTimer = 0.3; this._dodgeCd = 2;
+        const back = new THREE.Vector3().subVectors(this.position, target.position).setY(0).normalize().multiplyScalar(4);
+        this.root.position.add(back);
+      }
+      if (this.weapon && this.weapon.type === 'shield' && this._blockCd <= 0 && Math.random() < (diff ? diff.blockChance : 0)) {
+        this._blockTimer = 0.4; this._blockCd = 3;
+      }
+
       if (isBow && dist < 14) {
-        // 弓兵近战逼近后撤
         this._state = 'retreat';
         this.setMove(-0.8, Math.sin(this._strafePhase) * 0.4);
         this.setSprint(true);
@@ -115,6 +158,14 @@ export class AIController extends Character {
         this.setSprint(dist > 18);
       } else {
         this._state = 'attack';
+        if (this._callReinforceCd <= 0) {
+          this._callReinforceCd = diff ? diff.callReinforceCd : 60;
+          if (this._bus) this._bus.emit('ai.callReinforce', { pos: this.position.clone(), team: this.team, id: this });
+        }
+        if (this._spotCd <= 0) {
+          this._spotCd = 15;
+          if (this._bus) this._bus.emit('ai.spotPlayer', { target, team: this.team, id: this });
+        }
         if (isBow) {
           this.setMove(dist < 18 ? -0.5 : 0, Math.sin(this._strafePhase) * 0.5);
           this.setSprint(false);
@@ -123,10 +174,9 @@ export class AIController extends Character {
             this.setLook(savedYaw + (Math.random() - 0.5) * 0.28);
             this.tryAttack(combat, 0.3);
             this.setLook(savedYaw);
-            this._reactTimer = 1.2 + Math.random() * 0.8;
+            this._reactTimer = (diff ? diff.reactTime : 0.3) + Math.random() * 0.8;
           }
         } else {
-          // 近战包抄
           const allies = enemies.filter(e => e.team === this.team);
           const flank = this._calcFlankDir(target, allies);
           this.setMove(flank.dot(this.forward) > 0 ? 1 : 0.3, Math.sin(this._strafePhase) * 0.4);
