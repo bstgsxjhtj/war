@@ -19,6 +19,7 @@ export class Player extends Character {
     this._bowRelease = false;
     this._lastDirKey = { code: null, time: 0 };
     this._blocking = false;
+    this._weaponSkills = null;
     this._bindInput();
   }
 
@@ -60,6 +61,7 @@ export class Player extends Character {
         if (idx < this.weapons.length) { this.switchWeapon(idx); this.setCharging(false); this.camera.aimMode = false; }
       }
       if (e.code === 'KeyQ') this.tryDodge(this.camera.forward());
+      if (e.code === 'KeyF') this.trySkill(this._pendingCombat);
       if (e.code === 'Tab') { e.preventDefault(); this._toggleLock(); }
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) this._tryDodgeFromKey(e.code);
     });
@@ -104,6 +106,25 @@ export class Player extends Character {
     if (code === 'KeyA') return r.clone().negate();
     if (code === 'KeyD') return r;
     return null;
+  }
+
+  setWeaponSkills(ws) { this._weaponSkills = ws; }
+
+  trySkill(combat) {
+    if (!combat || !this.alive || !this._weaponSkills) return;
+    const idx = this.weaponIdx;
+    if (!this._weaponSkills.canCast(idx)) { this.bus?.emit('skill.reject', { weaponIdx: idx }); return; }
+    const now = performance.now() / 1000;
+    const ok = this.weapon.skill(this, combat, now);
+    if (ok) {
+      this._weaponSkills.trigger(idx);
+      this.bus?.emit('skill.cast', { weaponIdx: idx, name: this.weapon.skillName });
+    }
+  }
+
+  _lunge(dist) {
+    this.position.add(this.forward.clone().multiplyScalar(dist));
+    this._iFrame = Math.max(this._iFrame, 0.25);
   }
 
   _tryExecute(combat) {
