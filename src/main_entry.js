@@ -11,6 +11,8 @@ import { Water } from './world/Water.js';
 import { CombatSystem } from './gameplay/CombatSystem.js';
 import { ComboSystem } from './gameplay/ComboSystem.js';
 import { WeaponSkills } from './gameplay/WeaponSkills.js';
+import { EscortTarget } from './gameplay/EscortTarget.js';
+import { DefensePoint } from './gameplay/DefensePoint.js';
 import { Affixes } from './gameplay/Affixes.js';
 import { Achievements } from './gameplay/Achievements.js';
 import { AffixesUI } from './ui/AffixesUI.js';
@@ -89,6 +91,7 @@ async function bootstrap() {
 
   const comboSys = new ComboSystem(bus);
   const weaponSkills = new WeaponSkills();
+  let escortTarget = null, defenseTimer = 0, timeLimit = 0, surviveWavesDone = false;
   const affixes = new Affixes();
   const achievements = new Achievements();
   achievements.setBus(bus);
@@ -222,7 +225,7 @@ async function bootstrap() {
     if (player._weaponMesh) weaponTrail.attach(player._weaponMesh, 0xfff0a0);
     if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx);
     bus.on('skins.changed', () => { if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx); });
-    const redLayout = spawns.red;
+    const redLayout = mode.name === '战役' ? campaign.spawnLayout().red : spawns.red;
     const aiWeaponMakers = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];
     const unlocks = progression.unlocks;
     for (let i = 0; i < redLayout.length; i++) {
@@ -252,6 +255,13 @@ async function bootstrap() {
       const bowUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'BOW');
       if (shieldUsers.length >= 2) formations.createShieldWall(shieldUsers[0], shieldUsers.slice(1));
       if (bowUsers.length >= 2) formations.createArcherLine(bowUsers[0], bowUsers.slice(1));
+    }
+    if (mode.name === '战役') {
+      escortTarget = null; defenseTimer = 0; timeLimit = 0; surviveWavesDone = false;
+      const s = campaign.currentStage;
+      if (s.objective === '护送') { escortTarget = new EscortTarget({ x: -160, z: 0 }, { x: 160, z: 0 }, 80); scene.add(escortTarget.root); }
+      if (s.objective === '防御') { defenseTimer = 60; }
+      if (s.objective === 'Boss限时') { timeLimit = 120; }
     }
     enemies = [player, ...ais];
     hud.setRefs(player, ais, camera);
@@ -316,7 +326,7 @@ async function bootstrap() {
   function checkWin() {
     if (state.current !== States.PLAYING) return;
     if (mode.name === '战役') {
-      const winner = campaign.checkWin(player.alive, ais.some(a => a.alive), siege.gate);
+      const winner = campaign.checkWin(player.alive, ais.some(a => a.alive), siege.gate, { boss: ais.find(a => a instanceof BossEnemy), escortTarget, defenseTimer, surviveWavesDone, timeLimit, redAlive: ais.filter(a => a.alive).length });
       if (winner === 'blue') {
         const result = campaign.onStageClear();
         if (result === 'campaign_complete') {
@@ -434,6 +444,19 @@ async function bootstrap() {
         if (mode.name === '据点') { mode.onTick(dt, combat.characters); hud.setDomination(mode); }
         hud.update(dt);
         if (mode.name === '战役') hud.setMode('战役', campaign.stageInfo);
+        if (mode.name === '战役') {
+          const redAlive = ais.filter(a => a.alive).length;
+          if (defenseTimer > 0) defenseTimer -= dt;
+          if (timeLimit > 0) timeLimit -= dt;
+          if (escortTarget) escortTarget.update(dt, player);
+          campaign.onTick(dt, {
+            redAlive,
+            spawnReinforce: (n) => { for (let i = 0; i < n; i++) { const e = new AIController({ team: 1, passive: false, maxHp: Math.round(90 * (campaign.currentStage.difficulty || 1)) }); e.setBus(bus); e.setWeapons([new Spear()]); const px = 160 + (Math.random() - 0.5) * 40; const pz = (Math.random() - 0.5) * 120; e.spawn(new THREE.Vector3(px, terrain.heightAt(px, pz), pz)); e.setCameraRef(camera); scene.add(e.root); combat.register(e); ais.push(e); } },
+            boss: ais.find(a => a instanceof BossEnemy),
+            progress: redAlive / (campaign.currentStage.enemyCount || 1),
+            setWeather: (w) => weather.setMode(w),
+          });
+        }
         checkWin();
       },
       () => { renderer.render(); }
