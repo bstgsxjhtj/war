@@ -65,6 +65,13 @@ export class Renderer {
     this.composer.addPass(new OutputPass());
   }
 
+  setQuality(q) {
+    if (!this.webgl) return;
+    if (q === 'low') { this.webgl.shadowMap.enabled = false; this.webgl.setPixelRatio(0.7); }
+    else if (q === 'mid') { this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.mapSize.set(2048, 2048); this.webgl.setPixelRatio(1); }
+    else { this.webgl.shadowMap.enabled = true; this.webgl.shadowMap.mapSize.set(4096, 4096); this.webgl.setPixelRatio(Math.min(window.devicePixelRatio, 2)); }
+  }
+
   render() { this.composer.render(); }
 
   _onResize() {
