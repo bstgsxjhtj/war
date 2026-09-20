@@ -16,6 +16,7 @@ export class Weapon {
     this.skillCd = 8;
     this.skillName = '技能';
     this.skillDesc = '';
+    this.affixes = [null, null];
   }
 
   get ready() { return this._timer <= 0; }
