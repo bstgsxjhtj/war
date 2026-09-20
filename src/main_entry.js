@@ -11,6 +11,10 @@ import { Water } from './world/Water.js';
 import { CombatSystem } from './gameplay/CombatSystem.js';
 import { ComboSystem } from './gameplay/ComboSystem.js';
 import { WeaponSkills } from './gameplay/WeaponSkills.js';
+import { Affixes } from './gameplay/Affixes.js';
+import { Achievements } from './gameplay/Achievements.js';
+import { AffixesUI } from './ui/AffixesUI.js';
+import { AchievementsUI } from './ui/AchievementsUI.js';
 import { Player } from './gameplay/Player.js';
 import { AIController } from './gameplay/AIController.js';
 import { HUD } from './ui/HUD.js';
@@ -85,8 +89,23 @@ async function bootstrap() {
 
   const comboSys = new ComboSystem(bus);
   const weaponSkills = new WeaponSkills();
+  const affixes = new Affixes();
+  const achievements = new Achievements();
+  achievements.setBus(bus);
   const combat = new CombatSystem(scene.scene, bus, comboSys);
   const hud = new HUD(bus);
+  bus.on('combat.kill', (p) => achievements.check('combat.kill', p));
+  bus.on('combo.tier', (p) => achievements.check('combo.tier', p));
+  bus.on('skill.cast', (p) => achievements.check('skill.cast', p));
+  bus.on('campaign.clear', (p) => achievements.check('campaign.clear', p));
+  bus.on('daily.update', (p) => achievements.check('daily.update', p));
+  bus.on('achievement.unlock', ({ name, reward }) => {
+    if (reward.skillPoint) skills.addPoint(reward.skillPoint);
+    if (reward.affix) affixes.grant(reward.affix[0], reward.affix[1]);
+    if (reward.skin && skins) skins.unlock(reward.skin);
+    hud.flash('成就解锁：' + name);
+  });
+  bus.on('affix.drop', ({ type, tier }) => hud.flash('词条掉落：' + type));
   const miniMap = new MiniMap(bus);
   const weaponTrail = new WeaponTrail(scene.scene);
   const hitDirection = new HitDirection();
@@ -190,6 +209,8 @@ async function bootstrap() {
     comboSys.count = 0; comboSys._tier = 0; comboSys._finisher = false;
     player.setWeaponSkills(weaponSkills);
     weaponSkills.reset();
+    combat.setAffixes(affixes);
+    player.setAffixes(affixes);
     player.setWeapons([new Sword(), new Bow(), new Spear(), new Warhammer()]);
     player.setSkill(skills);
     const spawns = MapGenerator.MAPS[currentMapKey].spawns;
@@ -343,6 +364,8 @@ async function bootstrap() {
   }
 
   spawnAll();
+  const affixesUI = new AffixesUI(affixes, player);
+  const achievementsUI = new AchievementsUI(achievements);
   state.transit(States.PLAYING);
   hud.setRound(0, 0, targetWins);
   hud.setMode(mode.name + ' · ' + currentMapName);
