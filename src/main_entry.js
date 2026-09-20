@@ -11,6 +11,7 @@ import { Water } from './world/Water.js';
 import { CombatSystem } from './gameplay/CombatSystem.js';
 import { ComboSystem } from './gameplay/ComboSystem.js';
 import { WeaponSkills } from './gameplay/WeaponSkills.js';
+import { AIManager } from './gameplay/AIManager.js';
 import { EscortTarget } from './gameplay/EscortTarget.js';
 import { DefensePoint } from './gameplay/DefensePoint.js';
 import { Affixes } from './gameplay/Affixes.js';
@@ -96,6 +97,9 @@ async function bootstrap() {
   const achievements = new Achievements();
   achievements.setBus(bus);
   const combat = new CombatSystem(scene.scene, bus, comboSys);
+  const aiManager = new AIManager(bus);
+  const AI_DIFFICULTY = 'normal';
+  aiManager.setDifficulty(AI_DIFFICULTY);
   const hud = new HUD(bus);
   bus.on('combat.kill', (p) => achievements.check('combat.kill', p));
   bus.on('combo.tier', (p) => achievements.check('combo.tier', p));
@@ -109,6 +113,15 @@ async function bootstrap() {
     hud.flash('成就解锁：' + name);
   });
   bus.on('affix.drop', ({ type, tier }) => hud.flash('词条掉落：' + type));
+  bus.on('boss.summon', ({ pos, team, count }) => {
+    for (let i = 0; i < count; i++) {
+      const e = new AIController({ team, passive: false, maxHp: Math.round(50 * aiManager.difficulty().maxHpMul) });
+      e.setBus(bus); e.setWeapons([new Sword()]); e.setAIManager(aiManager);
+      const px = pos.x + (Math.random()-0.5)*6, pz = pos.z + (Math.random()-0.5)*6;
+      e.spawn(new THREE.Vector3(px, terrain.heightAt(px, pz), pz));
+      e.setCameraRef(camera); scene.add(e.root); combat.register(e); ais.push(e);
+    }
+  });
   const miniMap = new MiniMap(bus);
   const weaponTrail = new WeaponTrail(scene.scene);
   const hitDirection = new HitDirection();
@@ -239,17 +252,20 @@ async function bootstrap() {
         const horse = horses.create();
         ai.mount(horse);
       } else {
-        ai = new AIController({ team: 1, passive: mode.name === '训练场', maxHp: mode.name === '训练场' ? 500 : 90 });
+        ai = new AIController({ team: 1, passive: mode.name === '训练场', maxHp: mode.name === '训练场' ? 500 : Math.round(90 * aiManager.difficulty().maxHpMul) });
       }
       const p = redLayout[i];
       ai.spawn(new THREE.Vector3(p.x, terrain.heightAt(p.x, p.z), p.z));
       ai.setWeapons([aiWeaponMakers[i % aiWeaponMakers.length]()]);
       ai.setCameraRef(camera);
+      ai.setAIManager(aiManager);
+      if (!ai._isBoss && !ai._isElite && Math.random() < 0.15) { ai.setIsElite(true); ai._eliteSkill = ['blockCounter','dodgeStrike','enrage'][Math.floor(Math.random()*3)]; }
       scene.add(ai.root);
       combat.register(ai);
       if (ai._weaponMesh) weaponTrail.attach(ai._weaponMesh, ai.team === 1 ? 0xff8060 : 0x60a0ff);
       ais.push(ai);
     }
+    aiManager.assignSquad(ais);
     if (mode.name !== '训练场' && ais.length >= 3) {
       const shieldUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'SHIELD');
       const bowUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'BOW');
@@ -451,7 +467,7 @@ async function bootstrap() {
           if (escortTarget) escortTarget.update(dt, player);
           campaign.onTick(dt, {
             redAlive,
-            spawnReinforce: (n) => { for (let i = 0; i < n; i++) { const e = new AIController({ team: 1, passive: false, maxHp: Math.round(90 * (campaign.currentStage.difficulty || 1)) }); e.setBus(bus); e.setWeapons([new Spear()]); const px = 160 + (Math.random() - 0.5) * 40; const pz = (Math.random() - 0.5) * 120; e.spawn(new THREE.Vector3(px, terrain.heightAt(px, pz), pz)); e.setCameraRef(camera); scene.add(e.root); combat.register(e); ais.push(e); } },
+            spawnReinforce: (n) => { for (let i = 0; i < n; i++) { const e = new AIController({ team: 1, passive: false, maxHp: Math.round(90 * (campaign.currentStage.difficulty || 1)) }); e.setBus(bus); e.setWeapons([new Spear()]); e.setAIManager(aiManager); if (!e._isBoss && !e._isElite && Math.random() < 0.15) { e.setIsElite(true); e._eliteSkill = ['blockCounter','dodgeStrike','enrage'][Math.floor(Math.random()*3)]; } const px = 160 + (Math.random() - 0.5) * 40; const pz = (Math.random() - 0.5) * 120; e.spawn(new THREE.Vector3(px, terrain.heightAt(px, pz), pz)); e.setCameraRef(camera); scene.add(e.root); combat.register(e); ais.push(e); } },
             boss: ais.find(a => a instanceof BossEnemy),
             progress: redAlive / (campaign.currentStage.enemyCount || 1),
             setWeather: (w) => weather.setMode(w),
