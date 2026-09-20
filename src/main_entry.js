@@ -10,6 +10,7 @@ import { Environment } from './world/Environment.js';
 import { Water } from './world/Water.js';
 import { CombatSystem } from './gameplay/CombatSystem.js';
 import { ComboSystem } from './gameplay/ComboSystem.js';
+import { WeaponSkills } from './gameplay/WeaponSkills.js';
 import { Player } from './gameplay/Player.js';
 import { AIController } from './gameplay/AIController.js';
 import { HUD } from './ui/HUD.js';
@@ -83,6 +84,7 @@ async function bootstrap() {
   await water.init();
 
   const comboSys = new ComboSystem(bus);
+  const weaponSkills = new WeaponSkills();
   const combat = new CombatSystem(scene.scene, bus, comboSys);
   const hud = new HUD(bus);
   const miniMap = new MiniMap(bus);
@@ -186,6 +188,8 @@ async function bootstrap() {
     player = new Player(camera, bus);
     player.setComboSys(comboSys);
     comboSys.count = 0; comboSys._tier = 0; comboSys._finisher = false;
+    player.setWeaponSkills(weaponSkills);
+    weaponSkills.reset();
     player.setWeapons([new Sword(), new Bow(), new Spear(), new Warhammer()]);
     player.setSkill(skills);
     const spawns = MapGenerator.MAPS[currentMapKey].spawns;
