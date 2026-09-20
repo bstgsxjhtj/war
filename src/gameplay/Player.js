@@ -117,7 +117,7 @@ export class Player extends Character {
     const now = performance.now() / 1000;
     const ok = this.weapon.skill(this, combat, now);
     if (ok) {
-      this._weaponSkills.trigger(idx);
+      const cdMul = 1 - (this._affixes?.affixBonus(this.weapon, '迅捷') || 0); this._weaponSkills.trigger(idx, cdMul);
       this.bus?.emit('skill.cast', { weaponIdx: idx, name: this.weapon.skillName });
     }
   }
