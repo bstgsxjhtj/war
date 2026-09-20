@@ -174,7 +174,7 @@ async function bootstrap() {
   bus.on('settings.quality', ({ quality }) => { if (renderer) renderer.setQuality(quality); });
   bus.on('settings.sensitivity', ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
   bus.on('settings.difficulty', ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
-  settings.show(); settings.hide();
+  // 启动应用延后到 player/aiManager 赋值后避免 TDZ
   bus.on('hud.bossPhase', () => audio.playSound('ultimate'));
   bus.on('combo.tier', (p) => audio.playSound('hit', { combo: p.combo || 0 }));
 
