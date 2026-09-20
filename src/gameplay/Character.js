@@ -58,6 +58,7 @@ export class Character {
     this._vTmp = new THREE.Vector3();
     this._capsule = { center: new THREE.Vector3(), radius: 0.5, halfHeight: 1.0 };
 
+    this._footstepTimer = 0;
     this._build();
   }
 
@@ -486,9 +487,10 @@ export class Character {
     this.cape.material.uniforms.uTime.value = now;
     this.cape.material.uniforms.uMove.value = moving;
     // 脚步音
-    if (moving > 0.5 && this.onGround && this._audio && !this._attacking && this._dodgeTimer <= 0) {
-      this._footstepAcc += dt * (this._sprint ? 2.2 : 1.6);
-      if (this._footstepAcc > Math.PI) { this._footstepAcc -= Math.PI; if (this.isLocal) this._audio.footstep(); }
+    if (this._footstepTimer > 0) this._footstepTimer -= dt;
+    if (moving > 0.5 && this.onGround && this._audio && !this._attacking && this._dodgeTimer <= 0 && this._footstepTimer <= 0) {
+      if (this.isLocal) this._audio.footstep();
+      this._footstepTimer = 0.35;
     }
   }
 
