@@ -7,6 +7,7 @@ export class WeatherSystem {
     this.sun = sun;
     this.hemi = hemi;
     this.audio = audio;
+    this._audio = null;
     this._mode = 'clear';
     this._modes = ['clear', 'rain', 'night', 'snow', 'storm'];
     this._rain = null;
@@ -56,10 +57,13 @@ export class WeatherSystem {
     this.scene.add(this._lightning);
   }
 
+  setAudio(a) { this._audio = a; }
+
   setMode(mode) {
     if (this._modes.indexOf(mode) >= 0) {
       this._mode = mode;
       this.apply();
+      if (this._audio) this._audio.environment(mode);
     }
   }
 

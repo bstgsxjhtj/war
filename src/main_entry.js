@@ -169,6 +169,7 @@ async function bootstrap() {
   const _resumeOnce = () => { audio.resume(); window.removeEventListener('keydown', _resumeOnce); window.removeEventListener('mousedown', _resumeOnce); };
   window.addEventListener('keydown', _resumeOnce); window.addEventListener('mousedown', _resumeOnce);
   const weather = new WeatherSystem(scene.scene, scene.sun || null, scene.hemi || null, audio);
+  weather.setAudio(audio);
   const settings = new SettingsMenu(bus, audio);
   bus.on('hud.bossPhase', () => audio.playSound('ultimate'));
   bus.on('combo.tier', (p) => audio.playSound('hit', { combo: p.combo || 0 }));
