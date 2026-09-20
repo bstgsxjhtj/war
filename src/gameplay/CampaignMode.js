@@ -6,7 +6,7 @@ const STAGES = [
   { name: '最终决战', mapKey: 'field', objective: 'Boss', enemyCount: 8, weather: 'storm', layout: '环形', events: { bossPhase: 0.5 }, difficulty: 1.6, weapons: ['sword', 'spear', 'warhammer'] },
   { name: '密林伏击', mapKey: 'forest', objective: '全灭', enemyCount: 7, weather: 'clear', layout: '伏击', events: { reinforce: 0.4 }, difficulty: 1.75, weapons: ['sword', 'spear'] },
   { name: '河谷护送', mapKey: 'river', objective: '护送', enemyCount: 6, weather: 'rain', layout: '线阵', events: { weatherShift: { at: 0.5, to: 'storm' } }, difficulty: 1.9, weapons: ['sword', 'spear'] },
-  { name: '雪原生存', mapKey: 'snowfield', objective: '生存', enemyCount: 5, weather: 'snow', layout: '方阵', events: { reinforce: 0.3 }, difficulty: 2.05, weapons: ['sword', 'spear', 'warhammer'] },
+  { name: '雪原生存', mapKey: 'snowfield', objective: '生存', enemyCount: 5, weather: 'snow', layout: '方阵', events: { reinforce: 0.3 }, difficulty: 2.05, weapons: ['sword', 'spear', 'warhammer'], bossType: 'mage', mini: true },
   { name: '要塞防御', mapKey: 'keep', objective: '防御', enemyCount: 8, weather: 'clear', layout: '环形', events: { reinforce: 0.5 }, difficulty: 2.2, weapons: ['sword', 'spear', 'warhammer'] },
   { name: '终局之战', mapKey: 'keep', objective: 'Boss限时', enemyCount: 10, weather: 'storm', layout: '环形', events: { bossPhase: 0.5, reinforce: 0.3 }, difficulty: 2.4, weapons: ['sword', 'spear', 'warhammer'] },
 ];
