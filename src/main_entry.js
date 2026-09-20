@@ -103,7 +103,7 @@ async function bootstrap() {
   const hud = new HUD(bus);
   bus.on('combat.kill', (p) => achievements.check('combat.kill', p));
   bus.on('combo.tier', (p) => achievements.check('combo.tier', p));
-  bus.on('skill.cast', (p) => achievements.check('skill.cast', p));
+  bus.on('skill.cast', (p) => { achievements.check('skill.cast', p); audio.playSound('ultimate'); });
   bus.on('campaign.clear', (p) => achievements.check('campaign.clear', p));
   bus.on('daily.update', (p) => achievements.check('daily.update', p));
   bus.on('achievement.unlock', ({ name, reward }) => {
@@ -111,6 +111,7 @@ async function bootstrap() {
     if (reward.affix) affixes.grant(reward.affix[0], reward.affix[1]);
     if (reward.skin && skins) skins.unlock(reward.skin);
     hud.flash('成就解锁：' + name);
+    audio.playSound('achievement');
   });
   bus.on('affix.drop', ({ type, tier }) => hud.flash('词条掉落：' + type));
   bus.on('boss.summon', ({ pos, team, count }) => {
@@ -121,6 +122,7 @@ async function bootstrap() {
       e.spawn(new THREE.Vector3(px, terrain.heightAt(px, pz), pz));
       e.setCameraRef(camera); scene.add(e.root); combat.register(e); ais.push(e);
     }
+    audio.playSound('ultimate');
   });
   const miniMap = new MiniMap(bus);
   const weaponTrail = new WeaponTrail(scene.scene);
@@ -134,8 +136,8 @@ async function bootstrap() {
   const horses = new Horse(scene.scene);
   const formations = new FormationController();
   bus.emit('daily.update', daily.challenges);
-  bus.on('fx.perfectBlock', () => { if (daily.track('perfect')) bus.emit('daily.update', daily.challenges); });
-  bus.on('fx.perfectDodge', () => { if (daily.track('dodge')) bus.emit('daily.update', daily.challenges); });
+  bus.on('fx.perfectBlock', () => { if (daily.track('perfect')) bus.emit('daily.update', daily.challenges); audio.playSound('block'); });
+  bus.on('fx.perfectDodge', () => { if (daily.track('dodge')) bus.emit('daily.update', daily.challenges); audio.playSound('dodge'); });
   const progressUI = new ProgressionUI(progression, bus);
   bus.emit('minimap.supply', (supply.points || []).map(p => ({ x: p.pos.x, z: p.pos.z })));
   bus.on('combat.hit', ({ attacker, victim, damage, combo, heavy, backstab }) => {
@@ -150,19 +152,26 @@ async function bootstrap() {
     if (combo >= 3) daily.track('combo3');
     if (backstab) daily.track('backstab');
     bus.emit('daily.update', daily.challenges);
+    audio.playSound('swing');
+    audio.playSound('hit', { heavy, combo });
   });
   bus.on('combat.kill', ({ victim, killer }) => {
     if (killer && killer.isLocal) progression.recordKill();
     if (victim && victim.isLocal) progression.recordDeath();
     progressUI.refresh();
+    audio.playSound('ultimate');
   });
   const siege = new SiegeStructure(scene.scene, bus);
   const trajectory = new TrajectoryPreview(scene.scene);
   const skills = new SkillTree();
   const skillUI = new SkillTreeUI(bus, skills);
   const audio = new AudioEngine();
+  const _resumeOnce = () => { audio.resume(); window.removeEventListener('keydown', _resumeOnce); window.removeEventListener('mousedown', _resumeOnce); };
+  window.addEventListener('keydown', _resumeOnce); window.addEventListener('mousedown', _resumeOnce);
   const weather = new WeatherSystem(scene.scene, scene.sun || null, scene.hemi || null, audio);
   const settings = new SettingsMenu(bus, audio);
+  bus.on('hud.bossPhase', () => audio.playSound('ultimate'));
+  bus.on('combo.tier', (p) => audio.playSound('hit', { combo: p.combo || 0 }));
 
   let player, ais = [], enemies = [];
   let remotes = [];
@@ -211,6 +220,7 @@ async function bootstrap() {
     if (team === 1) scoreB++; else scoreR++;
     hud.setScore(scoreB, scoreR);
     if (killer && killer.isLocal) { playerKills++; skills.addPoint(1); hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => hud.clearHint(), 1500); daily.track('kills'); if (victim && victim._isBoss) daily.track('bossKill'); bus.emit('daily.update', daily.challenges); }
+    audio.playSound('ultimate');
   });
 
   function spawnAll() {
@@ -283,6 +293,7 @@ async function bootstrap() {
     hud.setRefs(player, ais, camera);
     miniMap.setRefs(player, ais, camera.cam);
     miniMap.setWorldSize(MapGenerator.MAPS[currentMapKey].size[0]);
+    player.setAudio(audio); for (const ai of ais) ai.setAudio(audio);
   }
 
   function startRound() {
