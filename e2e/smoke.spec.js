@@ -46,6 +46,15 @@ test('关键路径冒烟：0 运行时致命错误 + 关键 DOM + 主循环存�
   expect(comboEl).toBeGreaterThan(0);
   const skillEl = await page.locator('#skill-0').count();
   expect(skillEl).toBeGreaterThan(0);
+  await page.evaluate(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyI', key: 'i', bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', key: 'j', bubbles: true }));
+  });
+  await page.waitForTimeout(300);
+  const affixesPanel = await page.locator('#affixes-panel').count();
+  expect(affixesPanel).toBeGreaterThan(0);
+  const achievementsPanel = await page.locator('#achievements-panel').count();
+  expect(achievementsPanel).toBeGreaterThan(0);
   expect(errors.length).toBe(0);
   const weaponText = await page.locator('#weapon').innerText();
   expect(weaponText).toMatch(/[1].*刀/);
