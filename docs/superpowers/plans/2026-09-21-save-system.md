@@ -505,7 +505,7 @@ git commit -m "feat(save): main_entry 集成自动保存/启动加载/装备槽�
 
 ```js
   await page.evaluate(() => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', key: 'h', bubbles: true }));
   });
   await expect(page.locator('#save-panel')).toHaveCSS('display', /block/);
   await expect(page.locator('#save-now')).toBeVisible();

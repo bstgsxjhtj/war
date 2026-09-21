@@ -403,7 +403,6 @@ async function bootstrap() {
     }
     if (e.code === 'KeyN') { weather.toggle(); const wm = { clear: '晴', rain: '雨', night: '夜', snow: '雪', storm: '雷暴' }; hud.flash('天气：' + (wm[weather.mode] || weather.mode)); setTimeout(() => hud.clearHint(), 1500); }
     if (e.code === 'Escape') settings.toggle();
-    if (e.code === 'KeyH') { saveUI.toggle(); }
   });
 
   function checkWin() {
