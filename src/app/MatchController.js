@@ -34,7 +34,6 @@ export class MatchController {
         if (victim instanceof CavalryEnemy) bus.emit('combat.cavalrykill', { killer, victim });
         bus.emit('daily.update', this.deps.daily.challenges);
       }
-      this.deps.audio.playSound('ultimate');
     });
     bus.on('round.restart', () => { if (this.deps.state.current === States.ENDED) this.restart(); });
   }

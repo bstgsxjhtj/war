@@ -231,7 +231,7 @@ async function bootstrap() {
     getMode: () => mode
   });
   const match = new MatchController({
-    bus, state, hud, resultScreen, camera, progression, progressUI, daily, skills, campaign, siege, weather, audio,
+    bus, state, hud, resultScreen, camera, progression, progressUI, daily, skills, campaign, siege, weather,
     spawnAll: () => spawnAll(),
     saveNow: () => saveOrch.saveNow(),
     loadMap: (k) => loadMap(k),

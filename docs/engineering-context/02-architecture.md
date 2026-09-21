@@ -35,7 +35,7 @@ ESM 依赖图必须保持无环（DAG）。
 2. ~~**持久化双轨**~~（✅2026-09-21 偿还）：SaveManager（savegame_v1）成为游戏进度唯一事实来源；Progression/SkillTree/CampaignMode/Achievements/Affixes/DailyChallenge/WeaponSkins 七模块停止自写旧键，改为 serialize/restore 由 SaveOrchestrator 统一采集与恢复；6 个旧键（campaign_cleared/progression_v1/skilltree_v1/achievements/affixes/daily_challenge/weapon_skins）在首次启动一次性迁移后删除。保留独立键：settings/audio_volume/tutorial_done/skilltree_profile_*（UI/音频偏好与多档位特性）。
 3. ~~**UI 类错位**~~（✅2026-09-21 偿还）：ProgressionUI 与 WeaponSkinsUI 从 gameplay/ 抽出至 `ui/ProgressionUI.js`、`ui/WeaponSkinsUI.js`，gameplay 层只留领域模型；ui/ 单向依赖 gameplay（仅引用 SKINS 等常量/数据类）的约定现对全部 UI 一致。
 4. ~~**依赖注入不统一**~~（✅2026-09-21 偿还）：约定落地到 05 §6——必选依赖（bus）走构造、可选依赖（audio/affixes）走 setter、总线属性统一 `_bus`；DailyChallenge/Achievements 改为构造注入 bus（顺带修复 DailyChallenge 未传 bus 导致 `daily.completed` 事件死掉的 bug），Player 4 处 emit 统一 `_bus`。Character 群"注册时注入"为显式例外。
-5. ~~**监听器生命周期**~~（✅2026-09-21 偿还）：bus.on 返回 off、跨回合监听集中 bootstrap 顶层、spawnAll/spawnRed 内禁注册常驻监听——三条款经查均已满足（Player.dispose #8、死事件 #12 先前已修）；本轮落地 05 §7 约定 + 回归守卫（tests/core/listener-lifecycle.test.js 大括号匹配提取 spawnAll/spawnRed 函数体断言无 bus.on）。调查中发现并登记一无关次要缺陷：combat.kill 的 ultimate 音效在 main_entry 与 MatchController 各播一次（见 06 台账）。
+5. ~~**监听器生命周期**~~（✅2026-09-21 偿还）：bus.on 返回 off、跨回合监听集中 bootstrap 顶层、spawnAll/spawnRed 内禁注册常驻监听——三条款经查均已满足（Player.dispose #8、死事件 #12 先前已修）；本轮落地 05 §7 约定 + 回归守卫（tests/core/listener-lifecycle.test.js 大括号匹配提取 spawnAll/spawnRed 函数体断言无 bus.on）。调查中发现并修复一无关次要缺陷：combat.kill 的 ultimate 音效在 main_entry 与 MatchController 各播一次，已去重（保留 main_entry 进度处理器一处，MatchController 移除 audio 依赖）。
 
 ## 5. 组合根规则
 
