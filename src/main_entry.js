@@ -53,6 +53,8 @@ import { Horse, CavalryEnemy } from './gameplay/Cavalry.js';
 import { FormationController } from './gameplay/UnitFormation.js';
 import { SaveManager } from './gameplay/SaveManager.js';
 import { SaveUI } from './ui/SaveUI.js';
+import { MatchController } from './app/MatchController.js';
+import { SaveOrchestrator } from './app/SaveOrchestrator.js';
 
 async function bootstrap() {
   const app = document.querySelector('#app');
@@ -223,66 +225,26 @@ async function bootstrap() {
     hud.flash('单机模式（未连服务器）');
   }
   let mode = new Deathmatch(bus);
+  const saveOrch = new SaveOrchestrator({
+    bus, state, hud, saveManager, progression, campaign, skills, affixes, daily, skins, achievements,
+    getPlayer: () => player,
+    getMode: () => mode
+  });
   const match = new MatchController({
     bus, state, hud, resultScreen, camera, progression, progressUI, daily, skills, campaign, siege, weather, audio,
-    saveManager,
     spawnAll: () => spawnAll(),
-    saveNow: () => saveManager.save(captureSave()),
+    saveNow: () => saveOrch.saveNow(),
     loadMap: (k) => loadMap(k),
     mapName: () => currentMapName,
     getPlayer: () => player,
     getAis: () => ais,
     getMode: () => mode
   });
-
-  let playTimeSec = 0;
-  const captureSave = () => {
-    const slots = {};
-    if (player && player.weapons) {
-      for (const w of player.weapons) {
-        if (w && w.affixes) slots[w.weaponClass] = w.affixes.map(a => a ? { type: a.type, tier: a.tier } : null);
-      }
-    }
-    return {
-      mode: mode.name,
-      stage: campaign.stage,
-      campaignCompleted: campaign.cleared >= campaign.maxStages,
-      score: progression.score,
-      kills: progression.kills,
-      bestGrade: progression.getStats().bestGrade,
-      affixSlots: slots,
-      skillPoints: skills.points,
-      skillTree: skills.serialize(),
-      playTime: playTimeSec
-    };
-  };
-  const resetSave = () => {
-    saveManager.reset();
-    progression.reset();
-    campaign.reset(); campaign.cleared = 0; campaign._saveCleared();
-    skills.reset(); skills.points = 0; skills._save();
-    affixes.inventory = []; affixes._save();
-    daily._data = { date: '', challenges: [], progress: {}, claimed: false }; daily._save();
-    skins._data = { unlocked: { default: true }, equipped: { 0: 'default', 1: 'default', 2: 'default', 3: 'default' } }; skins._save();
-    achievements._data = {}; achievements._save();
-    ['campaign_cleared', 'progression_v1', 'skilltree_v1', 'achievements', 'affixes', 'daily_challenge', 'weapon_skins', 'tutorial_done', 'settings', 'audio_volume'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
-    playTimeSec = 0;
-    if (player && player.weapons) for (const w of player.weapons) w.affixes = [null, null];
-      hud.flash('进度已重置');
-    };
-  const saveUI = new SaveUI(bus, saveManager, captureSave, resetSave);
+  const saveUI = new SaveUI(bus, saveManager, () => saveOrch.capture(), () => saveOrch.reset());
   bus.on('skins.changed', ({ weaponIdx }) => { if (player && player._weaponMesh) skins.applyToWeapon(player._weaponMesh, weaponIdx); });
-  // 启动加载应用存档
-  const _saved = saveManager.load();
-  if (_saved) {
-    if (_saved.mode === '战役' && typeof _saved.stage === 'number') campaign.stage = Math.min(_saved.stage, campaign.maxStages - 1);
-    progression.restore(_saved);
-    if (_saved.skillTree) { skills.restore(_saved.skillTree); } else if (typeof _saved.skillPoints === 'number') { skills.points = _saved.skillPoints; }
-    playTimeSec = _saved.playTime || 0;
-  }
-  setInterval(() => { if (state.current === States.PLAYING) playTimeSec++; }, 1000);
-  setInterval(() => { if (state.current === States.PLAYING) saveManager.save(captureSave()); }, 60000);
-  window.addEventListener('beforeunload', () => { try { saveManager.save(captureSave()); } catch (e) { /* ignore */ } });
+  // 启动加载应用存档 + 定时/卸载自动存档
+  saveOrch.applyOnBoot();
+  saveOrch.startTimers();
 
   function spawnRed(redLayout, { bossWave = false } = {}) {
     const aiWeaponMakers = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];
