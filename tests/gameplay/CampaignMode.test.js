@@ -1,4 +1,4 @@
-import { CampaignMode } from '../../src/gameplay/CampaignMode.js';
+import { CampaignMode, STAGES } from '../../src/gameplay/CampaignMode.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 describe('CampaignMode', () => {
@@ -129,6 +129,24 @@ describe('CampaignMode', () => {
     let phased = 0;
     c.onTick(0.1, { boss: { alive: true, health: { hp: 30, maxHp: 100 }, enterPhase: (p) => { phased = p; } } });
     expect(phased).toBe(2);
+  });
+
+  it('所有 objective 含 Boss 的关必须配置 bossType（否则永不胜利）', () => {
+    const bossStages = STAGES.filter(s => s.objective.includes('Boss'));
+    expect(bossStages.length).toBeGreaterThan(0);
+    for (const s of bossStages) {
+      expect(typeof s.bossType).toBe('string');
+      expect(s.bossType.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('生存关必须配置 surviveTime（秒）', () => {
+    const surviveStages = STAGES.filter(s => s.objective === '生存');
+    expect(surviveStages.length).toBeGreaterThan(0);
+    for (const s of surviveStages) {
+      expect(typeof s.surviveTime).toBe('number');
+      expect(s.surviveTime).toBeGreaterThan(0);
+    }
   });
 
   it('reset 与 skipTo', () => {

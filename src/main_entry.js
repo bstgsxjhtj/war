@@ -531,6 +531,10 @@ async function bootstrap() {
           const redAlive = ais.filter(a => a.alive).length;
           if (defenseTimer > 0) defenseTimer -= dt;
           if (timeLimit > 0) timeLimit -= dt;
+          if (surviveTimer > 0) {
+            surviveTimer -= dt;
+            if (surviveTimer <= 0 && !surviveWavesDone) { surviveWavesDone = true; hud.flash('生存时间达成！'); setTimeout(() => hud.clearHint(), 1500); }
+          }
           if (escortTarget) escortTarget.update(dt, player);
           campaign.onTick(dt, {
             redAlive,
