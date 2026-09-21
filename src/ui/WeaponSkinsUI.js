@@ -1,26 +1,16 @@
-// 皮肤面板（V 键开关）；自 gameplay/WeaponSkins.js 抽出，纯移动不改行为
+// 皮肤面板（V 键开关）；自 gameplay/WeaponSkins.js 抽出，纯移动不改行为；现继承 UIPanel 复用面板共性
 import { SKINS } from '../gameplay/WeaponSkins.js';
+import { UIPanel } from './UIPanel.js';
 
-export class WeaponSkinsUI {
+export class WeaponSkinsUI extends UIPanel {
   constructor(skins, bus) {
+    super({ id: 'skins-panel', toggleKey: 'KeyV', width: '480px', style: { border: '2px solid rgba(180,160,80,.5)', boxShadow: '0 0 30px rgba(0,0,0,.6)', borderRadius: '12px', padding: '20px', background: 'rgba(15,15,25,.95)', zIndex: '80' } });
     this.skins = skins;
     this.bus = bus;
-    this.el = document.createElement('div');
-    this.el.id = 'skins-panel';
-    Object.assign(this.el.style, {
-      position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-      width: '480px', maxHeight: '80vh', overflowY: 'auto', zIndex: '80',
-      background: 'rgba(15,15,25,.95)', borderRadius: '12px', padding: '20px',
-      border: '2px solid rgba(180,160,80,.5)', display: 'none', fontFamily: 'Segoe UI, sans-serif',
-      color: '#ddd', boxShadow: '0 0 30px rgba(0,0,0,.6)'
-    });
-    document.body.appendChild(this.el);
     this._render();
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'v' || e.key === 'V') { this.el.style.display = this.el.style.display === 'none' ? 'block' : 'none'; }
-      if (e.key === 'Escape') this.el.style.display = 'none';
-    });
   }
+
+  render() { this._render(); }
 
   _render() {
     let html = '<h2 style="margin:0 0 16px;color:#ffd700;text-align:center">武器皮肤</h2>';
@@ -56,6 +46,4 @@ export class WeaponSkinsUI {
       });
     });
   }
-
-  refresh() { this._render(); }
 }

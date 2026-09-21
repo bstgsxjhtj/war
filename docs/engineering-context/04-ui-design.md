@@ -21,7 +21,7 @@
 ## 3. UI 约定
 
 1. 面板默认 `display:none`，toggle 切换；Escape 关闭。
-2. 面板样式：fixed 定位卡片，统一样式样板（后续抽 UIPanel 基类消除四胞胎重复）。
+2. 面板样式：fixed 定位卡片。**UIPanel 基类**（`src/ui/UIPanel.js`）封装居中/定位容器 + toggleKey 开关 + Escape 关闭 + show/hide/toggle/render 契约；AffixesUI/AchievementsUI/WeaponSkinsUI/SaveUI 继承之，子类只覆写 `render()` 提供内容。SkillTreeUI 因全屏遮罩 + opacity 渐变 + ui.locklost 语义不继承，保持独立。
 3. UI 只依赖 gameplay 的数据/常量，不反向被依赖。
 4. UI 测试用 `// @vitest-environment jsdom` pragma，模板见 tests/ui/SettingsMenu.test.js。
 5. 面板内提示统一走 `bus.emit('hud.flash', ...)` → HUD 监听显示（禁止发无人监听的事件）。

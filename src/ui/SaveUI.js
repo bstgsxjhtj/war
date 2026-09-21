@@ -1,39 +1,26 @@
-// 存档面板：H 键开关 + 进度概览 + 立即保存 + 重置进度（无导出/导入）
-export class SaveUI {
+// 存档面板：H 键开关 + 进度概览 + 立即保存 + 重置进度（无导出/导入）；继承 UIPanel 复用面板共性
+import { UIPanel } from './UIPanel.js';
+
+export class SaveUI extends UIPanel {
   constructor(bus, saveManager, captureFn, resetFn) {
+    super({
+      id: 'save-panel', toggleKey: 'KeyH', width: '280px',
+      position: { right: '16px', top: '16px' },
+      style: { zIndex: '30', border: '1px solid #444', background: 'rgba(10,12,18,.92)', padding: '12px', color: '#ddd' }
+    });
     this.bus = bus;
     this.saveManager = saveManager;
     this.captureFn = captureFn || (() => ({}));
     this.resetFn = resetFn || (() => {});
-    this._visible = false;
-    this._panel = document.createElement('div');
-    this._panel.id = 'save-panel';
-    Object.assign(this._panel.style, {
-      position: 'fixed', right: '16px', top: '16px', width: '280px', zIndex: 30,
-      background: 'rgba(10,12,18,.92)', border: '1px solid #444', borderRadius: '8px',
-      padding: '12px', color: '#ddd', fontFamily: 'Segoe UI, sans-serif', fontSize: '13px',
-      display: 'none'
-    });
-    document.body.appendChild(this._panel);
-    this._render();
-    document.addEventListener('keydown', (e) => {
-      if (e.code === 'KeyH') { e.preventDefault(); this.toggle(); }
-      else if (e.code === 'Escape' && this._visible) this.toggle();
-    });
+    this.render();
   }
 
-  toggle() {
-    this._visible = !this._visible;
-    this._panel.style.display = this._visible ? 'block' : 'none';
-    if (this._visible) this._render();
-  }
-
-  _render() {
+  render() {
     const d = this.saveManager.load() || {};
     const stage = (d.mode === '战役' && typeof d.stage === 'number') ? d.stage + 1 : 1;
     const timeStr = d.savedAt ? new Date(d.savedAt).toLocaleTimeString() : '无';
     const playMin = Math.floor((d.playTime || 0) / 60);
-    this._panel.innerHTML = `
+    this.el.innerHTML = `
       <div style="font-weight:bold;margin-bottom:8px;color:#ffd">存档</div>
       <div id="save-info" style="line-height:1.8">
         保存时间：${timeStr}<br>
@@ -45,14 +32,14 @@ export class SaveUI {
         <button id="save-reset" style="flex:1;cursor:pointer;color:#f66">重置进度</button>
       </div>
     `;
-    this._panel.querySelector('#save-now').addEventListener('click', () => {
+    this.el.querySelector('#save-now').addEventListener('click', () => {
       this.saveManager.save(this.captureFn());
-      this._render();
+      this.render();
     });
-    this._panel.querySelector('#save-reset').addEventListener('click', () => {
+    this.el.querySelector('#save-reset').addEventListener('click', () => {
       if (window.confirm('确定重置所有进度？此操作不可恢复。')) {
         this.resetFn();
-        this._render();
+        this.render();
       }
     });
   }
