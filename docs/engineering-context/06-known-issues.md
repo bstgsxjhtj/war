@@ -42,6 +42,8 @@
 - ~~持久化双轨收敛（SaveManager 唯一事实来源，7 模块 serialize/restore，6 旧键迁移后删除）~~ ✅2026-09-21 完成，见 02 架构文档 §4.2
 - ~~UI 类错位（ProgressionUI/WeaponSkinsUI 移至 ui/）~~ ✅2026-09-21 完成，见 02 架构文档 §4.3
 - ~~依赖注入不统一（bus 必选走构造、audio/affixes 可选走 setter、_bus 命名统一）~~ ✅2026-09-21 完成，见 02 架构文档 §4.4 与 05 §6；顺带修复 DailyChallenge 未注入 bus 致 daily.completed 死事件
+- ~~监听器生命周期（bus.on 返回 off / 跨回合注册集中 bootstrap / spawnAll 内禁注册）~~ ✅2026-09-21 完成，见 02 架构文档 §4.5 与 05 §7；三条款经查均已满足，加回归守卫锁定
+- ⬜ combat.kill 的 ultimate 音效重复：main_entry（progression 处理器 L173）与 MatchController（比分处理器）各调一次 audio.playSound('ultimate')，每次击杀播两声。架构债 #5 调查时发现，非生命周期问题，择机去重（保留比分处理器一处）
 - UI 面板四胞胎 → UIPanel 基类；近战武器 _perform 上提 Weapon 基类
 - 事件名/存储键/平衡数值常量模块化
 - 每帧 Vector3 分配池化；miniMap.setWorldSize 每帧调用
@@ -59,3 +61,4 @@
 | 2026-09-21 | 持久化双轨收敛 commits | P2 架构债#2（SaveManager 唯一事实来源 / 7 模块 serialize/restore / 6 旧键迁移后删除） |
 | 2026-09-21 | UI 类错位 commit | P2 架构债#3（ProgressionUI/WeaponSkinsUI 移至 ui/） |
 | 2026-09-21 | 依赖注入统一 commit | P2 架构债#4（bus 走构造 / _bus 命名统一 / 修复 DailyChallenge 死事件） |
+| 2026-09-21 | 监听器生命周期 commit | P2 架构债#5（三条款已满足 + 回归守卫 + 05 §7 约定）；登记 ultimate 音效重复次要缺陷 |

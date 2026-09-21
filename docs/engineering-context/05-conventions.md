@@ -41,3 +41,11 @@
 - **总线属性统一 `_bus`**：所有持有 EventBus 的类用 `this._bus`（非 `this.bus`），保持全仓命名一致。
 - **Character 群的 bus 注入例外**：Character 基类不强制构造 bus（敌人由 spawnAll 创建后经 `CombatSystem.register` 注入）；Player/AIController/RemotePlayer 等在自身构造调用 `this.setBus(bus)`。这是"注册时注入"的显式例外，不算违规。
 - **不得同时暴露构造与 setter 两套必选注入**：选其一，避免双真相。
+
+## 7. 监听器生命周期
+
+- **bus.on 返回 off**：`EventBus.on(event, handler)` 返回取消函数 `() => bus.off(event, handler)`；需在非启动期移除的监听必须捕获该返回值。启动期常驻监听（bootstrap 一次注册、随页面生命周期存在）可不捕获。
+- **跨回合监听集中在 bootstrap 顶层**：跨回合的 bus 监听必须集中在 main_entry bootstrap 顶层一次注册，handler 通过闭包引用 `player`/`ais`/`mode` 等 `let` 变量（重新赋值后闭包见最新值），无需每回合重注册。
+- **spawnAll / spawnRed 内禁止注册常驻监听**：每回合重建的函数体内不得调用 `bus.on`，否则监听随回合数线性累积导致事件重复处理。回归守卫见 `tests/core/listener-lifecycle.test.js`（大括号匹配提取函数体，断言无 `bus.on(`）。
+- **每回合重建对象的 document/window 监听必须随 dispose 清理**：如 Player 构造注册 8 个输入监听，`Player.dispose()` 逐条 `removeEventListener` 并清空 `_handlers`；spawnAll 重建 Player 前必先 dispose 旧实例（已实现，回归守卫见 `tests/gameplay/Player.dispose.test.js`）。
+- **UI 面板的 document 监听**：面板（SkillTreeUI/AffixesUI/AchievementsUI/WeaponSkinsUI/SaveUI/HUD/Tutorial/ResultScreen）在构造注册 document/window keydown，因面板仅 bootstrap 创建一次，无累积风险；后续若引入可销毁面板，须补 dispose。
