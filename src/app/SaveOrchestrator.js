@@ -10,7 +10,7 @@ export class SaveOrchestrator {
   }
 
   capture() {
-    const { campaign, progression, skills, getMode, getPlayer } = this.deps;
+    const { campaign, progression, skills, affixes, achievements, daily, skins, getMode, getPlayer } = this.deps;
     const mode = getMode();
     const player = getPlayer();
     const slots = {};
@@ -23,12 +23,18 @@ export class SaveOrchestrator {
       mode: mode.name,
       stage: campaign.stage,
       campaignCompleted: campaign.cleared >= campaign.maxStages,
+      campaignCleared: campaign.cleared,
+      progressionFull: progression.serialize(),
       score: progression.score,
       kills: progression.kills,
       bestGrade: progression.getStats().bestGrade,
       affixSlots: slots,
+      affixInventory: affixes.serialize(),
       skillPoints: skills.points,
       skillTree: skills.serialize(),
+      achievements: achievements.serialize(),
+      daily: daily.serialize(),
+      skins: skins.serialize(),
       playTime: this.playTimeSec
     };
   }
@@ -41,12 +47,12 @@ export class SaveOrchestrator {
     const { saveManager, progression, campaign, skills, affixes, daily, skins, achievements, hud, getPlayer } = this.deps;
     saveManager.reset();
     progression.reset();
-    campaign.reset(); campaign.cleared = 0; campaign._saveCleared();
+    campaign.reset(); campaign.cleared = 0;
     skills.reset(); skills.points = 0; skills._save();
-    affixes.inventory = []; affixes._save();
-    daily._data = { date: '', challenges: [], progress: {}, claimed: false }; daily._save();
-    skins._data = { unlocked: { default: true }, equipped: { 0: 'default', 1: 'default', 2: 'default', 3: 'default' } }; skins._save();
-    achievements._data = {}; achievements._save();
+    affixes.restore([]);
+    daily.restore({ date: '', challenges: [], progress: {}, claimed: false });
+    skins.restore({ unlocked: { default: true }, equipped: { 0: 'default', 1: 'default', 2: 'default', 3: 'default' } });
+    achievements.restore({});
     for (const k of LEGACY_KEYS) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
     this.playTimeSec = 0;
     const player = getPlayer();
@@ -55,12 +61,19 @@ export class SaveOrchestrator {
   }
 
   applyOnBoot() {
-    const { saveManager, campaign, progression, skills } = this.deps;
+    const { saveManager, campaign, progression, skills, affixes, achievements, daily, skins } = this.deps;
     const _saved = saveManager.load();
     if (_saved) {
       if (_saved.mode === '战役' && typeof _saved.stage === 'number') campaign.stage = Math.min(_saved.stage, campaign.maxStages - 1);
-      progression.restore(_saved);
+      if (typeof _saved.campaignCleared === 'number') campaign.cleared = _saved.campaignCleared;
+      else if (_saved.campaignCompleted) campaign.cleared = campaign.maxStages;
+      if (_saved.progressionFull) progression.restore(_saved.progressionFull);
+      else progression.restore(_saved);
       if (_saved.skillTree) { skills.restore(_saved.skillTree); } else if (typeof _saved.skillPoints === 'number') { skills.points = _saved.skillPoints; }
+      if (Array.isArray(_saved.affixInventory)) affixes.restore(_saved.affixInventory);
+      if (_saved.achievements && typeof _saved.achievements === 'object') achievements.restore(_saved.achievements);
+      if (_saved.daily && typeof _saved.daily === 'object') daily.restore(_saved.daily);
+      if (_saved.skins && typeof _saved.skins === 'object') skins.restore(_saved.skins);
       this.playTimeSec = _saved.playTime || 0;
     }
   }
