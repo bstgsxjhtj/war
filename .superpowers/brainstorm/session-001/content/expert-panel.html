@@ -1,0 +1,195 @@
+<h2>第六轮专家圆桌：画面与机制进化方向</h2>
+<p class="subtitle">6 位专家（含 2 名游戏策划）评估当前 Demo 状态，指出不足并提出进化路线</p>
+
+<style>
+.expert-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+.expert-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:18px}
+.expert-card h3{margin:0 0 4px;font-size:15px;color:#e8d5a0}
+.expert-role{font-size:11px;color:#88aacc;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.expert-assess{font-size:12px;color:#aaa;margin-bottom:10px;line-height:1.5}
+.expert-assess strong{color:#e8c8c8}
+.expert-recs{font-size:12px;line-height:1.6}
+.expert-recs li{margin-bottom:3px}
+.expert-recs strong{color:#a0d0a0}
+.rec-priority{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:700}
+.pri-high{background:#c0392b;color:#fff}
+.pri-med{background:#d4a017;color:#1a1a1a}
+.pri-low{background:#2a6a4a;color:#cfe}
+.current-state{background:rgba(60,40,80,.3);border:1px solid #4a3a6a;border-radius:12px;padding:16px;margin:12px 0}
+.current-state h3{margin:0 0 8px;color:#c0a0e0}
+.state-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px}
+.state-good{color:#6ac06a}
+.state-bad{color:#e07070}
+.summary-box{background:rgba(30,50,40,.3);border:1px solid #3a6a4a;border-radius:12px;padding:16px;margin:16px 0}
+.summary-box h3{margin:0 0 8px;color:#80d0a0}
+.summary-cats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.summary-cat h4{margin:0 0 6px;font-size:13px}
+.summary-cat ul{font-size:11px;padding-left:14px;margin:0;line-height:1.6}
+.summary-cat li{margin-bottom:2px}
+</style>
+
+<div class="current-state">
+<h3>📊 当前 Demo 评估（5 轮进化后）</h3>
+<div class="state-grid">
+<div><div class="state-good">✅ PBR材质 + EnvMap反射</div><div class="state-good">✅ SSAO+Bloom+Vignette后处理</div><div class="state-good">✅ 5种天气模式</div><div class="state-good">✅ 水面倒影 Reflector</div></div>
+<div><div class="state-bad">❌ 角色是胶囊体（CapsuleGeometry）</div><div class="state-bad">❌ 无骨骼动画（动作僵硬）</div><div class="state-bad">❌ 环境物体是基础几何体</div><div class="state-bad">❌ 地图仅220×110（太小）</div></div>
+<div><div class="state-good">✅ 3连击/格挡/完美闪避/处决</div><div class="state-good">✅ 武器克制矩阵</div><div class="state-good">✅ 锁定/耐力/怒气/击杀连击</div><div class="state-good">✅ 5种游戏模式</div></div>
+<div><div class="state-bad">❌ 无受击方向指示</div><div class="state-bad">❌ 无武器拖尾特效</div><div class="state-bad">❌ 无画面震动/卡帧反馈</div><div class="state-bad">❌ AI无个性（全一样）</div></div>
+<div><div class="state-good">✅ 技能树(拖拽排序+多档)</div><div class="state-good">✅ 新手引导7步</div><div class="state-good">✅ 结算页/补给点</div><div class="state-good">✅ WebSocket多人</div></div>
+<div><div class="state-bad">❌ 无持久进度系统</div><div class="state-bad">❌ 无装备配装</div><div class="state-bad">❌ Boss无多阶段</div><div class="state-bad">❌ 无队伍阵型机制</div></div>
+</div>
+</div>
+
+<div class="expert-grid">
+
+<div class="expert-card">
+<h3>🔧 渲染引擎工程师</h3>
+<div class="expert-role">Rendering Pipeline</div>
+<div class="expert-assess"><strong>现状：</strong>SSAO+Vignette+Bloom 管线完整，ACES色调+MSAA已就位。但角色是 CapsuleGeometry 拼接的"胶囊人"，攻击时只有位移没有动画——这是画面最大的短板。</div>
+<ul class="expert-recs">
+<li><strong>骨骼动画</strong>：引入 GLTF 人形模型 + 骨骼绑定（Mixamo 免费骨骼或程序化骨骼），攻击/格挡/闪避/死亡全部替换 <span class="rec-priority pri-high">最高</span></li>
+<li><strong>HDR环境</strong>：程序化天空盒替代纯色背景，反射更真实 <span class="rec-priority pri-med">中</span></li>
+<li><strong>动态阴影</strong>：篝火/火把投射 PointLight 阴影，夜间氛围倍增 <span class="rec-priority pri-med">中</span></li>
+<li><strong>运动模糊</strong>：重击卡帧时叠加方向模糊，强化打击感 <span class="rec-priority pri-low">低</span></li>
+</ul>
+</div>
+
+<div class="expert-card">
+<h3>🎨 技术美术</h3>
+<div class="expert-role">Tech Art / Materials</div>
+<div class="expert-assess"><strong>现状：</strong>TextureFactory 程序化贴图有了，但 256×256 噪声贴图重复感强。环境物体全是 flatShading 基础色，远看像乐高积木。粒子是 Points 方块而非形态精灵。</div>
+<ul class="expert-recs">
+<li><strong>材质图集</strong>：石/木/金属/布料 4 套 512 贴图图集，应用到所有环境物体 <span class="rec-priority pri-high">高</span></li>
+<li><strong>贴花系统</strong>：地面血迹、墙面刀痕、撞击坑——战斗痕迹累积可见 <span class="rec-priority pri-med">中</span></li>
+<li><strong>布料模拟</strong>：旗帜/披风/帐篷随风摆动，增加生命力 <span class="rec-priority pri-med">中</span></li>
+<li><strong>破损表现</strong>：角色护甲随血量降低出现裂纹/碎裂 <span class="rec-priority pri-low">低</span></li>
+</ul>
+</div>
+
+<div class="expert-card">
+<h3>⚔️ 战斗手感设计师</h3>
+<div class="expert-role">Combat / Game Feel</div>
+<div class="expert-assess"><strong>现状：</strong>战斗机制已很丰富（连击/蓄力/格挡/完美闪避/克制/处决），但视觉反馈跟不上——攻击像胶囊滑行，命中只有数字飘字。第五轮规划的受击方向指示和耐力闪红未实现。</div>
+<ul class="expert-recs">
+<li><strong>武器拖尾</strong>：挥砍时沿武器弧线生成 Trail Mesh，视觉化攻击判定 <span class="rec-priority pri-high">高</span></li>
+<li><strong>画面震动+卡帧</strong>：重击震屏+0.08s hitstop，按武器类型调参 <span class="rec-priority pri-high">高</span></li>
+<li><strong>受击方向指示</strong>：屏幕边缘红色弧线指向伤害来源 <span class="rec-priority pri-high">高</span></li>
+<li><strong>AI个性分化</strong>：猛冲型/防御型/远程型/精英型，不同行为模式+外观 <span class="rec-priority pri-med">中</span></li>
+</ul>
+</div>
+
+<div class="expert-card">
+<h3>🗺️ 关卡场景策划</h3>
+<div class="expert-role">Level Designer ★策划</div>
+<div class="expert-assess"><strong>现状：</strong>地图仅 220×110，说是"战场"实为竞技场。只有1张地图、无高低差、无战略要地。攻城模式有城墙但内部空洞。河流有但无渡河战斗设计。</div>
+<ul class="expert-recs">
+<li><strong>多地图</strong>：渡桥战(窄桥咽喉)、山口战(高地弓兵)、攻城战(城墙+室内)、平原遭遇(开阔骑战) <span class="rec-priority pri-high">高</span></li>
+<li><strong>纵向战斗</strong>：高地优势（弓兵站高处射程+视野），悬崖击退=坠亡 <span class="rec-priority pri-high">高</span></li>
+<li><strong>环境危险</strong>：悬崖边/深水区/火坑，击退可致死，增加战术深度 <span class="rec-priority pri-med">中</span></li>
+<li><strong>建筑室内</strong>：攻城模式城墙内部多房间+CQB近战走廊 <span class="rec-priority pri-med">中</span></li>
+</ul>
+</div>
+
+<div class="expert-card">
+<h3>📊 系统可玩性策划</h3>
+<div class="expert-role">System Designer ★策划</div>
+<div class="expert-assess"><strong>现状：</strong>5种模式+技能树很好，但每局重置无持久进度。无装备配装、无敌人分级、Boss只是高血量。玩家打完一局没有"成长感"。</div>
+<ul class="expert-recs">
+<li><strong>持久进度</strong>：段位/等级系统，跨局解锁武器和护甲 <span class="rec-priority pri-high">高</span></li>
+<li><strong>装备配装</strong>：选4武器+护甲类型(轻/中/重=速度vs防御权衡) <span class="rec-priority pri-high">高</span></li>
+<li><strong>敌人分级</strong>：杂兵/老兵/精英/冠军/Boss，不同AI行为+外观 <span class="rec-priority pri-med">中</span></li>
+<li><strong>Boss多阶段</strong>：正常→狂暴(新招式)→濒死(孤注一掷) <span class="rec-priority pri-med">中</span></li>
+<li><strong>阵型机制</strong>：盾墙(格挡加成)/枪阵(攻击距离+)，队伍协同 <span class="rec-priority pri-low">低</span></li>
+</ul>
+</div>
+
+<div class="expert-card">
+<h3>🌐 多人网络工程师</h3>
+<div class="expert-role">Multiplayer / Netcode</div>
+<div class="expert-assess"><strong>现状：</strong>WebSocket 中继可用但非权威（客户端自报伤害=作弊风险）。无大厅/匹配/断线重连/观战。作为Demo够用，但离"能玩"有距离。</div>
+<ul class="expert-recs">
+<li><strong>服务端校验</strong>：关键事件(死亡/占领)服务端权威，命中混合校验 <span class="rec-priority pri-med">中</span></li>
+<li><strong>大厅匹配</strong>：房间码+选队+3v3匹配 <span class="rec-priority pri-med">中</span></li>
+<li><strong>延迟补偿</strong>：服务端回溯判定，改善高ping体验 <span class="rec-priority pri-low">低</span></li>
+<li><strong>观战模式</strong>：自由相机+跟随玩家，赛后回放 <span class="rec-priority pri-low">低</span></li>
+</ul>
+</div>
+
+</div>
+
+<div class="summary-box">
+<h3>🎯 进化方向汇总</h3>
+<div class="summary-cats">
+<div class="summary-cat">
+<h4>🖼️ 画面</h4>
+<ul>
+<li>骨骼动画+人形模型 <span class="rec-priority pri-high">最高</span></li>
+<li>环境材质图集(石/木/金/布)</li>
+<li>动态点光源阴影(篝火)</li>
+<li>贴花系统(血迹/刀痕)</li>
+<li>HDR天空盒</li>
+</ul>
+</div>
+<div class="summary-cat">
+<h4>🎮 手感</h4>
+<ul>
+<li>武器拖尾 Trail</li>
+<li>画面震动+卡帧调参</li>
+<li>受击方向指示</li>
+<li>耐力/血量临界闪红</li>
+<li>AI个性分化</li>
+</ul>
+</div>
+<div class="summary-cat">
+<h4>⚙️ 机制</h4>
+<ul>
+<li>持久段位+解锁</li>
+<li>装备配装(武器+护甲)</li>
+<li>敌人分级(兵/精/Boss)</li>
+<li>Boss多阶段</li>
+<li>阵型协同机制</li>
+</ul>
+</div>
+<div class="summary-cat">
+<h4>🏰 可玩性</h4>
+<ul>
+<li>4张多地图(桥/山/城/原)</li>
+<li>纵向战斗+高地优势</li>
+<li>环境危险(崖/水/火)</li>
+<li>建筑室内CQB</li>
+<li>每日挑战(修改器)</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="section" style="margin-top:20px;text-align:center">
+<p class="subtitle">看完专家讨论后，请在下方选择你想优先推进的进化方向</p>
+</div>
+
+<div class="options" data-multiselect>
+<div class="option" data-choice="anim" onclick="toggleSelect(this)">
+<div class="letter">A</div>
+<div class="content"><h3>骨骼动画+人形模型</h3><p>最大画面升级：替换胶囊体为骨骼绑定人形，攻击/格挡/闪避/死亡全部动画化</p></div>
+</div>
+<div class="option" data-choice="feel" onclick="toggleSelect(this)">
+<div class="letter">B</div>
+<div class="content"><h3>战斗手感强化</h3><p>武器拖尾+画面震动+受击方向指示+耐力闪红，补齐第五轮未实现的反馈</p></div>
+</div>
+<div class="option" data-choice="maps" onclick="toggleSelect(this)">
+<div class="letter">C</div>
+<div class="content"><h3>多地图+纵向战斗</h3><p>4张地图(渡桥/山口/攻城/平原)+高地优势+环境危险，增加战略深度</p></div>
+</div>
+<div class="option" data-choice="progress" onclick="toggleSelect(this)">
+<div class="letter">D</div>
+<div class="content"><h3>持久进度+装备配装</h3><p>段位系统+跨局解锁+护甲轻/中/重配装，让玩家有成长感</p></div>
+</div>
+<div class="option" data-choice="enemies" onclick="toggleSelect(this)">
+<div class="letter">E</div>
+<div class="content"><h3>敌人分级+Boss多阶段</h3><p>杂兵/老兵/精英/冠军4级+Boss三阶段(正常→狂暴→濒死)</p></div>
+</div>
+<div class="option" data-choice="materials" onclick="toggleSelect(this)">
+<div class="letter">F</div>
+<div class="content"><h3>环境材质+贴花系统</h3><p>石/木/金属/布料4套贴图图集+战斗贴花(血迹/刀痕/撞击坑)</p></div>
+</div>
+</div>

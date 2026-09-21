@@ -43,8 +43,8 @@ export class SkillTreeUI {
     this.el.querySelector('#sk-reset').addEventListener('click', () => this._reset());
     this.el.addEventListener('click', (e) => { if (e.target === this.el) this.hide(); });
     this._keyHandler = (e) => {
-      if (!this.open) return;
-      if (e.code === 'Escape' || e.code === 'KeyK') { e.preventDefault(); this.hide(); }
+      if (e.code === 'Escape') { e.preventDefault(); this.hide(); return; }
+      if (e.code === 'KeyK') { e.preventDefault(); this.toggle(); }
     };
     window.addEventListener('keydown', this._keyHandler);
   }

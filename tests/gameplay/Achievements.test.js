@@ -6,6 +6,17 @@ describe('Achievements', () => {
   beforeEach(() => { a = new Achievements(); });
   afterEach(() => { vi.restoreAllMocks(); });
 
+  it('daily_10/daily_30 由 daily.completed 事件驱动（而非 daily.update）', () => {
+    const d10 = ACHIEVEMENTS.find(x => x.id === 'daily_10');
+    const d30 = ACHIEVEMENTS.find(x => x.id === 'daily_30');
+    expect(d10.event).toBe('daily.completed');
+    expect(d30.event).toBe('daily.completed');
+    a.check('daily.update', {});
+    expect(a.progress('daily_10')).toBe(0);
+    a.check('daily.completed', {});
+    expect(a.progress('daily_10')).toBe(1);
+  });
+
   it('check 进度更新：check 一次 progress(kill_1)=1', () => {
     a.check('combat.kill', {});
     expect(a.progress('kill_1')).toBe(1);

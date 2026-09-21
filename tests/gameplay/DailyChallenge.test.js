@@ -14,6 +14,21 @@ describe('DailyChallenge', () => {
     expect(d.challenges.length).toBe(3);
   });
 
+  it('track 使挑战从未完成翻转到完成时 emit daily.completed（只发一次）', () => {
+    const bus = { emit: vi.fn() };
+    const dd = new DailyChallenge(fakeProg(0), bus);
+    dd._data.challenges = [{ id: 'x1', desc: '测试', type: 'kills', target: 2, reward: 10 }];
+    dd._data.progress = {};
+    dd.track('kills');
+    expect(bus.emit).not.toHaveBeenCalled();
+    dd.track('kills');
+    const calls = bus.emit.mock.calls.filter(c => c[0] === 'daily.completed');
+    expect(calls.length).toBe(1);
+    expect(calls[0][1]).toMatchObject({ id: 'x1', type: 'kills' });
+    dd.track('kills');
+    expect(bus.emit.mock.calls.filter(c => c[0] === 'daily.completed').length).toBe(1);
+  });
+
   it('track 计数并返 changed', () => {
     const first = d.challenges[0];
     expect(d.track(first.type)).toBe(true);

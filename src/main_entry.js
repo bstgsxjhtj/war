@@ -94,7 +94,7 @@ async function bootstrap() {
 
   const comboSys = new ComboSystem(bus);
   const weaponSkills = new WeaponSkills();
-  let escortTarget = null, defenseTimer = 0, timeLimit = 0, surviveWavesDone = false;
+  let escortTarget = null, defenseTimer = 0, timeLimit = 0, surviveWavesDone = false, surviveTimer = 0;
   const affixes = new Affixes();
   const achievements = new Achievements();
   achievements.setBus(bus);
@@ -103,11 +103,16 @@ async function bootstrap() {
   const AI_DIFFICULTY = 'normal';
   aiManager.setDifficulty(AI_DIFFICULTY);
   const hud = new HUD(bus);
-  bus.on('combat.kill', (p) => achievements.check('combat.kill', p));
+  bus.on('combat.kill', (p) => { if (p && p.killer && p.killer.isLocal) achievements.check('combat.kill', p); });
   bus.on('combo.tier', (p) => achievements.check('combo.tier', p));
   bus.on('skill.cast', (p) => { achievements.check('skill.cast', p); audio.playSound('ultimate'); });
   bus.on('campaign.clear', (p) => achievements.check('campaign.clear', p));
-  bus.on('daily.update', (p) => achievements.check('daily.update', p));
+  bus.on('campaign.perfect', (p) => achievements.check('campaign.perfect', p));
+  bus.on('combat.backstab', (p) => achievements.check('combat.backstab', p));
+  bus.on('combat.perfectblock', (p) => achievements.check('combat.perfectblock', p));
+  bus.on('combat.dodge', (p) => achievements.check('combat.dodge', p));
+  bus.on('combat.cavalrykill', (p) => achievements.check('combat.cavalrykill', p));
+  bus.on('daily.completed', (p) => achievements.check('daily.completed', p));
   bus.on('achievement.unlock', ({ name, reward }) => {
     if (reward.skillPoint) skills.addPoint(reward.skillPoint);
     if (reward.affix) affixes.grant(reward.affix[0], reward.affix[1]);
@@ -138,8 +143,8 @@ async function bootstrap() {
   const horses = new Horse(scene.scene);
   const formations = new FormationController();
   bus.emit('daily.update', daily.challenges);
-  bus.on('fx.perfectBlock', () => { if (daily.track('perfect')) bus.emit('daily.update', daily.challenges); audio.playSound('block'); });
-  bus.on('fx.perfectDodge', () => { if (daily.track('dodge')) bus.emit('daily.update', daily.challenges); audio.playSound('dodge'); });
+  bus.on('fx.perfectBlock', () => { if (daily.track('perfect')) bus.emit('daily.update', daily.challenges); bus.emit('combat.perfectblock', {}); audio.playSound('block'); });
+  bus.on('fx.perfectDodge', () => { if (daily.track('dodge')) bus.emit('daily.update', daily.challenges); bus.emit('combat.dodge', {}); audio.playSound('dodge'); });
   const progressUI = new ProgressionUI(progression, bus);
   bus.emit('minimap.supply', (supply.points || []).map(p => ({ x: p.pos.x, z: p.pos.z })));
   bus.on('combat.hit', ({ attacker, victim, damage, combo, heavy, backstab }) => {
@@ -150,9 +155,10 @@ async function bootstrap() {
     if (attacker && attacker.isLocal) {
       hitStop.trigger(heavy ? 0.12 : 0.06, 0.05);
       weaponTrail.activate(attacker._weaponMesh);
+      playerDamage += damage || 0;
     }
-    if (combo >= 3) daily.track('combo3');
-    if (backstab) daily.track('backstab');
+    if (victim && victim.isLocal) playerTaken += damage || 0;
+    if (backstab) { daily.track('backstab'); if (attacker && attacker.isLocal) bus.emit('combat.backstab', { attacker, victim }); }
     bus.emit('daily.update', daily.challenges);
     audio.playSound('swing');
     audio.playSound('hit', { heavy, combo });
@@ -221,7 +227,7 @@ async function bootstrap() {
   let roundB = 0, roundR = 0;
   const targetWins = 2;
   let roundEndTimer = 0;
-  let playerKills = 0, playerDamage = 0, matchStartTime = performance.now();
+  let playerKills = 0, playerDamage = 0, playerTaken = 0, matchStartTime = performance.now();
   let mode = new Deathmatch(bus);
 
   let playTimeSec = 0;
@@ -246,8 +252,13 @@ async function bootstrap() {
   const resetSave = () => {
     saveManager.reset();
     progression.reset();
-    campaign.reset();
+    campaign.reset(); campaign.cleared = 0; campaign._saveCleared();
     skills.reset(); skills.points = 0; skills._save();
+    affixes.inventory = []; affixes._save();
+    daily._data = { date: '', challenges: [], progress: {}, claimed: false }; daily._save();
+    skins._data = { unlocked: { default: true }, equipped: { 0: 'default', 1: 'default', 2: 'default', 3: 'default' } }; skins._save();
+    achievements._data = {}; achievements._save();
+    ['campaign_cleared', 'progression_v1', 'skilltree_v1', 'achievements', 'affixes', 'daily_challenge', 'weapon_skins', 'tutorial_done', 'settings', 'audio_volume'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
     playTimeSec = 0;
     if (player && player.weapons) for (const w of player.weapons) w.affixes = [null, null];
     hud.flash('进度已重置');
@@ -268,7 +279,7 @@ async function bootstrap() {
   bus.on('combat.kill', ({ team, killer, victim }) => {
     if (team === 1) scoreB++; else scoreR++;
     hud.setScore(scoreB, scoreR);
-    if (killer && killer.isLocal) { playerKills++; skills.addPoint(1); hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => hud.clearHint(), 1500); daily.track('kills'); if (victim && victim._isBoss) { daily.track('bossKill'); saveManager.save(captureSave()); } bus.emit('daily.update', daily.challenges); }
+    if (killer && killer.isLocal) { playerKills++; skills.addPoint(1); hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => hud.clearHint(), 1500); daily.track('kills'); if (victim && victim._isBoss) { daily.track('bossKill'); saveManager.save(captureSave()); } if (victim instanceof CavalryEnemy) bus.emit('combat.cavalrykill', { killer, victim }); bus.emit('daily.update', daily.challenges); }
     audio.playSound('ultimate');
   });
 
@@ -345,11 +356,12 @@ async function bootstrap() {
     else redLayout = spawns.red;
     spawnRed(redLayout, { bossWave });
     if (mode.name === '战役') {
-      escortTarget = null; defenseTimer = 0; timeLimit = 0; surviveWavesDone = false;
+      escortTarget = null; defenseTimer = 0; timeLimit = 0; surviveWavesDone = false; surviveTimer = 0;
       const s = campaign.currentStage;
       if (s.objective === '护送') { escortTarget = new EscortTarget({ x: -160, z: 0 }, { x: 160, z: 0 }, 80); scene.add(escortTarget.root); }
       if (s.objective === '防御') { defenseTimer = 60; }
       if (s.objective === 'Boss限时') { timeLimit = 120; }
+      if (s.objective === '生存') { surviveTimer = s.surviveTime || 90; }
     }
     enemies = [player, ...ais];
     hud.setRefs(player, ais, camera);
@@ -402,7 +414,6 @@ async function bootstrap() {
       hud.flash('地图：' + currentMapName);
       restart();
     }
-    if (e.code === 'KeyK') { skillUI.toggle(); }
     if (e.code === 'KeyC') { hud.flash('战役：第' + (campaign.stage + 1) + '关 ' + campaign.currentStage.name); }
     if (e.code === 'KeyD') {
       const done = daily.challenges.filter(c => c.done).length;
@@ -421,6 +432,8 @@ async function bootstrap() {
         saveManager.save(captureSave());
         if (result === 'campaign_complete') {
           hud.flashEnd('战役通关！按 R 重玩');
+          bus.emit('campaign.clear', { stages: campaign.maxStages });
+          if (playerTaken === 0) bus.emit('campaign.perfect', {});
           progression.recordWin('S', 0);
           state.transit(States.ENDED);
           resultScreen.show({ kills: playerKills, damage: playerDamage, time: 0, win: true });
@@ -454,7 +467,7 @@ async function bootstrap() {
     }
     if (winner === 'blue') {
       roundB++; hud.setRound(roundB, roundR, targetWins);
-      if (roundB >= targetWins) { hud.flashEnd('蓝方获胜！按 R 重新开始'); camera.setKillCam(player); state.transit(States.ENDED); const grade = ResultScreen.gradeOf ? ResultScreen.gradeOf(playerKills, playerDamage, (performance.now() - matchStartTime) / 1000) : 'A'; progression.recordWin(grade, (performance.now() - matchStartTime) / 1000); progressUI.refresh(); resultScreen.show({ kills: playerKills, damage: playerDamage, time: (performance.now() - matchStartTime) / 1000, win: true }); if (playerDamage === 0) daily.track('noDamageWin'); const timeSec = (performance.now() - matchStartTime) / 1000; if (timeSec < 90) daily.track('speedWin', timeSec); if (grade === 'S') daily.track('winGrade'); const reward = daily.claim(); if (reward > 0) { progression.addScore(reward); hud.flash('每日挑战完成！+' + reward + '分'); progressUI.refresh(); } bus.emit('daily.update', daily.challenges); }
+      if (roundB >= targetWins) { hud.flashEnd('蓝方获胜！按 R 重新开始'); camera.setKillCam(player); state.transit(States.ENDED); const grade = ResultScreen.gradeOf ? ResultScreen.gradeOf(playerKills, playerDamage, (performance.now() - matchStartTime) / 1000) : 'A'; progression.recordWin(grade, (performance.now() - matchStartTime) / 1000); progressUI.refresh(); resultScreen.show({ kills: playerKills, damage: playerDamage, time: (performance.now() - matchStartTime) / 1000, win: true }); if (playerTaken === 0) daily.track('noDamageWin'); const timeSec = (performance.now() - matchStartTime) / 1000; if (timeSec < 90) daily.track('speedWin', timeSec); if (grade === 'S') daily.track('winGrade'); const reward = daily.claim(); if (reward > 0) { progression.addScore(reward); hud.flash('每日挑战完成！+' + reward + '分'); progressUI.refresh(); } bus.emit('daily.update', daily.challenges); }
       else { hud.flash('蓝方赢下本局！按 R 跳过'); state.transit(States.ROUND_END); roundEndTimer = 3; }
     } else if (winner === 'red') {
       roundR++; hud.setRound(roundB, roundR, targetWins);

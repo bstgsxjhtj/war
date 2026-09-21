@@ -12,8 +12,9 @@ const CHALLENGE_POOL = [
 ];
 
 export class DailyChallenge {
-  constructor(progression) {
+  constructor(progression, bus) {
     this.prog = progression;
+    this._bus = bus || null;
     this._key = 'daily_challenge';
     this._data = this._load();
     if (this._isExpired()) this._regenerate();
@@ -59,12 +60,15 @@ export class DailyChallenge {
 
   get allDone() { return this.challenges.every(c => c.done); }
 
+  setBus(b) { this._bus = b; }
+
   track(type, value = 1) {
     let changed = false;
     for (const c of this._data.challenges) {
       if (c.type === type && (this._data.progress[c.id] || 0) < c.target) {
         this._data.progress[c.id] = (this._data.progress[c.id] || 0) + value;
         changed = true;
+        if (this._data.progress[c.id] >= c.target && this._bus) this._bus.emit('daily.completed', { id: c.id, type });
       }
     }
     if (changed) this._save();

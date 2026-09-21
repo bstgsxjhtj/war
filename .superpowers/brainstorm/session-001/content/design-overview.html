@@ -1,0 +1,187 @@
+<h2>设计方案：骨骼动画 + 地图扩展</h2>
+<p class="subtitle">两种核心进化的技术方案与视觉概览</p>
+
+<style>
+.design-section{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:18px;margin:12px 0}
+.design-section h3{margin:0 0 10px;color:#e8d5a0;font-size:16px}
+.bone-diagram{display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:8px;padding:20px;margin:10px 0}
+.bone-node{fill:rgba(200,180,100,.8);stroke:#e8d5a0;stroke-width:1.5}
+.bone-line{stroke:#8090a0;stroke-width:2}
+.bone-label{fill:#c0c0d0;font-size:9px;font-family:monospace}
+.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+.map-card{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px}
+.map-card h4{margin:0 0 6px;font-size:13px;color:#a0c0e0}
+.map-card p{font-size:11px;color:#aaa;margin:4px 0;line-height:1.4}
+.map-svg{background:rgba(20,20,30,.5);border-radius:6px;margin:8px 0}
+.approach-box{background:rgba(40,60,50,.25);border-left:3px solid #4a8;border-radius:0 8px 8px 0;padding:12px 14px;margin:10px 0}
+.approach-box h4{margin:0 0 6px;color:#80d0a0;font-size:13px}
+.approach-box p{font-size:11px;color:#bbb;margin:0;line-height:1.5}
+</style>
+
+<div class="design-section">
+<h3>🦴 方案A：骨骼动画系统</h3>
+
+<div class="approach-box">
+<h4>推荐方案：程序化骨骼系统（无需外部资源）</h4>
+<p>在现有 CapsuleGeometry 身体上建立 Three.js Bone 层级，程序化生成关键帧动画。攻击/格挡/闪避/死亡全动画化，不依赖 Mixamo 或 GLTF 文件加载，保持 Demo 零外部资源特性。</p>
+</div>
+
+<div class="bone-diagram">
+<svg width="280" height="320" viewBox="0 0 280 320">
+<line class="bone-line" x1="140" y1="40" x2="140" y2="70"/>
+<line class="bone-line" x1="140" y1="70" x2="140" y2="110"/>
+<line class="bone-line" x1="140" y1="110" x2="140" y2="145"/>
+<line class="bone-line" x1="140" y1="110" x2="95" y2="120"/>
+<line class="bone-line" x1="95" y1="120" x2="75" y2="155"/>
+<line class="bone-line" x1="75" y1="155" x2="65" y2="190"/>
+<line class="bone-line" x1="140" y1="110" x2="185" y2="120"/>
+<line class="bone-line" x1="185" y1="120" x2="205" y2="155"/>
+<line class="bone-line" x1="205" y1="155" x2="215" y2="190"/>
+<line class="bone-line" x1="140" y1="145" x2="115" y2="185"/>
+<line class="bone-line" x1="115" y1="185" x2="105" y2="240"/>
+<line class="bone-line" x1="105" y1="240" x2="100" y2="285"/>
+<line class="bone-line" x1="140" y1="145" x2="165" y2="185"/>
+<line class="bone-line" x1="165" y1="185" x2="175" y2="240"/>
+<line class="bone-line" x1="175" y1="240" x2="180" y2="285"/>
+
+<circle class="bone-node" cx="140" cy="40" r="6"/>
+<text class="bone-label" x="150" y="38">头部 head</text>
+<circle class="bone-node" cx="140" cy="70" r="5"/>
+<text class="bone-label" x="150" y="68">颈部 neck</text>
+<circle class="bone-node" cx="140" cy="110" r="7"/>
+<text class="bone-label" x="150" y="108">胸部 chest</text>
+<circle class="bone-node" cx="140" cy="145" r="6"/>
+<text class="bone-label" x="150" y="143">腰部 hips</text>
+<circle class="bone-node" cx="95" cy="120" r="5"/>
+<text class="bone-label" x="40" y="118">肩L</text>
+<circle class="bone-node" cx="75" cy="155" r="5"/>
+<text class="bone-label" x="20" y="153">肘L</text>
+<circle class="bone-node" cx="65" cy="190" r="5"/>
+<text class="bone-label" x="20" y="188">腕L</text>
+<circle class="bone-node" cx="185" cy="120" r="5"/>
+<text class="bone-label" x="200" y="118">肩R</text>
+<circle class="bone-node" cx="205" cy="155" r="5"/>
+<text class="bone-label" x="220" y="153">肘R</text>
+<circle class="bone-node" cx="215" cy="190" r="5"/>
+<text class="bone-label" x="230" y="188">腕R</text>
+<circle class="bone-node" cx="115" cy="185" r="5"/>
+<text class="bone-label" x="60" y="183">大腿L</text>
+<circle class="bone-node" cx="105" cy="240" r="5"/>
+<text class="bone-label" x="45" y="238">膝L</text>
+<circle class="bone-node" cx="100" cy="285" r="5"/>
+<text class="bone-label" x="40" y="283">脚L</text>
+<circle class="bone-node" cx="165" cy="185" r="5"/>
+<text class="bone-label" x="180" y="183">大腿R</text>
+<circle class="bone-node" cx="175" cy="240" r="5"/>
+<text class="bone-label" x="190" y="238">膝R</text>
+<circle class="bone-node" cx="180" cy="285" r="5"/>
+<text class="bone-label" x="195" y="283">脚R</text>
+</svg>
+</div>
+
+<p style="font-size:12px;color:#999;line-height:1.6"><strong style="color:#a0c0e0">14块骨骼</strong>：head → neck → chest → hips 为主干，肩/肘/腕×2 为手臂，大腿/膝/脚×2 为腿部。现有 CapsuleGeometry 部件绑定到对应骨骼，通过旋转骨骼驱动动画。</p>
+
+<p style="font-size:12px;color:#999;line-height:1.6;margin-top:8px"><strong style="color:#c0a0e0">动画状态机</strong>：idle(呼吸) / walk / run / attack1-3(三连击) / block / dodge / charge / hurt / death / execute。每个状态定义关键骨骼在 t=0/0.3/0.6/1.0 的旋转角度，用 lerp 插值。</p>
+</div>
+
+<div class="design-section">
+<h3>🗺️ 方案B：多地图系统</h3>
+
+<div class="approach-box">
+<h4>推荐方案：MapGenerator 多布局系统</h4>
+<p>新建 MapGenerator 类，生成4种地形布局。每种地图定义地形尺寸/高度函数/物体分布/刷新点。M键切换模式时自动加载对应地图，或在大厅选图。</p>
+</div>
+
+<div class="map-grid">
+
+<div class="map-card">
+<h4>🌉 渡桥战</h4>
+<svg class="map-svg" width="100%" height="80" viewBox="0 0 200 80">
+<rect x="0" y="0" width="200" height="30" fill="#3a4a2a"/>
+<rect x="0" y="50" width="200" height="30" fill="#3a4a2a"/>
+<rect x="0" y="30" width="200" height="20" fill="#2a4a6a"/>
+<rect x="80" y="28" width="40" height="24" fill="#6a5a3a" stroke="#8a7a5a"/>
+<circle cx="30" cy="15" r="4" fill="#4a8" opacity="0.8"/>
+<circle cx="170" cy="65" r="4" fill="#a44" opacity="0.8"/>
+<text x="100" y="75" text-anchor="middle" fill="#ccc" font-size="7">桥</text>
+</svg>
+<p>大河横贯地图，仅一座窄桥通行。弓兵两岸对射，步兵桥头争夺。<strong>咽喉战略</strong>。</p>
+</div>
+
+<div class="map-card">
+<h4>⛰️ 山口战</h4>
+<svg class="map-svg" width="100%" height="80" viewBox="0 0 200 80">
+<rect x="0" y="0" width="60" height="80" fill="#5a4a3a"/>
+<rect x="140" y="0" width="60" height="80" fill="#5a4a3a"/>
+<rect x="60" y="20" width="80" height="40" fill="#3a4a2a"/>
+<polygon points="55,0 60,0 60,80 55,80" fill="#6a5a4a"/>
+<polygon points="140,0 145,0 145,80 140,80" fill="#6a5a4a"/>
+<circle cx="30" cy="20" r="3" fill="#4a8"/>
+<circle cx="170" cy="60" r="3" fill="#a44"/>
+<text x="100" y="50" text-anchor="middle" fill="#ccc" font-size="7">谷</text>
+</svg>
+<p>两侧山崖形成狭长谷道。高地弓兵压制，步兵谷底推进。<strong>高低差战斗</strong>。</p>
+</div>
+
+<div class="map-card">
+<h4>🏰 攻城战</h4>
+<svg class="map-svg" width="100%" height="80" viewBox="0 0 200 80">
+<rect x="0" y="0" width="200" height="80" fill="#3a4a2a"/>
+<rect x="120" y="10" width="70" height="60" fill="#6a5a4a" stroke="#8a7a5a" stroke-width="2"/>
+<rect x="145" y="40" width="20" height="30" fill="#4a3a2a"/>
+<rect x="130" y="15" width="8" height="8" fill="#888"/>
+<rect x="145" y="15" width="8" height="8" fill="#888"/>
+<rect x="160" y="15" width="8" height="8" fill="#888"/>
+<rect x="175" y="15" width="8" height="8" fill="#888"/>
+<circle cx="40" cy="40" r="4" fill="#4a8"/>
+<text x="155" y="75" text-anchor="middle" fill="#ccc" font-size="7">城墙+门</text>
+</svg>
+<p>蓝方攻城门，红方守城墙垛口。城内多房间CQB。<strong>非对称攻防</strong>。</p>
+</div>
+
+<div class="map-card">
+<h4>🌾 遭遇战</h4>
+<svg class="map-svg" width="100%" height="80" viewBox="0 0 200 80">
+<rect x="0" y="0" width="200" height="80" fill="#3a4a2a"/>
+<circle cx="50" cy="25" r="6" fill="#4a3a2a"/>
+<circle cx="150" cy="55" r="5" fill="#4a3a2a"/>
+<circle cx="100" cy="40" r="4" fill="#6a5a4a"/>
+<circle cx="30" cy="60" r="3" fill="#5a6a3a"/>
+<circle cx="170" cy="20" r="4" fill="#5a6a3a"/>
+<circle cx="40" cy="40" r="3" fill="#4a8"/>
+<circle cx="160" cy="40" r="3" fill="#a44"/>
+</svg>
+<p>开阔平原散布岩石树木掩体。双方远距遭遇，利用地形掩护推进。<strong>开放机动</strong>。</p>
+</div>
+
+</div>
+
+<p style="font-size:12px;color:#999;line-height:1.6;margin-top:8px"><strong style="color:#a0c0e0">地形高度</strong>：使用噪声+正弦函数生成起伏，渡桥有河流低洼、山口有两侧高地、攻城有城墙高耸、遭遇有缓坡。</p>
+<p style="font-size:12px;color:#999;line-height:1.6;margin-top:4px"><strong style="color:#a0c0e0">物体分布</strong>：每种地图定义树木/岩石/建筑/旗帜/补给点/刷新点的布局参数，Environment 按布局生成。</p>
+</div>
+
+<div class="design-section">
+<h3>📁 文件结构</h3>
+<p style="font-size:12px;color:#bbb;line-height:1.8">
+<strong style="color:#e8d5a0">新建：</strong><br>
+• <code>src/gameplay/Skeleton.js</code> — 骨骼层级 + 程序化关键帧动画<br>
+• <code>src/world/MapGenerator.js</code> — 4种地图布局定义 + 地形生成<br><br>
+<strong style="color:#e8d5a0">修改：</strong><br>
+• <code>src/gameplay/Character.js</code> — _build() 改用骨骼绑定，update() 驱动骨骼动画<br>
+• <code>src/gameplay/AIController.js</code> — 动画状态同步<br>
+• <code>src/world/Terrain.js</code> — 接受外部高度函数<br>
+• <code>src/world/Environment.js</code> — 按地图布局生成物体<br>
+• <code>src/main_entry.js</code> — MapGenerator 集成 + 地图切换键
+</p>
+</div>
+
+<div class="options">
+<div class="option" data-choice="approve" onclick="toggleSelect(this)">
+<div class="letter">✓</div>
+<div class="content"><h3>认可这个方案，继续制定实施计划</h3><p>程序化骨骼系统 + MapGenerator多地图，无需外部资源</p></div>
+</div>
+<div class="option" data-choice="modify" onclick="toggleSelect(this)">
+<div class="letter">✎</div>
+<div class="content"><h3>需要调整方案</h3><p>我有修改意见，请在终端说明</p></div>
+</div>
+</div>

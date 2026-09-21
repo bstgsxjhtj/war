@@ -79,6 +79,7 @@ export class Progression {
     if (typeof data.score === 'number') this._data.score = data.score;
     if (typeof data.kills === 'number') this._data.kills = data.kills;
     if (data.bestGrade) this._data.bestGrade = data.bestGrade;
+    this._checkUnlocks();
     this._save();
   }
 
