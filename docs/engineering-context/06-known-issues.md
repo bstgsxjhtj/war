@@ -1,26 +1,26 @@
 # 06 · 已知问题台账
 
-> 来源：2026-09-21 三专家联合审查（业务/架构/代码质量）。状态：⬜未修 / 🔧修复中 / ✅已修。
+> 来源：2026-09-21 三专家联合审查（业务/架构/代码质量）。状态：⬜未修 / 🔧修复中 / ✅已修 / ⚠️误报（代码实际正确）。
 
 ## P0 功能性 Bug
 
 | # | 问题 | 位置 | 状态 |
 |---|---|---|---|
-| 1 | 战役 Boss 关（objective=Boss 但无 bossType）永不胜利 | CampaignMode.js STAGES / main_entry spawnAll | ⬜ |
-| 2 | 生存关 surviveWavesDone 永为 false | main_entry.js spawnAll | ⬜ |
-| 3 | WaveMode 未接线（spawnLayout 从不调用，wave 恒 0） | main_entry.js / WaveMode.js | ⬜ |
-| 4 | 6 个成就事件从未发射（campaign.clear/perfect、backstab、perfectblock、cavalrykill、dodge） | Achievements.js 监听定义 | ⬜ |
-| 5 | daily_10/daily_30 用 daily.update 计数，口径错误 | main_entry.js combat.hit 处 | ⬜ |
-| 6 | playerDamage 恒 0，评级失真 + 无伤判定白送 | main_entry.js | ⬜ |
-| 7 | skins.changed 在 spawnAll 内重复注册（监听器泄漏） | main_entry.js:305 | ⬜ |
-| 8 | Player 输入监听每局累积（document/canvas/window 8 个） | Player.js:28-68 | ⬜ |
-| 9 | K 键双重绑定（main_entry + SkillTreeUI）面板关不掉 | main_entry.js:398 / SkillTreeUI.js:45 | ⬜ |
-| 10 | Affixes.equip 不移除库存 → 词条可复制 | Affixes.js:29-34 | ⬜ |
-| 11 | ResultScreen 两套评级算法并存 | ResultScreen.js:31 vs gradeOf | ⬜ |
-| 12 | 死事件：hud.flash / hud.miss / settings.closed 无监听 | SkillTreeUI/BossEnemy/SettingsMenu | ⬜ |
-| 13 | "重置所有进度"不清成就/词条/每日/皮肤/旧键 | main_entry resetSave | ⬜ |
-| 14 | 成就击杀计数未过滤 killer.isLocal | main_entry.js:106 | ⬜ |
-| 15 | Progression.restore 不触发 _checkUnlocks | Progression.js:78-83 | ⬜ |
+| 1 | 战役 Boss 关（objective=Boss 但无 bossType）永不胜利 | CampaignMode.js STAGES / main_entry spawnAll | ⚠️误报：STAGES 第5/8/10关均有 bossType，spawnRed L286 已生成 Boss |
+| 2 | 生存关 surviveTimer 未声明，进入第8关 tick 即 ReferenceError 崩溃 | main_entry.js L97/L354/L549 | ✅已修：声明 surviveTimer，生存关初始化 s.surviveTime |
+| 3 | WaveMode 未接线（spawnLayout 从不调用，wave 恒 0） | main_entry.js / WaveMode.js | ⚠️误报：L350 已调用 spawnLayout（内含 wave++），L562 有波次推进，checkWin L28 正确 |
+| 4 | 成就事件 combat.perfectblock/dodge/cavalrykill 未发射 | Achievements.js 监听定义 | ✅已修：fx.perfectBlock/Dodge 桥接 emit，combat.kill 判 victim instanceof CavalryEnemy 发射 cavalrykill |
+| 5 | daily_10/daily_30 用 daily.update 计数，口径错误 | main_entry.js combat.hit 处 | ⚠️误报：成就监听 daily.completed（非 daily.update），DailyChallenge L70 完成翻转时 emit，口径正确 |
+| 6 | playerDamage 恒 0，评级失真 + 无伤判定白送 | main_entry.js | ⚠️误报：L158 attacker.isLocal 时已累加 playerDamage；无伤判定 L465/L431 用 playerTaken（承伤）正确 |
+| 7 | skins.changed 在 spawnAll 内重复注册（监听器泄漏） | main_entry.js:305 | ⚠️误报：main_entry 无 skins.changed 注册点；但该事件无监听者（归 #12） |
+| 8 | Player 输入监听每局累积（document/canvas/window 8 个） | Player.js:28-68 | ⬜（P1，待重构输入管理器） |
+| 9 | K 键双重绑定（main_entry + SkillTreeUI）面板关不掉 | main_entry.js:411 / SkillTreeUI.js:45 | ✅已修：SkillTreeUI 改为全权 toggle（document 自监听），main_entry 移除 KeyK 绑定 |
+| 10 | Affixes.equip 不移除库存 → 词条可复制 | Affixes.js:29-34 | ✅已修：splice 出新词条 + 旧词条 push 回库存 |
+| 11 | ResultScreen 两套评级算法并存 | ResultScreen.js:31 vs gradeOf | ⬜（P1） |
+| 12 | 死事件：hud.flash / hud.miss / settings.closed / skins.changed 无监听 | SkillTreeUI/BossEnemy/SettingsMenu/WeaponSkins | ✅部分修：HUD 已加 bus.on('hud.flash')；hud.miss/settings.closed/skins.changed 仍 ⬜ |
+| 13 | "重置所有进度"不清成就/词条/每日/皮肤/旧键 | main_entry resetSave | ✅已修：resetSave 现清理全部受管键 + 各模块 _data 重置 |
+| 14 | 成就击杀计数未过滤 killer.isLocal | main_entry.js:106 | ⚠️误报：L106 已有 `if (p.killer.isLocal)` 过滤 |
+| 15 | Progression.restore 不触发 _checkUnlocks | Progression.js:78-83 | ✅已修：restore 末尾加 this._checkUnlocks() |
 
 ## P1 一致性/架构
 
@@ -33,7 +33,8 @@
 | 20 | 音量双份真相（settings vs audio_volume） | ⬜ |
 | 21 | main.js 整文件死代码（旧入口） | ⬜ |
 | 22 | tryUltimate 调用不存在的方法（死代码）+ rage getter 返回错误值 | ⬜ |
-| 23 | _killstreak 体系断裂（HUD 分支永远走不到） | ⬜ |
+| 23 | _killstreak 体系断裂（HUD 分支永远走不到，Character 无 getter） | ⬜ |
+| 24 | DailyChallenge 构造不支持 bus 参数（测试与实现不匹配） | ✅已修：构造加可选 bus 参数 |
 
 ## P2 债（记录暂不强制）
 
@@ -46,4 +47,6 @@
 
 ## 修复记录
 
-（修复后在此追加：日期、commit、问题编号）
+| 日期 | commit | 问题编号 |
+|---|---|---|
+| 2026-09-21 | (本轮 fix commit) | #2 #4 #9 #10 #12(hud.flash) #13 #15 #24 |
