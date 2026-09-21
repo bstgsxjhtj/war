@@ -59,6 +59,15 @@ test('关键路径冒烟：0 运行时致命错误 + 关键 DOM + 主循环存�
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyC', bubbles: true }));
   });
   await page.waitForTimeout(200);
+  await page.evaluate(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', key: 'h', bubbles: true }));
+  });
+  await expect(page.locator('#save-panel')).toHaveCSS('display', /block/);
+  await expect(page.locator('#save-now')).toBeVisible();
+  await expect(page.locator('#save-reset')).toBeVisible();
+  await page.evaluate(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  });
   const hint = await page.locator('#hint').innerText();
   expect(hint).toMatch(/战役/);
   expect(errors.length).toBe(0);
