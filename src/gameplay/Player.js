@@ -11,7 +11,6 @@ export class Player extends Character {
   constructor(camera, bus) {
     super({ team: 0, isLocal: true, speed: 8.5, maxHp: 160 });
     this.camera = camera;
-    this.bus = bus;
     this.setBus(bus);
     this._keys = new Set();
     this._attackQueued = false;
@@ -29,8 +28,8 @@ export class Player extends Character {
     const onClick = () => { if (document.pointerLockElement !== canvas) canvas.requestPointerLock(); };
     const onLockChange = () => {
       this._locked = document.pointerLockElement === document.querySelector('#app');
-      if (this._locked) this.bus.emit('ui.locked');
-      else this.bus.emit('ui.locklost');
+      if (this._locked) this._bus.emit('ui.locked');
+      else this._bus.emit('ui.locklost');
     };
     const onMouseMove = (e) => {
       if (!this._locked) return;
@@ -127,12 +126,12 @@ export class Player extends Character {
   trySkill(combat) {
     if (!combat || !this.alive || !this._weaponSkills) return;
     const idx = this.weaponIdx;
-    if (!this._weaponSkills.canCast(idx)) { this.bus?.emit('skill.reject', { weaponIdx: idx }); return; }
+    if (!this._weaponSkills.canCast(idx)) { this._bus?.emit('skill.reject', { weaponIdx: idx }); return; }
     const now = performance.now() / 1000;
     const ok = this.weapon.skill(this, combat, now);
     if (ok) {
       const cdMul = 1 - (this._affixes?.affixBonus(this.weapon, '迅捷') || 0); this._weaponSkills.trigger(idx, cdMul);
-      this.bus?.emit('skill.cast', { weaponIdx: idx, name: this.weapon.skillName });
+      this._bus?.emit('skill.cast', { weaponIdx: idx, name: this.weapon.skillName });
     }
   }
 

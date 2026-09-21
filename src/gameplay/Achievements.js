@@ -20,8 +20,7 @@ export const ACHIEVEMENTS = [
 ];
 
 export class Achievements {
-  constructor() { this._data = {}; this._bus = null; }
-  setBus(b) { this._bus = b; }
+  constructor(bus = null) { this._data = {}; this._bus = bus; }
   check(event, payload = {}) {
     for (const a of ACHIEVEMENTS) {
       if (a.event !== event) continue;

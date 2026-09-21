@@ -54,8 +54,6 @@ export class DailyChallenge {
 
   get allDone() { return this.challenges.every(c => c.done); }
 
-  setBus(b) { this._bus = b; }
-
   track(type, value = 1) {
     let changed = false;
     for (const c of this._data.challenges) {

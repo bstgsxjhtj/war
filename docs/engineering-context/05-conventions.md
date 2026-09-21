@@ -33,3 +33,11 @@
 - 私有字段 `_` 前缀仅为约定，禁止外部穿透（反例：`player._weaponMesh`）。
 - 面板字段命名、toggle/show-hide 风格向多数派看齐。
 - 魔法数字与事件名/存储键字符串逐步收敛到常量模块。
+
+## 6. 依赖注入
+
+- **必选依赖走构造函数**：构造时即需的依赖（如 `bus`——用于 emit/listen 的 EventBus）必须经构造函数注入，不得用 setter 后补。此类依赖在构造完成即可用，避免"忘 setter → 事件不发射"的隐性 bug（2026-09-21 修复 DailyChallenge 此类 bug）。
+- **可选依赖走 setter**：运行时才配置、或可为 null 的依赖（如 `audio`/`affixes`——缺失时降级）用 setter，构造时置 null。
+- **总线属性统一 `_bus`**：所有持有 EventBus 的类用 `this._bus`（非 `this.bus`），保持全仓命名一致。
+- **Character 群的 bus 注入例外**：Character 基类不强制构造 bus（敌人由 spawnAll 创建后经 `CombatSystem.register` 注入）；Player/AIController/RemotePlayer 等在自身构造调用 `this.setBus(bus)`。这是"注册时注入"的显式例外，不算违规。
+- **不得同时暴露构造与 setter 两套必选注入**：选其一，避免双真相。

@@ -100,8 +100,7 @@ async function bootstrap() {
   const comboSys = new ComboSystem(bus);
   const weaponSkills = new WeaponSkills();
   const affixes = new Affixes();
-  const achievements = new Achievements();
-  achievements.setBus(bus);
+  const achievements = new Achievements(bus);
   const combat = new CombatSystem(scene.scene, bus, comboSys);
   const aiManager = new AIManager(bus);
   const AI_DIFFICULTY = 'normal';
@@ -141,7 +140,7 @@ async function bootstrap() {
   const hitStop = new HitStop();
   const progression = new Progression();
   const campaign = new CampaignMode(bus);
-  const daily = new DailyChallenge(progression);
+  const daily = new DailyChallenge(progression, bus);
   const skins = new WeaponSkins(progression);
   const skinsUI = new WeaponSkinsUI(skins, bus);
   const horses = new Horse(scene.scene);

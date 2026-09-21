@@ -29,7 +29,7 @@ describe('Achievements', () => {
 
   it('奖励触发：解锁 kill_100 emit achievement.unlock 含 name+reward', () => {
     const emit = vi.fn();
-    a.setBus({ emit });
+    a = new Achievements({ emit });
     for (let i = 0; i < 100; i++) a.check('combat.kill', {});
     const call = emit.mock.calls.find(c => c[1] && c[1].id === 'kill_100');
     expect(call).toBeTruthy();
@@ -45,7 +45,7 @@ describe('Achievements', () => {
 
   it('不重复解锁：已解锁成就再 check 不重复 emit', () => {
     const emit = vi.fn();
-    a.setBus({ emit });
+    a = new Achievements({ emit });
     a.check('combat.kill', {});
     emit.mockClear();
     a.check('combat.kill', {});
@@ -55,7 +55,7 @@ describe('Achievements', () => {
 
   it('progress 超目标仍只解锁一次', () => {
     const emit = vi.fn();
-    a.setBus({ emit });
+    a = new Achievements({ emit });
     for (let i = 0; i < 5; i++) a.check('combat.kill', {});
     const calls = emit.mock.calls.filter(c => c[1] && c[1].id === 'kill_1');
     expect(calls.length).toBe(1);
