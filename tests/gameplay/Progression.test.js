@@ -60,4 +60,11 @@ describe('Progression', () => {
     expect(p.score).toBe(0);
     expect(p.unlocks.elite).toBe(false);
   });
+
+  it('restore 从存档覆盖 score/kills/bestGrade', () => {
+    p.restore({ score: 1200, kills: 45, bestGrade: 'A' });
+    expect(p.score).toBe(1200);
+    expect(p.kills).toBe(45);
+    expect(p.getStats().bestGrade).toBe('A');
+  });
 });
