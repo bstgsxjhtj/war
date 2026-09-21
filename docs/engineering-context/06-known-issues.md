@@ -16,7 +16,7 @@
 | 8 | Player 输入监听每局累积（document/canvas/window 8 个） | Player.js:28-68 | ⬜（P1，待重构输入管理器） |
 | 9 | K 键双重绑定（main_entry + SkillTreeUI）面板关不掉 | main_entry.js:411 / SkillTreeUI.js:45 | ✅已修：SkillTreeUI 改为全权 toggle（document 自监听），main_entry 移除 KeyK 绑定 |
 | 10 | Affixes.equip 不移除库存 → 词条可复制 | Affixes.js:29-34 | ✅已修：splice 出新词条 + 旧词条 push 回库存 |
-| 11 | ResultScreen 两套评级算法并存 | ResultScreen.js:31 vs gradeOf | ⬜（P1） |
+| 11 | ResultScreen 两套评级算法并存 | ResultScreen.js:31 vs gradeOf | ✅已修：show() 改用 ResultScreen.gradeOf(kills,damage,time) |
 | 12 | 死事件：hud.flash / hud.miss / settings.closed / skins.changed 无监听 | SkillTreeUI/BossEnemy/SettingsMenu/WeaponSkins | ✅部分修：HUD 已加 bus.on('hud.flash')；hud.miss/settings.closed/skins.changed 仍 ⬜ |
 | 13 | "重置所有进度"不清成就/词条/每日/皮肤/旧键 | main_entry resetSave | ✅已修：resetSave 现清理全部受管键 + 各模块 _data 重置 |
 | 14 | 成就击杀计数未过滤 killer.isLocal | main_entry.js:106 | ⚠️误报：L106 已有 `if (p.killer.isLocal)` 过滤 |
@@ -29,11 +29,11 @@
 | 16 | 存档双轨：旧键与新档并行读写，重置后可复活 | ⬜（目标态见 02 架构文档 §4.2） |
 | 17 | 通关 stage=0 与新档无法区分（需 campaignCompleted 标志） | ⬜ |
 | 18 | 词条效果只在 AOE 路径生效，近战/箭矢不吃词条 | ⬜ |
-| 19 | 每日挑战"单局击杀"语义矛盾（resetSession 从未调用）；战役胜利不发每日奖励 | ⬜ |
-| 20 | 音量双份真相（settings vs audio_volume） | ⬜ |
-| 21 | main.js 整文件死代码（旧入口） | ⬜ |
-| 22 | tryUltimate 调用不存在的方法（死代码）+ rage getter 返回错误值 | ⬜ |
-| 23 | _killstreak 体系断裂（HUD 分支永远走不到，Character 无 getter） | ⬜ |
+| 19 | 每日挑战"单局击杀"语义矛盾（resetSession 从未调用）；战役胜利不发每日奖励 | ✅部分修：战役通关补 daily.claim()；desc 语义/resetSession 仍 ⬜ |
+| 20 | 音量双份真相（settings vs audio_volume） | ✅已修：AudioEngine 加 getVolume，SettingsMenu 从 audio 读、_save 不再写 volume |
+| 21 | main.js 整文件死代码（旧入口） | ✅已修：删除 main.js |
+| 22 | tryUltimate 调用不存在的方法（死代码）+ rage getter 返回错误值 | ✅部分修：rage getter 改返回 _rage（语义正确）；tryUltimate 骨架保留为未完成功能（无调用者，不崩溃） |
+| 23 | _killstreak 体系断裂（HUD 分支永远走不到，Character 无 getter） | ✅已修：Character 加 get killstreak()，启用 HUD 连杀提示 |
 | 24 | DailyChallenge 构造不支持 bus 参数（测试与实现不匹配） | ✅已修：构造加可选 bus 参数 |
 
 ## P2 债（记录暂不强制）
@@ -49,4 +49,5 @@
 
 | 日期 | commit | 问题编号 |
 |---|---|---|
-| 2026-09-21 | (本轮 fix commit) | #2 #4 #9 #10 #12(hud.flash) #13 #15 #24 |
+| 2026-09-21 | P0 fix commit | #2 #4 #9 #10 #12(hud.flash) #13 #15 #24 |
+| 2026-09-21 | P1 fix commit | #11 #19(战役奖励) #20 #21 #22(rage) #23 |

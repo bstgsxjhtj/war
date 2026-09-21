@@ -63,7 +63,8 @@ export class Character {
   }
 
   get weapon() { return this.weapons[this.weaponIdx]; }
-  get rage() { return this._perfectBuff; }
+  get rage() { return this._rage; }
+  get killstreak() { return this._killstreak; }
 
   _build() {
     const teamColor = this.team === 0 ? 0x2f5fa8 : 0xa83030;

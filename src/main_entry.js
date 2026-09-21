@@ -435,6 +435,8 @@ async function bootstrap() {
           bus.emit('campaign.clear', { stages: campaign.maxStages });
           if (playerTaken === 0) bus.emit('campaign.perfect', {});
           progression.recordWin('S', 0);
+          const _creward = daily.claim(); if (_creward > 0) { progression.addScore(_creward); hud.flash('每日挑战完成！+' + _creward + '分'); }
+          bus.emit('daily.update', daily.challenges);
           state.transit(States.ENDED);
           resultScreen.show({ kills: playerKills, damage: playerDamage, time: 0, win: true });
         } else {

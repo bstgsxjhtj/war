@@ -28,8 +28,8 @@ export class ResultScreen {
     const win = data.win;
     const title = win ? '\u80dc\u5229' : '\u5931\u8d25';
     const titleClr = win ? '#4ade80' : '#f87171';
-    const grade = data.kills >= 5 ? 'S' : (data.kills >= 3 ? 'A' : (data.kills >= 1 ? 'B' : 'C'));
-    const gradeClr = data.kills >= 5 ? '#ffd070' : (data.kills >= 3 ? '#aef' : '#bcd');
+    const grade = ResultScreen.gradeOf(data.kills || 0, data.damage || 0, data.time || 0);
+    const gradeClr = grade === 'S' ? '#ffd070' : (grade === 'A' ? '#aef' : '#bcd');
     this.el.innerHTML = [
       '<div style="background:linear-gradient(145deg,#1a1a2e,#0f0f1a);border:1px solid #4a3a6a;border-radius:16px;padding:36px 48px;text-align:center;color:#eee;box-shadow:0 12px 48px rgba(0,0,0,.6);min-width:380px;">',
       '<div style="font-size:42px;font-weight:800;color:' + titleClr + ';margin-bottom:4px;">' + title + '</div>',

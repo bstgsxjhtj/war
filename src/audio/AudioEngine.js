@@ -3,6 +3,7 @@ export class AudioEngine {
   _init() { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { this.ctx = null; } }
   resume() { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); }
   setVolume(type, v) { v = Math.max(0, Math.min(1, v)); if (type === 'master') this._vol = v; else if (type === 'sfx') this._sfxVol = v; else if (type === 'bgm') this._bgmVol = v; else if (type === 'env') this._envVol = v; this._saveVolume(); }
+  getVolume(type) { if (type === 'master') return this._vol; if (type === 'sfx') return this._sfxVol; if (type === 'bgm') return this._bgmVol; if (type === 'env') return this._envVol; return this._vol; }
   _volOf(type) { const m = this._vol; if (type === 'sfx') return m * this._sfxVol; if (type === 'bgm') return m * this._bgmVol; if (type === 'env') return m * this._envVol; return m; }
   playSound(type, opts = {}) {
     if (type === 'swing') this.swing();
