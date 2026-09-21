@@ -24,37 +24,35 @@ export class Player extends Character {
   }
 
   _bindInput() {
+    this._handlers = [];
     const canvas = document.querySelector('#app');
-    canvas.addEventListener('click', () => {
-      if (document.pointerLockElement !== canvas) canvas.requestPointerLock();
-    });
-    document.addEventListener('pointerlockchange', () => {
+    const onClick = () => { if (document.pointerLockElement !== canvas) canvas.requestPointerLock(); };
+    const onLockChange = () => {
       this._locked = document.pointerLockElement === document.querySelector('#app');
       if (this._locked) this.bus.emit('ui.locked');
       else this.bus.emit('ui.locklost');
-    });
-    document.addEventListener('mousemove', (e) => {
+    };
+    const onMouseMove = (e) => {
       if (!this._locked) return;
       this.camera.look(e.movementX, e.movementY, 0.0025 * this.lookSensitivity);
-    });
-    document.addEventListener('mousedown', (e) => {
+    };
+    const onMouseDown = (e) => {
       if (!this._locked) return;
       if (e.button === 0) { this._attackQueued = true; this._queueTime = 0; }
       if (e.button === 2) {
         if (this.weapon.type === 'projectile') { this.setCharging(true); this.camera.aimMode = true; }
         else { this._blocking = true; this.tryBlock(); } // 持刀格挡
       }
-    });
-    document.addEventListener('mouseup', (e) => {
+    };
+    const onMouseUp = (e) => {
       if (e.button === 0) this._attackQueued = false;
       if (e.button === 2) {
         if (this.weapon.type === 'projectile') { this._bowRelease = true; this.camera.aimMode = false; }
         else if (this._blocking) { this._blocking = false; this.releaseBlock(); }
       }
-    });
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-    window.addEventListener('keydown', (e) => {
+    };
+    const onContextMenu = (e) => e.preventDefault();
+    const onKeyDown = (e) => {
       this._keys.add(e.code);
       if (e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3' || e.code === 'Digit4') {
         const idx = parseInt(e.code.slice(-1)) - 1;
@@ -64,8 +62,24 @@ export class Player extends Character {
       if (e.code === 'KeyF') this.trySkill(this._pendingCombat);
       if (e.code === 'Tab') { e.preventDefault(); this._toggleLock(); }
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) this._tryDodgeFromKey(e.code);
-    });
-    window.addEventListener('keyup', (e) => this._keys.delete(e.code));
+    };
+    const onKeyUp = (e) => this._keys.delete(e.code);
+    this._handlers = [
+      [canvas, 'click', onClick],
+      [document, 'pointerlockchange', onLockChange],
+      [document, 'mousemove', onMouseMove],
+      [document, 'mousedown', onMouseDown],
+      [document, 'mouseup', onMouseUp],
+      [document, 'contextmenu', onContextMenu],
+      [window, 'keydown', onKeyDown],
+      [window, 'keyup', onKeyUp]
+    ];
+    for (const [el, ev, fn] of this._handlers) el.addEventListener(ev, fn);
+  }
+
+  dispose() {
+    for (const [el, ev, fn] of this._handlers || []) el.removeEventListener(ev, fn);
+    this._handlers = [];
   }
 
   _toggleLock() {

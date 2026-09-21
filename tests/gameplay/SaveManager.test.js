@@ -4,13 +4,15 @@ import { describe, it, expect, beforeEach } from 'vitest';
 describe('SaveManager', () => {
   beforeEach(() => { localStorage.clear(); });
 
-  it('save 字段完整（version/savedAt/mode/stage/score/kills/bestGrade/affixSlots/skillPoints/playTime）', () => {
+  it('save 字段完整（含 campaignCompleted/skillTree）', () => {
     const sm = new SaveManager();
-    const d = sm.save({ mode: '战役', stage: 3, score: 1200, kills: 45, bestGrade: 'A', affixSlots: { SWORD: [{ type: '锋锐', tier: 2 }] }, skillPoints: 5, playTime: 3600 });
+    const d = sm.save({ mode: '战役', stage: 3, score: 1200, kills: 45, bestGrade: 'A', campaignCompleted: true, skillTree: { points: 5, skills: { power: 2 } }, affixSlots: { SWORD: [{ type: '锋锐', tier: 2 }] }, skillPoints: 5, playTime: 3600 });
     expect(d.version).toBe(1);
     expect(typeof d.savedAt).toBe('number');
     expect(d.mode).toBe('战役');
     expect(d.stage).toBe(3);
+    expect(d.campaignCompleted).toBe(true);
+    expect(d.skillTree).toEqual({ points: 5, skills: { power: 2 } });
     expect(d.score).toBe(1200);
     expect(d.kills).toBe(45);
     expect(d.bestGrade).toBe('A');

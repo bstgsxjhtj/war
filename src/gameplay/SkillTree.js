@@ -85,6 +85,14 @@ export class SkillTree {
       return true;
     } catch (e) { return false; }
   }
+  restore(data = {}) {
+    if (typeof data.points === 'number') this.points = data.points;
+    for (const [k, v] of Object.entries(data.skills || {})) if (this.skills[k] && typeof v === 'number') this.skills[k].level = Math.max(0, Math.min(this.skills[k].max, v));
+    for (let i = 0; i < 4; i++) if (typeof (data.weaponLevel && data.weaponLevel[i]) === 'number') this.weaponLevel[i] = Math.max(1, Math.min(3, data.weaponLevel[i]));
+    if (Array.isArray(data.skillOrder) && data.skillOrder.length === 4) this.skillOrder = data.skillOrder;
+    if (Array.isArray(data.weaponOrder) && data.weaponOrder.length === 4) this.weaponOrder = data.weaponOrder;
+  }
+
   hasProfile(name) { return !!localStorage.getItem('skilltree_profile_' + name); }
   deleteProfile(name) { try { localStorage.removeItem('skilltree_profile_' + name); } catch (e) {} }
 

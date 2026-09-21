@@ -241,11 +241,13 @@ async function bootstrap() {
     return {
       mode: mode.name,
       stage: campaign.stage,
+      campaignCompleted: campaign.cleared >= campaign.maxStages,
       score: progression.score,
       kills: progression.kills,
       bestGrade: progression.getStats().bestGrade,
       affixSlots: slots,
       skillPoints: skills.points,
+      skillTree: skills.serialize(),
       playTime: playTimeSec
     };
   };
@@ -261,15 +263,16 @@ async function bootstrap() {
     ['campaign_cleared', 'progression_v1', 'skilltree_v1', 'achievements', 'affixes', 'daily_challenge', 'weapon_skins', 'tutorial_done', 'settings', 'audio_volume'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
     playTimeSec = 0;
     if (player && player.weapons) for (const w of player.weapons) w.affixes = [null, null];
-    hud.flash('进度已重置');
-  };
+      hud.flash('进度已重置');
+    };
   const saveUI = new SaveUI(bus, saveManager, captureSave, resetSave);
+  bus.on('skins.changed', ({ weaponIdx }) => { if (player && player._weaponMesh) skins.applyToWeapon(player._weaponMesh, weaponIdx); });
   // 启动加载应用存档
   const _saved = saveManager.load();
   if (_saved) {
     if (_saved.mode === '战役' && typeof _saved.stage === 'number') campaign.stage = Math.min(_saved.stage, campaign.maxStages - 1);
     progression.restore(_saved);
-    if (typeof _saved.skillPoints === 'number') skills.points = _saved.skillPoints;
+    if (_saved.skillTree) { skills.restore(_saved.skillTree); } else if (typeof _saved.skillPoints === 'number') { skills.points = _saved.skillPoints; }
     playTimeSec = _saved.playTime || 0;
   }
   setInterval(() => { if (state.current === States.PLAYING) playTimeSec++; }, 1000);
@@ -324,7 +327,7 @@ async function bootstrap() {
     combat.clear();
     horses.dispose();
     formations.clear();
-    if (player) scene.remove(player.root);
+    if (player) { if (player.dispose) player.dispose(); scene.remove(player.root); }
     for (const a of ais) scene.remove(a.root);
     ais = [];
     player = new Player(camera, bus);

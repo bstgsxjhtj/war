@@ -13,7 +13,7 @@
 | 5 | daily_10/daily_30 用 daily.update 计数，口径错误 | main_entry.js combat.hit 处 | ⚠️误报：成就监听 daily.completed（非 daily.update），DailyChallenge L70 完成翻转时 emit，口径正确 |
 | 6 | playerDamage 恒 0，评级失真 + 无伤判定白送 | main_entry.js | ⚠️误报：L158 attacker.isLocal 时已累加 playerDamage；无伤判定 L465/L431 用 playerTaken（承伤）正确 |
 | 7 | skins.changed 在 spawnAll 内重复注册（监听器泄漏） | main_entry.js:305 | ⚠️误报：main_entry 无 skins.changed 注册点；但该事件无监听者（归 #12） |
-| 8 | Player 输入监听每局累积（document/canvas/window 8 个） | Player.js:28-68 | ⬜（P1，待重构输入管理器） |
+| 8 | Player 输入监听每局累积（document/canvas/window 8 个） | Player.js:28-68 | ✅已修：加 dispose()（存 handler 引用逐条移除），spawnAll 重建前调用 |
 | 9 | K 键双重绑定（main_entry + SkillTreeUI）面板关不掉 | main_entry.js:411 / SkillTreeUI.js:45 | ✅已修：SkillTreeUI 改为全权 toggle（document 自监听），main_entry 移除 KeyK 绑定 |
 | 10 | Affixes.equip 不移除库存 → 词条可复制 | Affixes.js:29-34 | ✅已修：splice 出新词条 + 旧词条 push 回库存 |
 | 11 | ResultScreen 两套评级算法并存 | ResultScreen.js:31 vs gradeOf | ✅已修：show() 改用 ResultScreen.gradeOf(kills,damage,time) |
@@ -51,3 +51,4 @@
 |---|---|---|
 | 2026-09-21 | P0 fix commit | #2 #4 #9 #10 #12(hud.flash) #13 #15 #24 |
 | 2026-09-21 | P1 fix commit | #11 #19(战役奖励) #20 #21 #22(rage) #23 |
+| 2026-09-21 | 收尾 fix commit（本轮） | #8 #12(全) #16 #17 #18 |

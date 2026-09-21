@@ -57,5 +57,5 @@ export class SettingsMenu {
   _applyAll() { if (this.audio) { this.audio.setVolume('master', this._vol.master); this.audio.setVolume('sfx', this._vol.sfx); this.audio.setVolume('bgm', this._vol.bgm); this.audio.setVolume('env', this._vol.env); } this.bus.emit('settings.quality', { quality: this.quality }); this.bus.emit('settings.sensitivity', { sensitivity: this.sensitivity }); this.bus.emit('settings.difficulty', { difficulty: this.difficulty }); }
   toggle() { this.open ? this.hide() : this.show(); }
   show() { this.el.style.display = 'flex'; this.open = true; if (this.audio) this.audio.resume(); this._applyAll(); }
-  hide() { this.el.style.display = 'none'; this.open = false; this.bus.emit('settings.closed'); }
+  hide() { this.el.style.display = 'none'; this.open = false; }
 }

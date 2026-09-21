@@ -166,16 +166,12 @@ export class CombatSystem {
       if (!c.alive || c.team === attacker.team) continue;
       const d = c.position.distanceTo(origin);
       if (d <= radius) {
-        let dmg = damage * (1 - d / radius);
-        if (this._affixes) {
-          dmg *= (1 + this._affixes.affixBonus(attacker.weapon, '锋锐'));
-          if (Math.random() < this._affixes.affixBonus(attacker.weapon, '暴怒')) dmg *= 2;
-        }
+        let dmg = this._affixApply(attacker, attacker.weapon, damage * (1 - d / radius));
         const lost = c.takeDamage(dmg, false, attacker, now);
         if (lost > 0) {
           if (this._comboSys) this._comboSys.onHit(false, false, now);
           this._emitHit(attacker, c, lost, '冲击', 0xaa8866, 0, false, now);
-          if (this._affixes) attacker.health.cur = Math.min(attacker.health.maxHp, attacker.health.cur + lost * this._affixes.affixBonus(attacker.weapon, '吸血'));
+          this._affixLeech(attacker, lost);
         }
         if (!c.health.alive) this.bus.emit('combat.kill', { victim: c, team: c.team, killer: attacker });
       }
@@ -229,8 +225,8 @@ export class CombatSystem {
         const cap = c.capsule;
         if (a.pos.distanceTo(cap.center) < cap.radius + cap.halfHeight * 0.5) {
           const heavy = (a.charge ?? 0) >= 0.8;
-          const lost = c.takeDamage(a.damage, heavy, a.attacker, now);
-          if (lost > 0) this._emitHit(a.attacker, c, lost, '弓', 0xff5522, 0, heavy, now);
+          const lost = c.takeDamage(this._affixApply(a.attacker, a.attacker.weapon, a.damage), heavy, a.attacker, now);
+          if (lost > 0) { this._emitHit(a.attacker, c, lost, '弓', 0xff5522, 0, heavy, now); this._affixLeech(a.attacker, lost); }
           if (!c.health.alive) this.bus.emit('combat.kill', { victim: c, team: c.team, killer: a.attacker });
           hit = true; break;
         }

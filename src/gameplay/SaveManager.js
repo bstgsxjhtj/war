@@ -14,6 +14,8 @@ export class SaveManager {
       score: capture.score ?? 0,
       kills: capture.kills ?? 0,
       bestGrade: capture.bestGrade ?? null,
+      campaignCompleted: !!capture.campaignCompleted,
+      skillTree: capture.skillTree || null,
       affixSlots: capture.affixSlots ?? {},
       skillPoints: capture.skillPoints ?? 0,
       playTime: capture.playTime ?? 0
@@ -34,7 +36,7 @@ export class SaveManager {
   }
 
   _defaults() {
-    return { version: 1, savedAt: null, mode: null, stage: 0, score: 0, kills: 0, bestGrade: null, affixSlots: {}, skillPoints: 0, playTime: 0 };
+    return { version: 1, savedAt: null, mode: null, stage: 0, score: 0, kills: 0, bestGrade: null, campaignCompleted: false, skillTree: null, affixSlots: {}, skillPoints: 0, playTime: 0 };
   }
 
   _load() {
@@ -71,7 +73,11 @@ export class SaveManager {
     } catch (e) { /* ignore */ }
     try {
       const s = JSON.parse(localStorage.getItem('skilltree_v1'));
-      if (s && typeof s === 'object' && typeof s.points === 'number') { out.skillPoints = s.points; any = true; }
+      if (s && typeof s === 'object') {
+        if (typeof s.points === 'number') { out.skillPoints = s.points; any = true; }
+        out.skillTree = { points: s.points || 0, skills: s.skills || {}, weaponLevel: s.weaponLevel || { 0: 1, 1: 1, 2: 1, 3: 1 }, skillOrder: s.skillOrder || ['power', 'vigor', 'agility', 'mastery'], weaponOrder: s.weaponOrder || [0, 1, 2, 3] };
+        any = true;
+      }
     } catch (e) { /* ignore */ }
     return any ? out : null;
   }

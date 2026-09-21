@@ -105,6 +105,7 @@ export class HUD {
     bus.on('ui.locklost', () => { this._locklost.style.display = 'flex'; });
     bus.on('ui.locked', () => { this._locklost.style.display = 'none'; });
     bus.on('hud.flash', ({ text } = {}) => { if (text) this.flash(text); });
+    bus.on('hud.miss', () => this.flash('落空'));
     bus.on('combat.hit', ({ victim }) => {
       if (victim && victim.isLocal) {
         this._hp.style.background = 'linear-gradient(90deg,#f44,#fa3)';
