@@ -10,22 +10,11 @@ const RANKS = [
   { name: '战神', min: 6000, color: '#fff' }
 ];
 
+const DEFAULT_DATA = { score: 0, kills: 0, deaths: 0, wins: 0, losses: 0, unlocks: { boss: false, elite: false }, bestGrade: null, bestTime: null };
+
 export class Progression {
   constructor() {
-    this._key = 'progression_v1';
-    this._data = this._load();
-  }
-
-  _load() {
-    try {
-      const raw = localStorage.getItem(this._key);
-      if (raw) return JSON.parse(raw);
-    } catch (e) { /* ignore */ }
-    return { score: 0, kills: 0, deaths: 0, wins: 0, losses: 0, unlocks: { boss: false, elite: false }, bestGrade: null, bestTime: null };
-  }
-
-  _save() {
-    try { localStorage.setItem(this._key, JSON.stringify(this._data)); } catch (e) { /* ignore */ }
+    this._data = { ...DEFAULT_DATA, unlocks: { boss: false, elite: false } };
   }
 
   get score() { return this._data.score; }
@@ -57,10 +46,9 @@ export class Progression {
     this._data.kills++;
     this._data.score += 25;
     this._checkUnlocks();
-    this._save();
   }
 
-  recordDeath() { this._data.deaths++; this._save(); }
+  recordDeath() { this._data.deaths++; }
   recordWin(grade, time) {
     this._data.wins++;
     this._data.score += 100;
@@ -71,9 +59,8 @@ export class Progression {
       this._data.bestTime = time;
     }
     this._checkUnlocks();
-    this._save();
   }
-  recordLoss() { this._data.losses++; this._save(); }
+  recordLoss() { this._data.losses++; }
 
   serialize() {
     return JSON.parse(JSON.stringify(this._data));
@@ -89,13 +76,11 @@ export class Progression {
     if (typeof data.bestTime === 'number') this._data.bestTime = data.bestTime;
     if (data.unlocks && typeof data.unlocks === 'object') this._data.unlocks = { boss: !!data.unlocks.boss, elite: !!data.unlocks.elite };
     this._checkUnlocks();
-    this._save();
   }
 
   addScore(n) {
     this._data.score += n;
     this._checkUnlocks();
-    this._save();
   }
 
   _gradeVal(g) { return { S: 4, A: 3, B: 2, C: 1 }[g] || 0; }
@@ -106,8 +91,7 @@ export class Progression {
   }
 
   reset() {
-    this._data = { score: 0, kills: 0, deaths: 0, wins: 0, losses: 0, unlocks: { boss: false, elite: false }, bestGrade: null, bestTime: null };
-    this._save();
+    this._data = { ...DEFAULT_DATA, unlocks: { boss: false, elite: false } };
   }
 
   getStats() {

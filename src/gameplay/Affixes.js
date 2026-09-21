@@ -8,7 +8,7 @@ export const AFFIX_TYPES = {
 };
 
 export class Affixes {
-  constructor() { this.inventory = []; this._load(); }
+  constructor() { this.inventory = []; }
   drop(luck = 0) {
     if (this.inventory.length >= 20) return false;
     if (Math.random() > 0.08 + luck) return false;
@@ -17,13 +17,11 @@ export class Affixes {
     const r = Math.random();
     const tier = r < 0.6 ? 0 : (r < 0.9 ? 1 : 2);
     this.inventory.push({ type, tier });
-    this._save();
     return { type, tier };
   }
   grant(type, tier) {
     if (this.inventory.length >= 20) return false;
     this.inventory.push({ type, tier });
-    this._save();
     return true;
   }
   equip(weapon, slot, invIdx) {
@@ -33,7 +31,6 @@ export class Affixes {
     const newAffix = this.inventory.splice(invIdx, 1)[0];
     weapon.affixes[slot] = newAffix;
     if (oldAffix) this.inventory.push(oldAffix);
-    this._save();
     return true;
   }
   affixBonus(weapon, type) {
@@ -46,6 +43,4 @@ export class Affixes {
   }
   serialize() { return JSON.parse(JSON.stringify(this.inventory)); }
   restore(data = []) { this.inventory = Array.isArray(data) ? JSON.parse(JSON.stringify(data)) : []; }
-  _save() { try { localStorage.setItem('affixes', JSON.stringify(this.inventory)); } catch (e) {} }
-  _load() { try { const d = localStorage.getItem('affixes'); if (d) this.inventory = JSON.parse(d); } catch (e) {} }
 }

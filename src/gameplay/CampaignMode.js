@@ -17,18 +17,12 @@ export class CampaignMode {
     this.name = '战役';
     this.stage = 0;
     this.maxStages = STAGES.length;
-    this.cleared = this._loadCleared();
+    this.cleared = 0;
     this._reinforced = false;
     this._bossPhase = 1;
     this._weatherShifted = false;
   }
 
-  _loadCleared() {
-    try { return JSON.parse(localStorage.getItem('campaign_cleared') || '0'); } catch (e) { return 0; }
-  }
-  _saveCleared() {
-    try { localStorage.setItem('campaign_cleared', JSON.stringify(this.cleared)); } catch (e) {}
-  }
   serialize() { return { cleared: this.cleared }; }
   restore(data = {}) {
     if (data && typeof data.cleared === 'number') this.cleared = data.cleared;
@@ -105,7 +99,6 @@ export class CampaignMode {
 
   onStageClear() {
     this.cleared = Math.max(this.cleared, this.stage + 1);
-    this._saveCleared();
     this.stage++;
     this._reinforced = false;
     this._bossPhase = 1;

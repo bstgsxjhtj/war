@@ -15,21 +15,8 @@ export class DailyChallenge {
   constructor(progression, bus) {
     this.prog = progression;
     this._bus = bus || null;
-    this._key = 'daily_challenge';
-    this._data = this._load();
+    this._data = { date: '', challenges: [], progress: {} };
     if (this._isExpired()) this._regenerate();
-  }
-
-  _load() {
-    try {
-      const raw = localStorage.getItem(this._key);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return { date: '', challenges: [], progress: {} };
-  }
-
-  _save() {
-    try { localStorage.setItem(this._key, JSON.stringify(this._data)); } catch (e) {}
   }
 
   serialize() { return JSON.parse(JSON.stringify(this._data)); }
@@ -55,7 +42,6 @@ export class DailyChallenge {
       picked.push(pool.splice(idx, 1)[0]);
     }
     this._data = { date: this._todayKey(), challenges: picked, progress: {}, claimed: false };
-    this._save();
   }
 
   get challenges() {
@@ -79,7 +65,6 @@ export class DailyChallenge {
         if (this._data.progress[c.id] >= c.target && this._bus) this._bus.emit('daily.completed', { id: c.id, type });
       }
     }
-    if (changed) this._save();
     return changed;
   }
 
@@ -88,12 +73,10 @@ export class DailyChallenge {
     let total = 0;
     for (const c of this._data.challenges) total += c.reward;
     this._data.claimed = true;
-    this._save();
     return total;
   }
 
   resetSession() {
     this._data.progress = {};
-    this._save();
   }
 }

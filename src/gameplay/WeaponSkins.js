@@ -12,18 +12,11 @@ export const SKINS = {
 export class WeaponSkins {
   constructor(progression) {
     this.prog = progression;
-    this._key = 'weapon_skins';
-    this._data = this._load();
+    this._data = {};
     if (!this._data.unlocked) this._data.unlocked = { default: true };
     if (!this._data.equipped) this._data.equipped = { 0: 'default', 1: 'default', 2: 'default', 3: 'default' };
   }
 
-  _load() {
-    try { return JSON.parse(localStorage.getItem(this._key)) || {}; } catch (e) { return {}; }
-  }
-  _save() {
-    try { localStorage.setItem(this._key, JSON.stringify(this._data)); } catch (e) {}
-  }
   serialize() { return JSON.parse(JSON.stringify(this._data)); }
   restore(data = {}) {
     this._data = (data && typeof data === 'object') ? JSON.parse(JSON.stringify(data)) : {};
@@ -41,14 +34,12 @@ export class WeaponSkins {
     if (!skin || this.isUnlocked(id)) return false;
     if (this.prog.score < skin.cost) return false;
     this._data.unlocked[id] = true;
-    this._save();
     return true;
   }
 
   equip(weaponIdx, skinId) {
     if (!this.isUnlocked(skinId)) return false;
     this._data.equipped[weaponIdx] = skinId;
-    this._save();
     return true;
   }
 

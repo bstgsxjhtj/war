@@ -39,12 +39,14 @@ describe('WeaponSkins', () => {
     expect(s.getEquippedSkin(0)).toBe(SKINS.default);
   });
 
-  it('equip 已解锁生效并持久化', () => {
+  it('equip 已解锁生效；经 serialize→restore 还原（收敛到 savegame_v1，不再自写 weapon_skins）', () => {
     const rich = new WeaponSkins(fakeProg(500));
     rich.unlock('bronze');
     expect(rich.equip(1, 'bronze')).toBe(true);
     expect(rich.getEquippedSkin(1)).toBe(SKINS.bronze);
+    expect(localStorage.getItem('weapon_skins')).toBeNull();
     const rich2 = new WeaponSkins(fakeProg(500));
+    rich2.restore(rich.serialize());
     expect(rich2.getEquippedSkin(1)).toBe(SKINS.bronze);
   });
 

@@ -54,11 +54,13 @@ describe('Affixes', () => {
     expect(a.inventory.length).toBe(20);
   });
 
-  it('持久化：_save 后新建实例 _load 还原', () => {
+  it('持久化：serialize→restore 还原背包（收敛到 savegame_v1，不再自写 affixes 键）', () => {
     a.grant('锋锐', 2);
     a.grant('吸血', 0);
-    a._save();
+    const snap = a.serialize();
+    expect(localStorage.getItem('affixes')).toBeNull();
     const a2 = new Affixes();
+    a2.restore(snap);
     expect(a2.inventory.length).toBe(2);
     expect(a2.inventory[0]).toEqual({ type: '锋锐', tier: 2 });
     expect(a2.inventory[1]).toEqual({ type: '吸血', tier: 0 });

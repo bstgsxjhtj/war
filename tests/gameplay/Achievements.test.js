@@ -61,11 +61,13 @@ describe('Achievements', () => {
     expect(calls.length).toBe(1);
   });
 
-  it('持久化：_save 后新实例 _load 还原', () => {
+  it('持久化：serialize→restore 还原进度与解锁（收敛到 savegame_v1，不再自写 achievements 键）', () => {
     a.check('combat.kill', {});
     a.check('combo.tier', {});
-    a._save();
+    const snap = a.serialize();
+    expect(localStorage.getItem('achievements')).toBeNull();
     const a2 = new Achievements();
+    a2.restore(snap);
     expect(a2.progress('kill_1')).toBe(1);
     expect(a2.isUnlocked('kill_1')).toBe(true);
     expect(a2.progress('combo_10')).toBe(1);

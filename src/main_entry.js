@@ -244,6 +244,9 @@ async function bootstrap() {
   // 启动加载应用存档 + 定时/卸载自动存档
   saveOrch.applyOnBoot();
   saveOrch.startTimers();
+  // 存档恢复后刷新依赖模块的 UI/事件（模块不再自加载，applyOnBoot 才注入数据）
+  bus.emit('daily.update', daily.challenges);
+  progressUI.refresh();
 
   function spawnRed(redLayout, { bossWave = false } = {}) {
     const aiWeaponMakers = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];

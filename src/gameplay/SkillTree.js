@@ -12,20 +12,19 @@ export class SkillTree {
     this.weaponNames = ['\u5200', '\u5f13', '\u67aa', '\u9524'];
     this.skillOrder = ['power', 'vigor', 'agility', 'mastery'];
     this.weaponOrder = [0, 1, 2, 3];
-    this._load();
   }
 
-  addPoint(n = 1) { this.points += n; this._save(); }
+  addPoint(n = 1) { this.points += n; }
 
   upgrade(key) {
     const s = this.skills[key];
     if (!s || s.level >= s.max || this.points < s.cost) return false;
-    s.level++; this.points -= s.cost; this._save(); return true;
+    s.level++; this.points -= s.cost; return true;
   }
 
   upgradeWeapon(idx) {
     if (this.weaponLevel[idx] >= 3 || this.points < 2) return false;
-    this.weaponLevel[idx]++; this.points -= 2; this._save(); return true;
+    this.weaponLevel[idx]++; this.points -= 2; return true;
   }
 
   reorderSkill(from, to) {
@@ -33,7 +32,6 @@ export class SkillTree {
     const arr = this.skillOrder;
     const item = arr.splice(from, 1)[0];
     arr.splice(to, 0, item);
-    this._save();
   }
 
   reorderWeapon(from, to) {
@@ -41,13 +39,11 @@ export class SkillTree {
     const arr = this.weaponOrder;
     const item = arr.splice(from, 1)[0];
     arr.splice(to, 0, item);
-    this._save();
   }
 
   reset() {
     for (const s of Object.values(this.skills)) { this.points += s.level * s.cost; s.level = 0; }
     for (let i = 0; i < 4; i++) { this.points += (this.weaponLevel[i] - 1) * 2; this.weaponLevel[i] = 1; }
-    this._save();
   }
 
   get damageMul() { return 1 + this.skills.power.level * 0.1; }
@@ -81,7 +77,6 @@ export class SkillTree {
       for (let i = 0; i < 4; i++) this.weaponLevel[i] = (d.weaponLevel && d.weaponLevel[i]) || 1;
       if (Array.isArray(d.skillOrder)) this.skillOrder = d.skillOrder;
       if (Array.isArray(d.weaponOrder)) this.weaponOrder = d.weaponOrder;
-      this._save();
       return true;
     } catch (e) { return false; }
   }
@@ -95,17 +90,4 @@ export class SkillTree {
 
   hasProfile(name) { return !!localStorage.getItem('skilltree_profile_' + name); }
   deleteProfile(name) { try { localStorage.removeItem('skilltree_profile_' + name); } catch (e) {} }
-
-  _save() { try { localStorage.setItem('skilltree_v1', JSON.stringify(this.serialize())); } catch (e) {} }
-  _load() {
-    try {
-      const d = JSON.parse(localStorage.getItem('skilltree_v1'));
-      if (!d) return;
-      this.points = d.points || 0;
-      for (const [k, v] of Object.entries(d.skills || {})) if (this.skills[k]) this.skills[k].level = v;
-      for (let i = 0; i < 4; i++) this.weaponLevel[i] = (d.weaponLevel && d.weaponLevel[i]) || 1;
-      if (Array.isArray(d.skillOrder) && d.skillOrder.length === 4) this.skillOrder = d.skillOrder;
-      if (Array.isArray(d.weaponOrder) && d.weaponOrder.length === 4) this.weaponOrder = d.weaponOrder;
-    } catch (e) {}
-  }
 }

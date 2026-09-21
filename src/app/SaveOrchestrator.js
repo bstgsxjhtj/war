@@ -48,7 +48,7 @@ export class SaveOrchestrator {
     saveManager.reset();
     progression.reset();
     campaign.reset(); campaign.cleared = 0;
-    skills.reset(); skills.points = 0; skills._save();
+    skills.reset(); skills.points = 0;
     affixes.restore([]);
     daily.restore({ date: '', challenges: [], progress: {}, claimed: false });
     skins.restore({ unlocked: { default: true }, equipped: { 0: 'default', 1: 'default', 2: 'default', 3: 'default' } });

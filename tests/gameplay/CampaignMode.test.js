@@ -101,11 +101,13 @@ describe('CampaignMode', () => {
     expect(l.red.length).toBe(4);
   });
 
-  it('onStageClear 递进并持久化 cleared', () => {
+  it('onStageClear 递进；cleared 经 serialize→restore 还原（收敛到 savegame_v1，不再自写 campaign_cleared）', () => {
     expect(c.onStageClear()).toBe('next_stage');
     expect(c.stage).toBe(1);
     expect(c.cleared).toBe(1);
+    expect(localStorage.getItem('campaign_cleared')).toBeNull();
     const c2 = new CampaignMode({});
+    c2.restore(c.serialize());
     expect(c2.cleared).toBe(1);
   });
 
