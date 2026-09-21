@@ -51,6 +51,8 @@ import { DailyChallenge } from './gameplay/DailyChallenge.js';
 import { WeaponSkins, WeaponSkinsUI } from './gameplay/WeaponSkins.js';
 import { Horse, CavalryEnemy } from './gameplay/Cavalry.js';
 import { FormationController } from './gameplay/UnitFormation.js';
+import { SaveManager } from './gameplay/SaveManager.js';
+import { SaveUI } from './ui/SaveUI.js';
 
 async function bootstrap() {
   const app = document.querySelector('#app');
@@ -165,6 +167,7 @@ async function bootstrap() {
   const trajectory = new TrajectoryPreview(scene.scene);
   const skills = new SkillTree();
   const skillUI = new SkillTreeUI(bus, skills);
+  const saveManager = new SaveManager();
   const audio = new AudioEngine();
   const _resumeOnce = () => { audio.resume(); window.removeEventListener('keydown', _resumeOnce); window.removeEventListener('mousedown', _resumeOnce); };
   window.addEventListener('keydown', _resumeOnce); window.addEventListener('mousedown', _resumeOnce);
@@ -221,10 +224,51 @@ async function bootstrap() {
   let playerKills = 0, playerDamage = 0, matchStartTime = performance.now();
   let mode = new Deathmatch(bus);
 
+  let playTimeSec = 0;
+  const captureSave = () => {
+    const slots = {};
+    if (player && player.weapons) {
+      for (const w of player.weapons) {
+        if (w && w.affixes) slots[w.weaponClass] = w.affixes.map(a => a ? { type: a.type, tier: a.tier } : null);
+      }
+    }
+    return {
+      mode: mode.name,
+      stage: campaign.stage,
+      score: progression.score,
+      kills: progression.kills,
+      bestGrade: progression.getStats().bestGrade,
+      affixSlots: slots,
+      skillPoints: skills.points,
+      playTime: playTimeSec
+    };
+  };
+  const resetSave = () => {
+    saveManager.reset();
+    progression.reset();
+    campaign.reset();
+    skills.reset(); skills.points = 0; skills._save();
+    playTimeSec = 0;
+    if (player && player.weapons) for (const w of player.weapons) w.affixes = [null, null];
+    hud.flash('进度已重置');
+  };
+  const saveUI = new SaveUI(bus, saveManager, captureSave, resetSave);
+  // 启动加载应用存档
+  const _saved = saveManager.load();
+  if (_saved) {
+    if (_saved.mode === '战役' && typeof _saved.stage === 'number') campaign.stage = Math.min(_saved.stage, campaign.maxStages - 1);
+    progression.restore(_saved);
+    if (typeof _saved.skillPoints === 'number') skills.points = _saved.skillPoints;
+    playTimeSec = _saved.playTime || 0;
+  }
+  setInterval(() => { if (state.current === States.PLAYING) playTimeSec++; }, 1000);
+  setInterval(() => { if (state.current === States.PLAYING) saveManager.save(captureSave()); }, 60000);
+  window.addEventListener('beforeunload', () => { try { saveManager.save(captureSave()); } catch (e) { /* ignore */ } });
+
   bus.on('combat.kill', ({ team, killer, victim }) => {
     if (team === 1) scoreB++; else scoreR++;
     hud.setScore(scoreB, scoreR);
-    if (killer && killer.isLocal) { playerKills++; skills.addPoint(1); hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => hud.clearHint(), 1500); daily.track('kills'); if (victim && victim._isBoss) daily.track('bossKill'); bus.emit('daily.update', daily.challenges); }
+    if (killer && killer.isLocal) { playerKills++; skills.addPoint(1); hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => hud.clearHint(), 1500); daily.track('kills'); if (victim && victim._isBoss) { daily.track('bossKill'); saveManager.save(captureSave()); } bus.emit('daily.update', daily.challenges); }
     audio.playSound('ultimate');
   });
 
@@ -243,6 +287,12 @@ async function bootstrap() {
     combat.setAffixes(affixes);
     player.setAffixes(affixes);
     player.setWeapons([new Sword(), new Bow(), new Spear(), new Warhammer()]);
+    const _savedAff = saveManager.load();
+    if (_savedAff && _savedAff.affixSlots) {
+      for (const w of player.weapons) {
+        if (w && _savedAff.affixSlots[w.weaponClass]) w.affixes = _savedAff.affixSlots[w.weaponClass].map(a => a ? { ...a } : null);
+      }
+    }
     player.setSkill(skills);
     const spawns = MapGenerator.MAPS[currentMapKey].spawns;
     const lb = spawns.blue[0];
@@ -353,6 +403,7 @@ async function bootstrap() {
     }
     if (e.code === 'KeyN') { weather.toggle(); const wm = { clear: '晴', rain: '雨', night: '夜', snow: '雪', storm: '雷暴' }; hud.flash('天气：' + (wm[weather.mode] || weather.mode)); setTimeout(() => hud.clearHint(), 1500); }
     if (e.code === 'Escape') settings.toggle();
+    if (e.code === 'KeyH') { saveUI.toggle(); }
   });
 
   function checkWin() {
@@ -361,6 +412,7 @@ async function bootstrap() {
       const winner = campaign.checkWin(player.alive, ais.some(a => a.alive), siege.gate, { boss: ais.find(a => a instanceof BossEnemy), escortTarget, defenseTimer, surviveWavesDone, timeLimit, redAlive: ais.filter(a => a.alive).length });
       if (winner === 'blue') {
         const result = campaign.onStageClear();
+        saveManager.save(captureSave());
         if (result === 'campaign_complete') {
           hud.flashEnd('战役通关！按 R 重玩');
           progression.recordWin('S', 0);
