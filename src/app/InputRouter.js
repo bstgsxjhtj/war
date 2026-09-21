@@ -1,0 +1,60 @@
+// 全局输入路由：R/M/,/C/D/N/Escape 按键与音频解锁（自 main_entry 拆出，只搬代码不改行为）
+// 注意：面板键 I/J/V/H/K 由面板组件自监听，此处不得绑定（见 04-ui-design 按键表）
+import { States } from '../core/GameState.js';
+import { Deathmatch, Domination, SiegeMode } from '../gameplay/GameMode.js';
+import { WaveMode } from '../gameplay/WaveMode.js';
+import { MapGenerator } from '../world/MapGenerator.js';
+
+export class InputRouter {
+  constructor(deps) {
+    this.deps = deps;
+    this._installed = false;
+  }
+
+  install() {
+    if (this._installed) return;
+    this._installed = true;
+    const { audio } = this.deps;
+    const _resumeOnce = () => { audio.resume(); window.removeEventListener('keydown', _resumeOnce); window.removeEventListener('mousedown', _resumeOnce); };
+    window.addEventListener('keydown', _resumeOnce);
+    window.addEventListener('mousedown', _resumeOnce);
+    window.addEventListener('keydown', (e) => this._onKey(e));
+  }
+
+  _onKey(e) {
+    const { state, hud, campaign, daily, weather, settings, match } = this.deps;
+    if (e.code === 'KeyR') {
+      if (state.current === States.ENDED) match.restart();
+      else if (state.current === States.ROUND_END) { match.roundEndTimer = 0; match.startRound(); }
+    }
+    if (e.code === 'KeyM' && (state.current === States.ENDED || state.current === States.ROUND_END || state.current === States.PLAYING && !this.deps.getPlayer()?.alive)) {
+      const { bus, getMode, setMode, loadMap, mapName } = this.deps;
+      const mode = getMode();
+      setMode(mode.name === '死斗' ? new Domination(bus) : (mode.name === '据点' ? new SiegeMode(bus) : (mode.name === '攻城' ? new WaveMode(bus) : (mode.name === '波次' ? campaign : new Deathmatch(bus)))));
+      const newMode = getMode();
+      if (newMode.name === '战役') {
+        const layout = campaign.spawnLayout();
+        loadMap(layout.mapKey);
+        if (layout.weather) weather.setMode(layout.weather);
+      } else {
+        const newMapKey = MapGenerator.recommendMap(newMode.name);
+        loadMap(newMapKey);
+      }
+      hud.setMode(newMode.name + ' · ' + mapName());
+      match.restart();
+    }
+    if (e.code === 'Comma' && (state.current === States.ENDED || state.current === States.ROUND_END)) {
+      const next = MapGenerator.cycleMap(this.deps.currentMapKey());
+      this.deps.loadMap(next);
+      hud.flash('地图：' + this.deps.mapName());
+      match.restart();
+    }
+    if (e.code === 'KeyC') { hud.flash('战役：第' + (campaign.stage + 1) + '关 ' + campaign.currentStage.name); }
+    if (e.code === 'KeyD') {
+      const done = daily.challenges.filter(c => c.done).length;
+      hud.flash('每日挑战：' + done + '/' + daily.challenges.length + ' 完成');
+    }
+    if (e.code === 'KeyN') { weather.toggle(); const wm = { clear: '晴', rain: '雨', night: '夜', snow: '雪', storm: '雷暴' }; hud.flash('天气：' + (wm[weather.mode] || weather.mode)); setTimeout(() => hud.clearHint(), 1500); }
+    if (e.code === 'Escape') settings.toggle();
+  }
+}

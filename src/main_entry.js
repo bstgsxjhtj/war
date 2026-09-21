@@ -55,6 +55,7 @@ import { SaveManager } from './gameplay/SaveManager.js';
 import { SaveUI } from './ui/SaveUI.js';
 import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
+import { InputRouter } from './app/InputRouter.js';
 
 async function bootstrap() {
   const app = document.querySelector('#app');
@@ -176,8 +177,6 @@ async function bootstrap() {
   const skillUI = new SkillTreeUI(bus, skills);
   const saveManager = new SaveManager();
   const audio = new AudioEngine();
-  const _resumeOnce = () => { audio.resume(); window.removeEventListener('keydown', _resumeOnce); window.removeEventListener('mousedown', _resumeOnce); };
-  window.addEventListener('keydown', _resumeOnce); window.addEventListener('mousedown', _resumeOnce);
   const weather = new WeatherSystem(scene.scene, scene.sun || null, scene.hemi || null, audio);
   weather.setAudio(audio);
   const settings = new SettingsMenu(bus, audio);
@@ -333,38 +332,16 @@ async function bootstrap() {
     player.setAudio(audio); for (const ai of ais) ai.setAudio(audio);
   }
 
-  window.addEventListener('keydown', (e) => {
-    if (e.code === 'KeyR') {
-      if (state.current === States.ENDED) match.restart();
-      else if (state.current === States.ROUND_END) { match.roundEndTimer = 0; match.startRound(); }
-    }
-    if (e.code === 'KeyM' && (state.current === States.ENDED || state.current === States.ROUND_END || state.current === States.PLAYING && !player?.alive)) {
-      mode = mode.name === '死斗' ? new Domination(bus) : (mode.name === '据点' ? new SiegeMode(bus) : (mode.name === '攻城' ? new WaveMode(bus) : (mode.name === '波次' ? campaign : new Deathmatch(bus))));
-      if (mode.name === '战役') {
-        const layout = campaign.spawnLayout();
-        loadMap(layout.mapKey);
-        if (layout.weather) weather.setMode(layout.weather);
-      } else {
-        const newMapKey = MapGenerator.recommendMap(mode.name);
-        loadMap(newMapKey);
-      }
-      hud.setMode(mode.name + ' · ' + currentMapName);
-      restart();
-    }
-    if (e.code === 'Comma' && (state.current === States.ENDED || state.current === States.ROUND_END)) {
-      const next = MapGenerator.cycleMap(currentMapKey);
-      loadMap(next);
-      hud.flash('地图：' + currentMapName);
-      restart();
-    }
-    if (e.code === 'KeyC') { hud.flash('战役：第' + (campaign.stage + 1) + '关 ' + campaign.currentStage.name); }
-    if (e.code === 'KeyD') {
-      const done = daily.challenges.filter(c => c.done).length;
-      hud.flash('每日挑战：' + done + '/' + daily.challenges.length + ' 完成');
-    }
-    if (e.code === 'KeyN') { weather.toggle(); const wm = { clear: '晴', rain: '雨', night: '夜', snow: '雪', storm: '雷暴' }; hud.flash('天气：' + (wm[weather.mode] || weather.mode)); setTimeout(() => hud.clearHint(), 1500); }
-    if (e.code === 'Escape') settings.toggle();
+  const inputRouter = new InputRouter({
+    bus, state, hud, campaign, daily, weather, settings, audio, match,
+    getMode: () => mode,
+    setMode: (m) => { mode = m; },
+    loadMap: (k) => loadMap(k),
+    mapName: () => currentMapName,
+    currentMapKey: () => currentMapKey,
+    getPlayer: () => player
   });
+  inputRouter.install();
 
 
   spawnAll();
