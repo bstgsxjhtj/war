@@ -272,6 +272,43 @@ async function bootstrap() {
     audio.playSound('ultimate');
   });
 
+  function spawnRed(redLayout, { bossWave = false } = {}) {
+    const aiWeaponMakers = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];
+    const unlocks = progression.unlocks;
+    for (let i = 0; i < redLayout.length; i++) {
+      let ai;
+      if (i === 0 && (campaign.currentStage.bossType || bossWave) && mode.name !== '训练场') {
+        ai = new BossEnemy({ team: 1, type: bossWave ? 'warlord' : (campaign.currentStage.bossType || 'warlord'), mini: bossWave ? false : (campaign.currentStage.mini || false) });
+      } else if (i === 1 && unlocks.elite && mode.name !== '训练场') {
+        ai = new EliteEnemy({ team: 1 });
+      } else if (i === 2 && mode.name !== '训练场' && progression.score >= 500) {
+        ai = new CavalryEnemy({ team: 1 });
+        const horse = horses.create();
+        ai.mount(horse);
+      } else {
+        ai = new AIController({ team: 1, passive: mode.name === '训练场', maxHp: mode.name === '训练场' ? 500 : Math.round(90 * aiManager.difficulty().maxHpMul) });
+      }
+      const p = redLayout[i];
+      ai.spawn(new THREE.Vector3(p.x, terrain.heightAt(p.x, p.z), p.z));
+      ai.setWeapons([aiWeaponMakers[i % aiWeaponMakers.length]()]);
+      ai.setCameraRef(camera);
+      ai.setAIManager(aiManager);
+      if (!ai._isBoss && !ai._isElite && Math.random() < 0.15) { ai.setIsElite(true); ai._eliteSkill = ['blockCounter','dodgeStrike','enrage'][Math.floor(Math.random()*3)]; }
+      scene.add(ai.root);
+      combat.register(ai);
+      if (ai._weaponMesh) weaponTrail.attach(ai._weaponMesh, ai.team === 1 ? 0xff8060 : 0x60a0ff);
+      ais.push(ai);
+    }
+    aiManager.assignSquad(ais);
+    if (mode.name !== '训练场' && ais.length >= 3) {
+      const shieldUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'SHIELD');
+      const bowUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'BOW');
+      if (shieldUsers.length >= 2) formations.createShieldWall(shieldUsers[0], shieldUsers.slice(1));
+      if (bowUsers.length >= 2) formations.createArcherLine(bowUsers[0], bowUsers.slice(1));
+    }
+    for (const ai of ais) ai.setAudio(audio);
+  }
+
   function spawnAll() {
     combat.clear();
     horses.dispose();
@@ -302,41 +339,11 @@ async function bootstrap() {
     combat.register(player);
     if (player._weaponMesh) weaponTrail.attach(player._weaponMesh, 0xfff0a0);
     if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx);
-    bus.on('skins.changed', () => { if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx); });
-    const redLayout = mode.name === '战役' ? campaign.spawnLayout().red : spawns.red;
-    const aiWeaponMakers = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];
-    const unlocks = progression.unlocks;
-    for (let i = 0; i < redLayout.length; i++) {
-      let ai;
-      if (i === 0 && campaign.currentStage.bossType && mode.name !== '训练场') {
-        ai = new BossEnemy({ team: 1, type: campaign.currentStage.bossType || 'warlord', mini: campaign.currentStage.mini || false });
-      } else if (i === 1 && unlocks.elite && mode.name !== '训练场') {
-        ai = new EliteEnemy({ team: 1 });
-      } else if (i === 2 && mode.name !== '训练场' && progression.score >= 500) {
-        ai = new CavalryEnemy({ team: 1 });
-        const horse = horses.create();
-        ai.mount(horse);
-      } else {
-        ai = new AIController({ team: 1, passive: mode.name === '训练场', maxHp: mode.name === '训练场' ? 500 : Math.round(90 * aiManager.difficulty().maxHpMul) });
-      }
-      const p = redLayout[i];
-      ai.spawn(new THREE.Vector3(p.x, terrain.heightAt(p.x, p.z), p.z));
-      ai.setWeapons([aiWeaponMakers[i % aiWeaponMakers.length]()]);
-      ai.setCameraRef(camera);
-      ai.setAIManager(aiManager);
-      if (!ai._isBoss && !ai._isElite && Math.random() < 0.15) { ai.setIsElite(true); ai._eliteSkill = ['blockCounter','dodgeStrike','enrage'][Math.floor(Math.random()*3)]; }
-      scene.add(ai.root);
-      combat.register(ai);
-      if (ai._weaponMesh) weaponTrail.attach(ai._weaponMesh, ai.team === 1 ? 0xff8060 : 0x60a0ff);
-      ais.push(ai);
-    }
-    aiManager.assignSquad(ais);
-    if (mode.name !== '训练场' && ais.length >= 3) {
-      const shieldUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'SHIELD');
-      const bowUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'BOW');
-      if (shieldUsers.length >= 2) formations.createShieldWall(shieldUsers[0], shieldUsers.slice(1));
-      if (bowUsers.length >= 2) formations.createArcherLine(bowUsers[0], bowUsers.slice(1));
-    }
+    let redLayout, bossWave = false;
+    if (mode.name === '战役') redLayout = campaign.spawnLayout().red;
+    else if (mode.name === '波次') { const lay = mode.spawnLayout(); redLayout = lay.red; bossWave = lay.isBoss; }
+    else redLayout = spawns.red;
+    spawnRed(redLayout, { bossWave });
     if (mode.name === '战役') {
       escortTarget = null; defenseTimer = 0; timeLimit = 0; surviveWavesDone = false;
       const s = campaign.currentStage;
@@ -543,6 +550,13 @@ async function bootstrap() {
             progress: redAlive / (campaign.currentStage.enemyCount || 1),
             setWeather: (w) => weather.setMode(w),
           });
+        }
+        if (mode.name === '波次' && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
+          const lay = mode.spawnLayout();
+          spawnRed(lay.red, { bossWave: lay.isBoss });
+          enemies = [player, ...ais];
+          hud.flash('第 ' + mode.wave + ' 波来袭！');
+          setTimeout(() => hud.clearHint(), 1500);
         }
         checkWin();
       },
