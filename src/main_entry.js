@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { EventBus } from './core/EventBus.js';
 import { GameState, States } from './core/GameState.js';
 import { Time } from './core/Time.js';
@@ -94,7 +94,6 @@ async function bootstrap() {
 
   const comboSys = new ComboSystem(bus);
   const weaponSkills = new WeaponSkills();
-  let escortTarget = null, defenseTimer = 0, timeLimit = 0, surviveWavesDone = false, surviveTimer = 0;
   const affixes = new Affixes();
   const achievements = new Achievements();
   achievements.setBus(bus);
@@ -155,9 +154,9 @@ async function bootstrap() {
     if (attacker && attacker.isLocal) {
       hitStop.trigger(heavy ? 0.12 : 0.06, 0.05);
       weaponTrail.activate(attacker._weaponMesh);
-      playerDamage += damage || 0;
+      match.playerDamage += damage || 0;
     }
-    if (victim && victim.isLocal) playerTaken += damage || 0;
+    if (victim && victim.isLocal) match.playerTaken += damage || 0;
     if (backstab) { daily.track('backstab'); if (attacker && attacker.isLocal) bus.emit('combat.backstab', { attacker, victim }); }
     bus.emit('daily.update', daily.challenges);
     audio.playSound('swing');
@@ -223,12 +222,18 @@ async function bootstrap() {
   } else {
     hud.flash('单机模式（未连服务器）');
   }
-  let scoreB = 0, scoreR = 0;
-  let roundB = 0, roundR = 0;
-  const targetWins = 2;
-  let roundEndTimer = 0;
-  let playerKills = 0, playerDamage = 0, playerTaken = 0, matchStartTime = performance.now();
   let mode = new Deathmatch(bus);
+  const match = new MatchController({
+    bus, state, hud, resultScreen, camera, progression, progressUI, daily, skills, campaign, siege, weather, audio,
+    saveManager,
+    spawnAll: () => spawnAll(),
+    saveNow: () => saveManager.save(captureSave()),
+    loadMap: (k) => loadMap(k),
+    mapName: () => currentMapName,
+    getPlayer: () => player,
+    getAis: () => ais,
+    getMode: () => mode
+  });
 
   let playTimeSec = 0;
   const captureSave = () => {
@@ -278,13 +283,6 @@ async function bootstrap() {
   setInterval(() => { if (state.current === States.PLAYING) playTimeSec++; }, 1000);
   setInterval(() => { if (state.current === States.PLAYING) saveManager.save(captureSave()); }, 60000);
   window.addEventListener('beforeunload', () => { try { saveManager.save(captureSave()); } catch (e) { /* ignore */ } });
-
-  bus.on('combat.kill', ({ team, killer, victim }) => {
-    if (team === 1) scoreB++; else scoreR++;
-    hud.setScore(scoreB, scoreR);
-    if (killer && killer.isLocal) { playerKills++; skills.addPoint(1); hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => hud.clearHint(), 1500); daily.track('kills'); if (victim && victim._isBoss) { daily.track('bossKill'); saveManager.save(captureSave()); } if (victim instanceof CavalryEnemy) bus.emit('combat.cavalrykill', { killer, victim }); bus.emit('daily.update', daily.challenges); }
-    audio.playSound('ultimate');
-  });
 
   function spawnRed(redLayout, { bossWave = false } = {}) {
     const aiWeaponMakers = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];
@@ -359,12 +357,12 @@ async function bootstrap() {
     else redLayout = spawns.red;
     spawnRed(redLayout, { bossWave });
     if (mode.name === '战役') {
-      escortTarget = null; defenseTimer = 0; timeLimit = 0; surviveWavesDone = false; surviveTimer = 0;
+      match.escortTarget = null; match.defenseTimer = 0; match.timeLimit = 0; match.surviveWavesDone = false; match.surviveTimer = 0;
       const s = campaign.currentStage;
-      if (s.objective === '护送') { escortTarget = new EscortTarget({ x: -160, z: 0 }, { x: 160, z: 0 }, 80); scene.add(escortTarget.root); }
-      if (s.objective === '防御') { defenseTimer = 60; }
-      if (s.objective === 'Boss限时') { timeLimit = 120; }
-      if (s.objective === '生存') { surviveTimer = s.surviveTime || 90; }
+      if (s.objective === '护送') { match.escortTarget = new EscortTarget({ x: -160, z: 0 }, { x: 160, z: 0 }, 80); scene.add(match.escortTarget.root); }
+      if (s.objective === '防御') { match.defenseTimer = 60; }
+      if (s.objective === 'Boss限时') { match.timeLimit = 120; }
+      if (s.objective === '生存') { match.surviveTimer = s.surviveTime || 90; }
     }
     enemies = [player, ...ais];
     hud.setRefs(player, ais, camera);
@@ -373,30 +371,10 @@ async function bootstrap() {
     player.setAudio(audio); for (const ai of ais) ai.setAudio(audio);
   }
 
-  function startRound() {
-    scoreB = 0; scoreR = 0;
-    playerKills = 0; playerDamage = 0; matchStartTime = performance.now();
-    hud.setScore(0, 0);
-    hud.clearHint();
-    spawnAll();
-    state.transit(States.READY);
-    state.transit(States.PLAYING);
-    hud.flash('遭遇战开始！点击锁定鼠标');
-    setTimeout(() => hud.clearHint(), 1800);
-  }
-
-  function restart() {
-    resultScreen.hide();
-    roundB = 0; roundR = 0;
-    hud.setRound(roundB, roundR, targetWins);
-    startRound();
-  }
-  bus.on('round.restart', () => { if (state.current === States.ENDED) restart(); });
-
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyR') {
-      if (state.current === States.ENDED) restart();
-      else if (state.current === States.ROUND_END) { roundEndTimer = 0; startRound(); }
+      if (state.current === States.ENDED) match.restart();
+      else if (state.current === States.ROUND_END) { match.roundEndTimer = 0; match.startRound(); }
     }
     if (e.code === 'KeyM' && (state.current === States.ENDED || state.current === States.ROUND_END || state.current === States.PLAYING && !player?.alive)) {
       mode = mode.name === '死斗' ? new Domination(bus) : (mode.name === '据点' ? new SiegeMode(bus) : (mode.name === '攻城' ? new WaveMode(bus) : (mode.name === '波次' ? campaign : new Deathmatch(bus))));
@@ -426,66 +404,12 @@ async function bootstrap() {
     if (e.code === 'Escape') settings.toggle();
   });
 
-  function checkWin() {
-    if (state.current !== States.PLAYING) return;
-    if (mode.name === '战役') {
-      const winner = campaign.checkWin(player.alive, ais.some(a => a.alive), siege.gate, { boss: ais.find(a => a instanceof BossEnemy), escortTarget, defenseTimer, surviveWavesDone, timeLimit, redAlive: ais.filter(a => a.alive).length });
-      if (winner === 'blue') {
-        const result = campaign.onStageClear();
-        saveManager.save(captureSave());
-        if (result === 'campaign_complete') {
-          hud.flashEnd('战役通关！按 R 重玩');
-          bus.emit('campaign.clear', { stages: campaign.maxStages });
-          if (playerTaken === 0) bus.emit('campaign.perfect', {});
-          progression.recordWin('S', 0);
-          const _creward = daily.claim(); if (_creward > 0) { progression.addScore(_creward); hud.flash('每日挑战完成！+' + _creward + '分'); }
-          bus.emit('daily.update', daily.challenges);
-          state.transit(States.ENDED);
-          resultScreen.show({ kills: playerKills, damage: playerDamage, time: 0, win: true });
-        } else {
-          const layout = campaign.spawnLayout();
-          loadMap(layout.mapKey);
-          if (layout.weather) weather.setMode(layout.weather);
-          hud.flash('关卡通过！按 R 进入下一关');
-          state.transit(States.ROUND_END);
-          roundEndTimer = 3;
-        }
-        return;
-      } else if (winner === 'red') {
-        hud.flashEnd('战役失败！按 R 重试本关');
-        state.transit(States.ENDED);
-        resultScreen.show({ kills: playerKills, damage: playerDamage, time: 0, win: false });
-        return;
-      }
-      return;
-    }
-    let winner = null;
-    if (mode.name === '攻城') {
-      if (siege.gate.broken) winner = 'blue';
-      else if (!player.alive) winner = 'red';
-    } else if (mode.name === '据点') {
-      winner = mode.checkWin();
-      if (!ais.some(a => a.alive)) winner = 'blue';
-      else if (!player.alive) winner = 'red';
-    } else {
-      winner = mode.checkWin(player.alive, ais.some(a => a.alive));
-    }
-    if (winner === 'blue') {
-      roundB++; hud.setRound(roundB, roundR, targetWins);
-      if (roundB >= targetWins) { hud.flashEnd('蓝方获胜！按 R 重新开始'); camera.setKillCam(player); state.transit(States.ENDED); const grade = ResultScreen.gradeOf ? ResultScreen.gradeOf(playerKills, playerDamage, (performance.now() - matchStartTime) / 1000) : 'A'; progression.recordWin(grade, (performance.now() - matchStartTime) / 1000); progressUI.refresh(); resultScreen.show({ kills: playerKills, damage: playerDamage, time: (performance.now() - matchStartTime) / 1000, win: true }); if (playerTaken === 0) daily.track('noDamageWin'); const timeSec = (performance.now() - matchStartTime) / 1000; if (timeSec < 90) daily.track('speedWin', timeSec); if (grade === 'S') daily.track('winGrade'); const reward = daily.claim(); if (reward > 0) { progression.addScore(reward); hud.flash('每日挑战完成！+' + reward + '分'); progressUI.refresh(); } bus.emit('daily.update', daily.challenges); }
-      else { hud.flash('蓝方赢下本局！按 R 跳过'); state.transit(States.ROUND_END); roundEndTimer = 3; }
-    } else if (winner === 'red') {
-      roundR++; hud.setRound(roundB, roundR, targetWins);
-      if (roundR >= targetWins) { hud.flashEnd('红方获胜！按 R 重新开始'); if (player.lastAttacker) camera.setKillCam(player.lastAttacker); state.transit(States.ENDED); progression.recordLoss(); progressUI.refresh(); resultScreen.show({ kills: playerKills, damage: playerDamage, time: (performance.now() - matchStartTime) / 1000, win: false }); }
-      else { hud.flash('红方赢下本局！按 R 跳过'); state.transit(States.ROUND_END); roundEndTimer = 3; }
-    }
-  }
 
   spawnAll();
   const affixesUI = new AffixesUI(affixes, player);
   const achievementsUI = new AchievementsUI(achievements);
   state.transit(States.PLAYING);
-  hud.setRound(0, 0, targetWins);
+  hud.setRound(0, 0, match.targetWins);
   hud.setMode(mode.name + ' · ' + currentMapName);
   hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式');
   setTimeout(() => hud.clearHint(), 5000);
@@ -497,10 +421,10 @@ async function bootstrap() {
       (dt) => {
         const now = time.now * 0.001;
         if (state.current === States.ROUND_END) {
-          roundEndTimer -= dt;
+          match.roundEndTimer -= dt;
           env.update(dt, now);
           water.update(dt, now);
-          if (roundEndTimer <= 0) startRound();
+          if (match.roundEndTimer <= 0) match.startRound();
           renderer.render();
           return;
         }
@@ -554,13 +478,13 @@ async function bootstrap() {
         if (mode.name === '战役') hud.setMode('战役', campaign.stageInfo);
         if (mode.name === '战役') {
           const redAlive = ais.filter(a => a.alive).length;
-          if (defenseTimer > 0) defenseTimer -= dt;
-          if (timeLimit > 0) timeLimit -= dt;
-          if (surviveTimer > 0) {
-            surviveTimer -= dt;
-            if (surviveTimer <= 0 && !surviveWavesDone) { surviveWavesDone = true; hud.flash('生存时间达成！'); setTimeout(() => hud.clearHint(), 1500); }
+          if (match.defenseTimer > 0) match.defenseTimer -= dt;
+          if (match.timeLimit > 0) match.timeLimit -= dt;
+          if (match.surviveTimer > 0) {
+            match.surviveTimer -= dt;
+            if (match.surviveTimer <= 0 && !match.surviveWavesDone) { match.surviveWavesDone = true; hud.flash('生存时间达成！'); setTimeout(() => hud.clearHint(), 1500); }
           }
-          if (escortTarget) escortTarget.update(dt, player);
+          if (match.escortTarget) match.escortTarget.update(dt, player);
           campaign.onTick(dt, {
             redAlive,
             spawnReinforce: (n) => { for (let i = 0; i < n; i++) { const e = new AIController({ team: 1, passive: false, maxHp: Math.round(90 * (campaign.currentStage.difficulty || 1)) }); e.setBus(bus); e.setWeapons([new Spear()]); e.setAIManager(aiManager); if (!e._isBoss && !e._isElite && Math.random() < 0.15) { e.setIsElite(true); e._eliteSkill = ['blockCounter','dodgeStrike','enrage'][Math.floor(Math.random()*3)]; } const px = 160 + (Math.random() - 0.5) * 40; const pz = (Math.random() - 0.5) * 120; e.spawn(new THREE.Vector3(px, terrain.heightAt(px, pz), pz)); e.setCameraRef(camera); scene.add(e.root); combat.register(e); ais.push(e); } },
@@ -576,7 +500,7 @@ async function bootstrap() {
           hud.flash('第 ' + mode.wave + ' 波来袭！');
           setTimeout(() => hud.clearHint(), 1500);
         }
-        checkWin();
+        match.checkWin();
       },
       () => { renderer.render(); }
     );
