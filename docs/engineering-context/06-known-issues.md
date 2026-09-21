@@ -40,6 +40,7 @@
 
 - ~~main_entry 上帝文件三步拆分（MatchController → SaveOrchestrator → InputRouter）~~ ✅2026-09-21 完成，见 02 架构文档 §4.1
 - ~~持久化双轨收敛（SaveManager 唯一事实来源，7 模块 serialize/restore，6 旧键迁移后删除）~~ ✅2026-09-21 完成，见 02 架构文档 §4.2
+- ~~UI 类错位（ProgressionUI/WeaponSkinsUI 移至 ui/）~~ ✅2026-09-21 完成，见 02 架构文档 §4.3
 - UI 面板四胞胎 → UIPanel 基类；近战武器 _perform 上提 Weapon 基类
 - 事件名/存储键/平衡数值常量模块化
 - 每帧 Vector3 分配池化；miniMap.setWorldSize 每帧调用
@@ -55,3 +56,4 @@
 | 2026-09-21 | 收尾 fix commit（本轮） | #8 #12(全) #16 #17 #18 |
 | 2026-09-21 | main_entry 三步拆分 commit | P2 架构债#1（MatchController/SaveOrchestrator/InputRouter） |
 | 2026-09-21 | 持久化双轨收敛 commits | P2 架构债#2（SaveManager 唯一事实来源 / 7 模块 serialize/restore / 6 旧键迁移后删除） |
+| 2026-09-21 | UI 类错位 commit | P2 架构债#3（ProgressionUI/WeaponSkinsUI 移至 ui/） |
