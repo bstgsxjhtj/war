@@ -1,0 +1,40 @@
+# 02 · 架构文档
+
+## 1. 分层与依赖方向
+
+```
+main_entry.js（组合根 / composition root）
+   ├── ui/          → 单向依赖 gameplay（仅引用常量/数据类）
+   ├── gameplay/    → 可依赖 core、render 的纯工厂/特效接口（显式例外）
+   ├── world/       → 依赖 core（bus）
+   ├── engine/      → 依赖 render
+   └── core/        → EventBus / GameState / Time，不依赖任何上层
+net/ audio/ render/ 为基础设施，被上层使用。
+ESM 依赖图必须保持无环（DAG）。
+```
+
+## 2. 模块职责
+
+- **core**：EventBus（on 返回 off 函数）、GameState 状态机、Time 主循环。ECS.js 当前未被使用（保留待决）。
+- **engine**：Renderer（three 后期管线）、Scene、Camera、AssetLoader。
+- **world**：Terrain、Environment、Water、WeatherSystem、MapGenerator、SiegeStructure、SupplyPoint。
+- **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/CavalryEnemy）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、weapons/*；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；SaveManager。
+- **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI。
+
+## 3. 运行期解耦
+
+模块间通过字符串事件（`域.动作`，如 `combat.hit`、`fx.shake`）在 EventBus 上通信，约 25 个事件名。事件契约见 05-conventions.md。
+
+## 4. 已知架构债（按优先级）
+
+1. **main_entry.js 上帝文件**（~550 行 bootstrap）：重构路线为三步小步搬迁——
+   ① MatchController（score/round/checkWin/startRound）② SaveOrchestrator（captureSave/resetSave/定时存档）③ InputRouter（全局按键）。每步只搬代码不改行为，e2e 冒烟验证。
+2. **持久化双轨**：SaveManager 统一存档上线后，Progression/SkillTree/CampaignMode 仍自写旧键。目标态：SaveManager 为唯一事实来源，旧键只读迁移一次后删除。
+3. **UI 类错位**：ProgressionUI 住在 gameplay/Progression.js、WeaponSkinsUI 住在 gameplay/WeaponSkins.js，应移至 ui/（纯移动）。
+4. **依赖注入不统一**：约定"必选依赖走构造、可选依赖走 setter"。
+5. **监听器生命周期**：bus.on 返回 off，跨回合的注册必须集中在 bootstrap 顶层一次注册；spawnAll 内禁止注册常驻监听。
+
+## 5. 组合根规则
+
+- main_entry 是唯一装配点；新增系统的实例化、事件接线、按键绑定都在此完成。
+- UI 面板按键惯例：面板组件在 `document` 上自监听 keydown（KeyI/J/V/H），main_entry 的 window handler **不得重复绑定**同一键（会双 toggle 抵消）。
