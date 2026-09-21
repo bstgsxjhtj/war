@@ -24,6 +24,12 @@ export class WeaponSkins {
   _save() {
     try { localStorage.setItem(this._key, JSON.stringify(this._data)); } catch (e) {}
   }
+  serialize() { return JSON.parse(JSON.stringify(this._data)); }
+  restore(data = {}) {
+    this._data = (data && typeof data === 'object') ? JSON.parse(JSON.stringify(data)) : {};
+    if (!this._data.unlocked) this._data.unlocked = { default: true };
+    if (!this._data.equipped) this._data.equipped = { 0: 'default', 1: 'default', 2: 'default', 3: 'default' };
+  }
 
   get unlocked() { return this._data.unlocked; }
   get equipped() { return this._data.equipped; }

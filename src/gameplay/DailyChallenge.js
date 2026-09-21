@@ -32,6 +32,14 @@ export class DailyChallenge {
     try { localStorage.setItem(this._key, JSON.stringify(this._data)); } catch (e) {}
   }
 
+  serialize() { return JSON.parse(JSON.stringify(this._data)); }
+  restore(data = {}) {
+    this._data = (data && typeof data === 'object') ? JSON.parse(JSON.stringify(data)) : { date: '', challenges: [], progress: {} };
+    if (!this._data.challenges) this._data.challenges = [];
+    if (!this._data.progress) this._data.progress = {};
+    if (this._isExpired()) this._regenerate();
+  }
+
   _todayKey() {
     const d = new Date();
     return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();

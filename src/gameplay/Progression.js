@@ -75,10 +75,19 @@ export class Progression {
   }
   recordLoss() { this._data.losses++; this._save(); }
 
+  serialize() {
+    return JSON.parse(JSON.stringify(this._data));
+  }
+
   restore(data = {}) {
     if (typeof data.score === 'number') this._data.score = data.score;
     if (typeof data.kills === 'number') this._data.kills = data.kills;
+    if (typeof data.deaths === 'number') this._data.deaths = data.deaths;
+    if (typeof data.wins === 'number') this._data.wins = data.wins;
+    if (typeof data.losses === 'number') this._data.losses = data.losses;
     if (data.bestGrade) this._data.bestGrade = data.bestGrade;
+    if (typeof data.bestTime === 'number') this._data.bestTime = data.bestTime;
+    if (data.unlocks && typeof data.unlocks === 'object') this._data.unlocks = { boss: !!data.unlocks.boss, elite: !!data.unlocks.elite };
     this._checkUnlocks();
     this._save();
   }

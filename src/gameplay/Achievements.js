@@ -39,6 +39,8 @@ export class Achievements {
   progress(id) { return this._data[id] ? this._data[id].progress : 0; }
   isUnlocked(id) { return !!(this._data[id] && this._data[id].unlocked); }
   allByCat(cat) { return ACHIEVEMENTS.filter(a => a.cat === cat).map(a => ({ ...a, progress: this.progress(a.id), unlocked: this.isUnlocked(a.id) })); }
+  serialize() { return JSON.parse(JSON.stringify(this._data)); }
+  restore(data = {}) { this._data = (data && typeof data === 'object') ? JSON.parse(JSON.stringify(data)) : {}; }
   _save() { try { localStorage.setItem('achievements', JSON.stringify(this._data)); } catch (e) {} }
   _load() { try { const d = localStorage.getItem('achievements'); if (d) this._data = JSON.parse(d); } catch (e) {} }
 }

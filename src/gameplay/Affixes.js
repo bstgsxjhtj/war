@@ -44,6 +44,8 @@ export class Affixes {
     }
     return sum;
   }
+  serialize() { return JSON.parse(JSON.stringify(this.inventory)); }
+  restore(data = []) { this.inventory = Array.isArray(data) ? JSON.parse(JSON.stringify(data)) : []; }
   _save() { try { localStorage.setItem('affixes', JSON.stringify(this.inventory)); } catch (e) {} }
   _load() { try { const d = localStorage.getItem('affixes'); if (d) this.inventory = JSON.parse(d); } catch (e) {} }
 }

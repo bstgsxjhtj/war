@@ -29,6 +29,10 @@ export class CampaignMode {
   _saveCleared() {
     try { localStorage.setItem('campaign_cleared', JSON.stringify(this.cleared)); } catch (e) {}
   }
+  serialize() { return { cleared: this.cleared }; }
+  restore(data = {}) {
+    if (data && typeof data.cleared === 'number') this.cleared = data.cleared;
+  }
 
   get currentStage() { return STAGES[Math.min(this.stage, STAGES.length - 1)]; }
   get stageInfo() { return { ...this.currentStage, index: this.stage, total: this.maxStages, cleared: this.cleared }; }
