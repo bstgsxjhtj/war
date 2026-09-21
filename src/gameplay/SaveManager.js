@@ -1,4 +1,6 @@
-// 统一存档：savegame_v1 + 版本迁移 + 旧键合并（成就/设置/皮肤/音量保留各自键）
+// 统一存档：savegame_v1 + 版本迁移 + 旧键一次性迁移后删除（游戏进度唯一事实来源）
+const LEGACY_GAME_KEYS = ['campaign_cleared', 'progression_v1', 'skilltree_v1', 'achievements', 'affixes', 'daily_challenge', 'weapon_skins'];
+
 export class SaveManager {
   constructor() {
     this._key = 'savegame_v1';
@@ -11,13 +13,18 @@ export class SaveManager {
       savedAt: Date.now(),
       mode: capture.mode ?? null,
       stage: capture.stage ?? 0,
+      campaignCompleted: !!capture.campaignCompleted,
+      progressionFull: capture.progressionFull ?? null,
       score: capture.score ?? 0,
       kills: capture.kills ?? 0,
       bestGrade: capture.bestGrade ?? null,
-      campaignCompleted: !!capture.campaignCompleted,
       skillTree: capture.skillTree || null,
       affixSlots: capture.affixSlots ?? {},
+      affixInventory: capture.affixInventory ?? [],
       skillPoints: capture.skillPoints ?? 0,
+      achievements: capture.achievements ?? {},
+      daily: capture.daily ?? null,
+      skins: capture.skins ?? null,
       playTime: capture.playTime ?? 0
     };
   }
@@ -36,7 +43,12 @@ export class SaveManager {
   }
 
   _defaults() {
-    return { version: 1, savedAt: null, mode: null, stage: 0, score: 0, kills: 0, bestGrade: null, campaignCompleted: false, skillTree: null, affixSlots: {}, skillPoints: 0, playTime: 0 };
+    return {
+      version: 1, savedAt: null, mode: null, stage: 0, campaignCompleted: false,
+      progressionFull: null, score: 0, kills: 0, bestGrade: null,
+      skillTree: null, affixSlots: {}, affixInventory: [], skillPoints: 0,
+      achievements: {}, daily: null, skins: null, playTime: 0
+    };
   }
 
   _load() {
@@ -45,7 +57,11 @@ export class SaveManager {
       if (raw) {
         const d = JSON.parse(raw);
         if (d && typeof d === 'object') {
-          if (d.version === 1) return d;
+          if (d.version === 1) {
+            const merged = { ...this._defaults(), ...d, version: 1 };
+            this._mergeOldKeys(merged);
+            return merged;
+          }
           const merged = { ...this._defaults(), ...d, version: 1 };
           this._mergeOldKeys(merged);
           return merged;
@@ -55,20 +71,22 @@ export class SaveManager {
     } catch (e) { return null; }
   }
 
-  // 旧键迁移：campaign_cleared→stage、progression_v1→score/kills/bestGrade、skilltree_v1→skillPoints
+  // 旧键一次性迁移：campaign_cleared/progression_v1/skilltree_v1/achievements/affixes/daily_challenge/weapon_skins → savegame_v1
   _migrateOld() {
     const out = this._defaults();
     let any = false;
     try {
       const cleared = JSON.parse(localStorage.getItem('campaign_cleared') || '0');
-      if (Number.isFinite(cleared) && cleared > 0) { out.stage = Math.min(cleared, 9); any = true; }
+      if (Number.isFinite(cleared) && cleared > 0) { out.stage = Math.min(cleared, 9); out.campaignCompleted = cleared >= 10; any = true; }
     } catch (e) { /* ignore */ }
     try {
       const p = JSON.parse(localStorage.getItem('progression_v1'));
       if (p && typeof p === 'object') {
+        out.progressionFull = p;
         if (typeof p.score === 'number') { out.score = p.score; any = true; }
         if (typeof p.kills === 'number') { out.kills = p.kills; any = true; }
         if (p.bestGrade) { out.bestGrade = p.bestGrade; any = true; }
+        any = true;
       }
     } catch (e) { /* ignore */ }
     try {
@@ -79,7 +97,28 @@ export class SaveManager {
         any = true;
       }
     } catch (e) { /* ignore */ }
-    return any ? out : null;
+    try {
+      const ach = JSON.parse(localStorage.getItem('achievements'));
+      if (ach && typeof ach === 'object') { out.achievements = ach; any = true; }
+    } catch (e) { /* ignore */ }
+    try {
+      const afx = JSON.parse(localStorage.getItem('affixes'));
+      if (Array.isArray(afx)) { out.affixInventory = afx; any = true; }
+    } catch (e) { /* ignore */ }
+    try {
+      const daily = JSON.parse(localStorage.getItem('daily_challenge'));
+      if (daily && typeof daily === 'object') { out.daily = daily; any = true; }
+    } catch (e) { /* ignore */ }
+    try {
+      const skins = JSON.parse(localStorage.getItem('weapon_skins'));
+      if (skins && typeof skins === 'object') { out.skins = skins; any = true; }
+    } catch (e) { /* ignore */ }
+    if (any) {
+      for (const k of LEGACY_GAME_KEYS) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
+      try { localStorage.setItem(this._key, JSON.stringify(out)); } catch (e) { /* ignore */ }
+      return out;
+    }
+    return null;
   }
 
   _mergeOldKeys(merged) {
@@ -90,6 +129,11 @@ export class SaveManager {
     if (!merged.kills) merged.kills = old.kills;
     if (!merged.bestGrade) merged.bestGrade = old.bestGrade;
     if (!merged.skillPoints) merged.skillPoints = old.skillPoints;
+    if (!merged.progressionFull && old.progressionFull) merged.progressionFull = old.progressionFull;
+    if (Object.keys(merged.achievements).length === 0 && old.achievements) merged.achievements = old.achievements;
+    if (merged.affixInventory.length === 0 && old.affixInventory) merged.affixInventory = old.affixInventory;
+    if (!merged.daily && old.daily) merged.daily = old.daily;
+    if (!merged.skins && old.skins) merged.skins = old.skins;
   }
 
   _persist() {
