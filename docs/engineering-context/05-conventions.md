@@ -9,11 +9,12 @@
 
 | 键 | 属主 |
 |---|---|
-| savegame_v1 | SaveManager（统一存档，唯一事实来源目标态） |
-| progression_v1 / skilltree_v1 / campaign_cleared | 旧键，仅迁移用 |
-| achievements / affixes / daily_challenge / weapon_skins | 各自模块 |
-| settings / audio_volume | 音量持久化只留 AudioEngine 一处 |
-| tutorial_done / skilltree_profile_* | Tutorial / SkillTree |
+| savegame_v1 | SaveManager（游戏进度唯一事实来源：mode/stage/campaignCleared/progressionFull/score/kills/bestGrade/affixSlots/affixInventory/skillPoints/skillTree/achievements/daily/skins/playTime） |
+| ~~progression_v1 / skilltree_v1 / campaign_cleared / achievements / affixes / daily_challenge / weapon_skins~~ | 旧键，仅启动时一次性迁移到 savegame_v1 后删除 |
+| settings | SettingsMenu（UI 偏好，独立保留） |
+| audio_volume | AudioEngine（音量，独立保留，05 §5 "音量只留 AudioEngine 一处"） |
+| tutorial_done | Tutorial（一次性引导标志，独立保留） |
+| skilltree_profile_* | SkillTree（多档位技能方案，独立保留） |
 
 ## 3. 测试规范
 

@@ -32,7 +32,7 @@ ESM 依赖图必须保持无环（DAG）。
    ① `app/MatchController`（比分/回合/checkWin/startRound/restart + 战役目标状态字段）
    ② `app/SaveOrchestrator`（capture/reset/applyOnBoot/tickPlayTime/startTimers）
    ③ `app/InputRouter`（R/M/,/C/D/N/Escape + 音频解锁）。main_entry 仅剩组合根装配、spawnAll/spawnRed 与主循环；跨模块可变状态（player/ais/mode）经 getter/setter 回调注入。
-2. **持久化双轨**：SaveManager 统一存档上线后，Progression/SkillTree/CampaignMode 仍自写旧键。目标态：SaveManager 为唯一事实来源，旧键只读迁移一次后删除。
+2. ~~**持久化双轨**~~（✅2026-09-21 偿还）：SaveManager（savegame_v1）成为游戏进度唯一事实来源；Progression/SkillTree/CampaignMode/Achievements/Affixes/DailyChallenge/WeaponSkins 七模块停止自写旧键，改为 serialize/restore 由 SaveOrchestrator 统一采集与恢复；6 个旧键（campaign_cleared/progression_v1/skilltree_v1/achievements/affixes/daily_challenge/weapon_skins）在首次启动一次性迁移后删除。保留独立键：settings/audio_volume/tutorial_done/skilltree_profile_*（UI/音频偏好与多档位特性）。
 3. **UI 类错位**：ProgressionUI 住在 gameplay/Progression.js、WeaponSkinsUI 住在 gameplay/WeaponSkins.js，应移至 ui/（纯移动）。
 4. **依赖注入不统一**：约定"必选依赖走构造、可选依赖走 setter"。
 5. **监听器生命周期**：bus.on 返回 off，跨回合的注册必须集中在 bootstrap 顶层一次注册；spawnAll 内禁止注册常驻监听。
