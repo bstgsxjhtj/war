@@ -4,6 +4,7 @@
 
 ```
 main_entry.js（组合根 / composition root）
+   ├── app/         → 组合根辅助：MatchController（比分/回合/胜负）、SaveOrchestrator（存档编排）、InputRouter（全局按键）；依赖 core/gameplay/world/ui
    ├── ui/          → 单向依赖 gameplay（仅引用常量/数据类）
    ├── gameplay/    → 可依赖 core、render 的纯工厂/特效接口（显式例外）
    ├── world/       → 依赖 core（bus）
@@ -27,8 +28,10 @@ ESM 依赖图必须保持无环（DAG）。
 
 ## 4. 已知架构债（按优先级）
 
-1. **main_entry.js 上帝文件**（~550 行 bootstrap）：重构路线为三步小步搬迁——
-   ① MatchController（score/round/checkWin/startRound）② SaveOrchestrator（captureSave/resetSave/定时存档）③ InputRouter（全局按键）。每步只搬代码不改行为，e2e 冒烟验证。
+1. ~~**main_entry.js 上帝文件**~~（✅2026-09-21 偿还）：三步拆分完成——
+   ① `app/MatchController`（比分/回合/checkWin/startRound/restart + 战役目标状态字段）
+   ② `app/SaveOrchestrator`（capture/reset/applyOnBoot/tickPlayTime/startTimers）
+   ③ `app/InputRouter`（R/M/,/C/D/N/Escape + 音频解锁）。main_entry 仅剩组合根装配、spawnAll/spawnRed 与主循环；跨模块可变状态（player/ais/mode）经 getter/setter 回调注入。
 2. **持久化双轨**：SaveManager 统一存档上线后，Progression/SkillTree/CampaignMode 仍自写旧键。目标态：SaveManager 为唯一事实来源，旧键只读迁移一次后删除。
 3. **UI 类错位**：ProgressionUI 住在 gameplay/Progression.js、WeaponSkinsUI 住在 gameplay/WeaponSkins.js，应移至 ui/（纯移动）。
 4. **依赖注入不统一**：约定"必选依赖走构造、可选依赖走 setter"。

@@ -38,7 +38,7 @@
 
 ## P2 债（记录暂不强制）
 
-- main_entry 上帝文件三步拆分（MatchController → SaveOrchestrator → InputRouter）
+- ~~main_entry 上帝文件三步拆分（MatchController → SaveOrchestrator → InputRouter）~~ ✅2026-09-21 完成，见 02 架构文档 §4.1
 - UI 面板四胞胎 → UIPanel 基类；近战武器 _perform 上提 Weapon 基类
 - 事件名/存储键/平衡数值常量模块化
 - 每帧 Vector3 分配池化；miniMap.setWorldSize 每帧调用
@@ -52,3 +52,4 @@
 | 2026-09-21 | P0 fix commit | #2 #4 #9 #10 #12(hud.flash) #13 #15 #24 |
 | 2026-09-21 | P1 fix commit | #11 #19(战役奖励) #20 #21 #22(rage) #23 |
 | 2026-09-21 | 收尾 fix commit（本轮） | #8 #12(全) #16 #17 #18 |
+| 2026-09-21 | main_entry 三步拆分 commit | P2 架构债#1（MatchController/SaveOrchestrator/InputRouter） |
