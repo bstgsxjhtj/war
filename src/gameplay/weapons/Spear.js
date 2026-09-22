@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
+import { WEAPON_STATS } from '../../core/constants/balance.js';
 
 // 长枪：长距突刺窄弧，风筝盾兵
 export class Spear extends Weapon {
   constructor() {
-    super({ name: '枪', damage: 18, range: 4.2, cooldown: 0.4, type: AttackType.MELEE, windup: 0.1 });
+    super({ ...WEAPON_STATS.SPEAR, type: AttackType.MELEE });
     this.weaponClass = 'SPEAR';
     this.armorPierce = false;
     this.arc = Math.PI * 0.15;

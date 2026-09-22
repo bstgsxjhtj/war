@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
+import { WEAPON_STATS } from '../../core/constants/balance.js';
 
 // 弓：蓄力远程，hitFrame 提高使前摇可反应
 export class Bow extends Weapon {
   constructor() {
-    super({ name: '弓', damage: 30, range: 70, cooldown: 0.95, type: AttackType.PROJECTILE, windup: 0.15 });
+    super({ ...WEAPON_STATS.BOW, type: AttackType.PROJECTILE });
     this.weaponClass = 'BOW';
     this.baseSpeed = 42;
     this.maxSpeed = 78;

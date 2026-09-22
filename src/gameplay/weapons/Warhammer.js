@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
+import { WEAPON_STATS } from '../../core/constants/balance.js';
 
 // 重锤：破盾高伤慢攻，无视格挡
 export class Warhammer extends Weapon {
   constructor() {
-    super({ name: '重锤', damage: 55, range: 2.4, cooldown: 1.2, type: AttackType.MELEE, windup: 0.18 });
+    super({ ...WEAPON_STATS.WARHAMMER, type: AttackType.MELEE });
     this.weaponClass = 'HEAVY';
     this.armorPierce = true;
     this.arc = Math.PI * 0.4;

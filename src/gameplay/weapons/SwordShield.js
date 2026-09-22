@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
+import { WEAPON_STATS } from '../../core/constants/balance.js';
 
 // 剑盾：持盾格挡减伤非重锤
 export class SwordShield extends Weapon {
   constructor() {
-    super({ name: '剑盾', damage: 20, range: 2.6, cooldown: 0.32, type: AttackType.MELEE, windup: 0.06 });
+    super({ ...WEAPON_STATS.SWORD_SHIELD, type: AttackType.MELEE });
     this.weaponClass = 'SHIELD';
     this.armorPierce = false;
     this.shieldBlock = true;

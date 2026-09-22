@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
+import { WEAPON_STATS } from '../../core/constants/balance.js';
 
 // 刀：三段连击，cooldown 调优消除冷却死区，突进降防穿模
 export class Sword extends Weapon {
   constructor() {
-    super({ name: '刀', damage: 24, range: 2.9, cooldown: 0.27, type: AttackType.MELEE, windup: 0.06 });
+    super({ ...WEAPON_STATS.SWORD, type: AttackType.MELEE });
     this.arc = Math.PI * 0.55;
     this.comboDamage = [24, 20, 40];
     this.comboKnock = [1.2, 1.0, 2.6];
