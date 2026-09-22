@@ -63,6 +63,9 @@
 | 2026-09-22 | 68a156d | 实现 ultimateMelee/ultimateLine 大招 API（原 tryUltimate 调不存在方法），spawnPierceArrow 加 opts 覆写修 Boss 连射/火球签名错误，5 用例 |
 | 2026-09-22 | 658746e | e2e 冒烟补攻击→伤害断言（__game 调试句柄），堵住箭矢/近战回归类问题 |
 | 2026-09-22 | 台账清理 | #12/#16/#17 核实已修标 ✅；#19 desc 改"今日累计"口径 |
+| 2026-09-22 | e22f12b | Spawner 下沉：spawnRed/spawnReinforce 收进 gameplay/Spawner.js，精英技能随机去重，+7 用例 |
+| 2026-09-22 | 4bc9280 | AIController 构造尊重 passive/maxHp（此前被静默丢弃——隐藏 bug），+9 决策路径用例 |
+| 2026-09-22 | 943835c | HUD 高频 setter 接入 _write 脏检查（WeakMap 缓存），消除每帧重复 DOM 写入，+7 用例 |
 | 2026-09-21 | main_entry 三步拆分 commit | P2 架构债#1（MatchController/SaveOrchestrator/InputRouter） |
 | 2026-09-21 | 持久化双轨收敛 commits | P2 架构债#2（SaveManager 唯一事实来源 / 7 模块 serialize/restore / 6 旧键迁移后删除） |
 | 2026-09-21 | UI 类错位 commit | P2 架构债#3（ProgressionUI/WeaponSkinsUI 移至 ui/） |
