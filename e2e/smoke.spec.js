@@ -70,6 +70,35 @@ test('关键路径冒烟：0 运行时致命错误 + 关键 DOM + 主循环存�
   });
   const hint = await page.locator('#hint').innerText();
   expect(hint).toMatch(/战役/);
+
+  // 攻击→伤害断言：传送到最近敌人面前，左键攻击，验证敌人掉血
+  const dmgResult = await page.evaluate(async () => {
+    const g = window.__game;
+    if (!g || !g.player || !g.ais.length) return { skip: true };
+    const p = g.player;
+    const target = g.ais.find(a => a.alive);
+    if (!target) return { skip: true };
+    const hpOf = () => (target.health.hp ?? target.health.cur);
+    const hpBefore = hpOf();
+    p._locked = true; // e2e 无 pointer lock，直接解锁输入门
+    const oldSpeed = target.speed;
+    for (let i = 0; i < 3; i++) {
+      if (!target.alive) break;
+      target.speed = 0; // 钉住目标防止走出攻击范围
+      target.position.copy(p.position).addScaledVector(p.forward, 1.5); // 放到玩家正前方
+      document.dispatchEvent(new MouseEvent('mousedown', { button: 0, bubbles: true }));
+      await new Promise(r => setTimeout(r, 500));
+      document.dispatchEvent(new MouseEvent('mouseup', { button: 0, bubbles: true }));
+      await new Promise(r => setTimeout(r, 200));
+      if (hpOf() < hpBefore) break;
+    }
+    target.speed = oldSpeed;
+    return { hpBefore, hpAfter: hpOf() };
+  });
+  if (!dmgResult.skip) {
+    expect(dmgResult.hpAfter).toBeLessThan(dmgResult.hpBefore);
+  }
+
   expect(errors.length).toBe(0);
   const weaponText = await page.locator('#weapon').innerText();
   expect(weaponText).toMatch(/[1].*刀/);

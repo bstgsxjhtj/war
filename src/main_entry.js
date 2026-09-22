@@ -354,6 +354,7 @@ async function bootstrap() {
 
 
   spawnAll();
+  window.__game = { get player() { return player; }, get ais() { return ais; }, combat };
   const affixesUI = new AffixesUI(affixes, player);
   const achievementsUI = new AchievementsUI(achievements);
   state.transit(States.PLAYING);
