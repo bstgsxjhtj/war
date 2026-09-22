@@ -213,15 +213,60 @@ export class CombatSystem {
     this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage: weapon.damageFor(charge), life: 3.5, attacker, charge });
   }
 
-  spawnPierceArrow(attacker, weapon, charge) {
+  spawnPierceArrow(attacker, weapon, charge, opts = {}) {
     const mesh = new THREE.Mesh(this._arrowGeo, this._arrowMat);
     mesh.castShadow = true;
-    this._tmpOrigin.copy(attacker.position).add(this._tmpTo.set(0, 1.5, 0)).add(attacker.forward.clone().multiplyScalar(0.7));
-    const vel = attacker.forward.clone().multiplyScalar(weapon.speedFor(charge) * 1.2);
+    const origin = opts.origin || attacker.position;
+    const dir = opts.dir || attacker.forward;
+    this._tmpOrigin.copy(origin).add(this._tmpTo.set(0, 1.5, 0)).addScaledVector(dir, 0.7);
+    const speed = opts.speed || (weapon ? weapon.speedFor(charge) * 1.2 : 45);
+    const vel = dir.clone().multiplyScalar(speed);
     vel.y += 1.0;
+    const damage = opts.damage ?? (weapon ? weapon.damageFor(charge) * 1.5 : 30);
     mesh.position.copy(this._tmpOrigin);
     this.scene.add(mesh);
-    this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage: weapon.damageFor(charge) * 1.5, life: 4, attacker, charge, pierce: 3, hitSet: new Set() });
+    this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage, life: 4, attacker, charge, pierce: 3, hitSet: new Set() });
+  }
+
+  // 全向大招：360° 范围多段伤害
+  ultimateMelee(attacker, arc, range, dmg, now = 0) {
+    for (const c of this.characters) {
+      if (!c.alive || c.team === attacker.team || c === attacker) continue;
+      const dist = c.position.distanceTo(attacker.position);
+      if (dist > range) continue;
+      const total = this._affixApply(attacker, attacker.weapon, dmg);
+      const lost = c.takeDamage(total, true, attacker, now);
+      if (lost > 0) {
+        this._emitHit(attacker, c, lost, '大招', 0xffaa22, 2, true, now);
+        this._affixLeech(attacker, lost);
+        if (c._curVel) {
+          this._tmpTo.copy(c.position).sub(attacker.position).setY(0).normalize();
+          c._curVel.addScaledVector(this._tmpTo, 12);
+        }
+      }
+      if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: attacker });
+    }
+  }
+
+  // 直线贯穿大招：沿 dir 的矩形走廊判定（宽 1.6）
+  ultimateLine(origin, dir, length, dmg, attacker, now = 0) {
+    const d = this._tmpTo.copy(dir).setY(0).normalize();
+    for (const c of this.characters) {
+      if (!c.alive || c.team === attacker.team || c === attacker) continue;
+      const rx = c.position.x - origin.x;
+      const rz = c.position.z - origin.z;
+      const along = rx * d.x + rz * d.z;
+      if (along < 0 || along > length) continue;
+      const perp = Math.abs(rx * -d.z + rz * d.x);
+      if (perp > 0.8) continue;
+      const total = this._affixApply(attacker, attacker.weapon, dmg);
+      const lost = c.takeDamage(total, true, attacker, now);
+      if (lost > 0) {
+        this._emitHit(attacker, c, lost, '大招', 0xffaa22, 2, true, now);
+        this._affixLeech(attacker, lost);
+      }
+      if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: attacker });
+    }
   }
 
   update(dt, terrain, now = 0) {

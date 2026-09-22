@@ -1,4 +1,4 @@
-﻿import { AIController } from './AIController.js';
+import { AIController } from './AIController.js';
 import * as THREE from 'three';
 import { EV } from '../core/constants/events.js';
 
@@ -119,7 +119,7 @@ export class BossEnemy extends AIController {
   _skillFireball(target, combat, now) {
     if (!target) return;
     const dir = new THREE.Vector3().subVectors(target.position, this.root.position).setY(0).normalize();
-    combat.spawnPierceArrow && combat.spawnPierceArrow(this.root.position, dir, 50, this, now);
+    combat.spawnPierceArrow && combat.spawnPierceArrow(this, this.weapon, 1, { origin: this.root.position, dir, damage: 50 });
     this._fireballCd = 7;
   }
 
