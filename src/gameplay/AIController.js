@@ -3,8 +3,9 @@ import { Character } from './Character.js';
 import { EV } from '../core/constants/events.js';
 
 export class AIController extends Character {
-  constructor({ team = 1 } = {}) {
-    super({ team, isLocal: false, speed: 6.2, maxHp: 90 });
+  constructor({ team = 1, passive = false, maxHp = 90 } = {}) {
+    super({ team, isLocal: false, speed: 6.2, maxHp });
+    this._passive = passive;
     this._state = 'patrol';
     this._patrolTarget = new THREE.Vector3();
     this._formationTarget = null;

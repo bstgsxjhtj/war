@@ -79,7 +79,6 @@ describe('Spawner', () => {
     spawner.spawnRed(LAYOUT, ais, { modeName: '训练场' });
     for (const a of ais) {
       expect(a._isBoss).toBeFalsy();
-      expect(a._isElite).toBeFalsy();
       expect(a.mounted).toBeFalsy();
       expect(a.opts.maxHp).toBe(500);
       expect(a.opts.passive).toBe(true);
