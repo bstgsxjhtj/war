@@ -1,3 +1,5 @@
+import { EV } from '../core/constants/events.js';
+
 export const DIFFICULTY = {
   easy: { reactTime: 0.5, dodgeChance: 0.10, blockChance: 0.10, maxHpMul: 0.8, callReinforceCd: 90 },
   normal: { reactTime: 0.3, dodgeChance: 0.20, blockChance: 0.20, maxHpMul: 1.0, callReinforceCd: 60 },
@@ -30,14 +32,14 @@ export class AIManager {
   }
   _bind() {
     if (!this.bus) return;
-    this.bus.on('ai.callReinforce', ({ pos, team, id }) => {
+    this.bus.on(EV.AI_CALLREINFORCE, ({ pos, team, id }) => {
       for (const a of this._ais) {
         if (a === id || !a.alive || a.team !== team) continue;
         const d = a.position.clone().sub(pos).length();
         if (d < 30) a._reinforceTarget = pos.clone();
       }
     });
-    this.bus.on('ai.spotPlayer', ({ target, team, id }) => {
+    this.bus.on(EV.AI_SPOTPLAYER, ({ target, team, id }) => {
       for (const a of this._ais) {
         if (a === id || !a.alive || a.team !== team) continue;
         const d = a.position.clone().sub(target.position).length();

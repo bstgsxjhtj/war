@@ -1,3 +1,5 @@
+import { EV } from '../core/constants/events.js';
+
 const CHALLENGE_POOL = [
   { id: 'kills5', desc: '单局击杀5人', target: 5, type: 'kills', reward: 50 },
   { id: 'kills10', desc: '单局击杀10人', target: 10, type: 'kills', reward: 100 },
@@ -60,7 +62,7 @@ export class DailyChallenge {
       if (c.type === type && (this._data.progress[c.id] || 0) < c.target) {
         this._data.progress[c.id] = (this._data.progress[c.id] || 0) + value;
         changed = true;
-        if (this._data.progress[c.id] >= c.target && this._bus) this._bus.emit('daily.completed', { id: c.id, type });
+        if (this._data.progress[c.id] >= c.target && this._bus) this._bus.emit(EV.DAILY_COMPLETED, { id: c.id, type });
       }
     }
     return changed;

@@ -1,5 +1,6 @@
-import { AIController } from './AIController.js';
+﻿import { AIController } from './AIController.js';
 import * as THREE from 'three';
+import { EV } from '../core/constants/events.js';
 
 const BOSS_TYPES = {
   warlord: { hp: 300, speed: 5.5, name: '战将', skills: ['charge', 'roar', 'summon'] },
@@ -67,7 +68,7 @@ export class BossEnemy extends AIController {
         e.takeDamage(40, true, this, now);
       }
     }
-    this._bus && this._bus.emit('fx.shake', { amount: 0.3 });
+    this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.3 });
   }
 
   _skillRoar(combat, now) {
@@ -82,13 +83,13 @@ export class BossEnemy extends AIController {
       }
     }
     combat.spawnAoE && combat.spawnAoE(this.root.position, 6, 15, this, now);
-    this._bus && this._bus.emit('fx.shake', { amount: 0.5 });
+    this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.5 });
   }
 
   _skillSummon() {
     if (this._summoned) return;
     this._summoned = true;
-    this._bus && this._bus.emit('boss.summon', { pos: this.root.position.clone(), team: this.team, count: 2 });
+    this._bus && this._bus.emit(EV.BOSS_SUMMON, { pos: this.root.position.clone(), team: this.team, count: 2 });
   }
 
   _skillRapidshot(target, combat, now) {
@@ -137,7 +138,7 @@ export class BossEnemy extends AIController {
   _skillSlam(combat, now) {
     combat.spawnAoE && combat.spawnAoE(this.root.position, 8, 30, this, now);
     this._slamCd = 6;
-    this._bus && this._bus.emit('fx.shake', { amount: 0.5 });
+    this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.5 });
   }
 
   _skillRegenerate(dt) {
@@ -156,11 +157,11 @@ export class BossEnemy extends AIController {
     const hpPct = this.hp / this._maxHp;
     if (this._phase === 1 && hpPct < 0.6) {
       this._phase = 2; this.speed *= 1.2; this._enrageTimer = 5;
-      this._bus && this._bus.emit('hud.bossPhase', { boss: this, phase: 2 });
+      this._bus && this._bus.emit(EV.HUD_BOSSPHASE, { boss: this, phase: 2 });
     }
     if (!this._isMini && this._phase === 2 && hpPct < 0.3) {
       this._phase = 3; this.speed *= 1.15; this._enrageTimer = 8;
-      this._bus && this._bus.emit('hud.bossPhase', { boss: this, phase: 3 });
+      this._bus && this._bus.emit(EV.HUD_BOSSPHASE, { boss: this, phase: 3 });
     }
     if (this._enrageTimer > 0) {
       this._enrageTimer -= dt;
@@ -229,7 +230,7 @@ export class EliteEnemy extends AIController {
 
   takeDamage(amount, heavy = false, attacker = null, now = 0) {
     if (Math.random() < this._dodgeChance && this.alive && this._dodgeIFrame <= 0) {
-      this._bus && this._bus.emit('hud.miss', { target: this });
+      this._bus && this._bus.emit(EV.HUD_MISS, { target: this });
       return 0;
     }
     return super.takeDamage(amount, heavy, attacker, now);

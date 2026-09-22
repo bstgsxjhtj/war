@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { EV } from '../core/constants/events.js';
 
 // 第三人称相机：跟随 + 越肩瞄准 + 命中震动
 export class Camera {
@@ -22,8 +23,8 @@ export class Camera {
       this.cam.aspect = window.innerWidth / window.innerHeight;
       this.cam.updateProjectionMatrix();
     });
-    if (bus) bus.on('fx.shake', ({ amount }) => this.addShake(amount));
-    if (bus) bus.on('fx.perfectDodge', () => { this.addShake(0.5); this._curFov = 52; this.timeScale = 0.5; });
+    if (bus) bus.on(EV.FX_SHAKE, ({ amount }) => this.addShake(amount));
+    if (bus) bus.on(EV.FX_PERFECTDODGE, () => { this.addShake(0.5); this._curFov = 52; this.timeScale = 0.5; });
   }
 
   addShake(amount) { this._shake = Math.min(0.9, this._shake + amount); }

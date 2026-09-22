@@ -1,3 +1,5 @@
+import { EV } from '../core/constants/events.js';
+
 export class ComboSystem {
   constructor(bus = null) {
     this._bus = bus;
@@ -19,9 +21,9 @@ export class ComboSystem {
     if (this._finisher) { mul *= 1.5; this._finisher = false; }
     if (oldTier < 3 && this._tier >= 3) {
       this._finisher = true;
-      this._bus?.emit('combo.finisher');
+      this._bus?.emit(EV.COMBO_FINISHER);
     }
-    if (this._tier !== oldTier) this._bus?.emit('combo.tier', { tier: this._tier, count: this.count });
+    if (this._tier !== oldTier) this._bus?.emit(EV.COMBO_TIER, { tier: this._tier, count: this.count });
     return mul;
   }
 
@@ -30,7 +32,7 @@ export class ComboSystem {
       this.count = 0;
       this._tier = 0;
       this._finisher = false;
-      this._bus?.emit('combo.break', { count: 0 });
+      this._bus?.emit(EV.COMBO_BREAK, { count: 0 });
     }
   }
 
@@ -42,7 +44,7 @@ export class ComboSystem {
         this.count = 0;
         this._tier = 0;
         this._finisher = false;
-        this._bus?.emit('combo.break', { count: 0 });
+        this._bus?.emit(EV.COMBO_BREAK, { count: 0 });
       } else {
         this._updateTier();
       }

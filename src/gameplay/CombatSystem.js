@@ -1,5 +1,6 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { ParticleFX } from '../render/ParticleFX.js';
+import { EV } from '../core/constants/events.js';
 
 // 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率（导出供单测引用，构造时复用同一引用）
 export const COUNTER_MATRIX = {
@@ -75,13 +76,13 @@ export class CombatSystem {
 
   _emitHit(attacker, victim, damage, weaponName, color, combo = 0, heavy = false, now = 0, backstab = false) {
     const counterMul = this._counterMul(attacker.weapon, victim.weapon);
-    if (counterMul > 1.2) this.bus.emit('combat.counter', { attacker, victim, mul: counterMul });
-    this.bus.emit('combat.hit', { attacker, victim, damage, weapon: weaponName, combo, heavy, backstab });
+    if (counterMul > 1.2) this.bus.emit(EV.COMBAT_COUNTER, { attacker, victim, mul: counterMul });
+    this.bus.emit(EV.COMBAT_HIT, { attacker, victim, damage, weapon: weaponName, combo, heavy, backstab });
     this._tmpOrigin.copy(victim.position).add(this._tmpTo.set(0, 1.6, 0));
     this.spawnHitFX(this._tmpOrigin.clone(), color);
     this.createDamageNumber(this._tmpOrigin.clone(), Math.round(damage));
     const shakeMap = [0.16, 0.18, 0.32];
-    this.bus.emit('fx.shake', { amount: Math.min(0.9, (shakeMap[combo] ?? 0.16) + (heavy ? 0.14 : 0)) });
+    this.bus.emit(EV.FX_SHAKE, { amount: Math.min(0.9, (shakeMap[combo] ?? 0.16) + (heavy ? 0.14 : 0)) });
     const hsMap = [0.04, 0.05, 0.11];
     this.hitstop = Math.min(0.14, this.hitstop + (hsMap[combo] ?? 0.04) + (heavy ? 0.04 : 0));
   }
@@ -152,7 +153,7 @@ export class CombatSystem {
           c._curVel.addScaledVector(attacker.forward, knock * 2.5);
           if (launch) { if (launch.y) c.vy += launch.y; if (launch.rot) c._launchRot = launch.rot; }
         }
-        if (!c.health.alive) this.bus.emit('combat.kill', { victim: c, team: c.team, killer: attacker });
+        if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: attacker });
       }
     }
     // 下劈 AOE
@@ -173,7 +174,7 @@ export class CombatSystem {
           this._emitHit(attacker, c, lost, '冲击', 0xaa8866, 0, false, now);
           this._affixLeech(attacker, lost);
         }
-        if (!c.health.alive) this.bus.emit('combat.kill', { victim: c, team: c.team, killer: attacker });
+        if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: attacker });
       }
     }
     this.spawnHitFX(origin.clone().setY(0.5), 0xaa8866);
@@ -227,7 +228,7 @@ export class CombatSystem {
           const heavy = (a.charge ?? 0) >= 0.8;
           const lost = c.takeDamage(this._affixApply(a.attacker, a.attacker.weapon, a.damage), heavy, a.attacker, now);
           if (lost > 0) { this._emitHit(a.attacker, c, lost, '弓', 0xff5522, 0, heavy, now); this._affixLeech(a.attacker, lost); }
-          if (!c.health.alive) this.bus.emit('combat.kill', { victim: c, team: c.team, killer: a.attacker });
+          if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: a.attacker });
           hit = true; break;
         }
       }

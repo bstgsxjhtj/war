@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { EventBus } from './core/EventBus.js';
 import { GameState, States } from './core/GameState.js';
 import { Time } from './core/Time.js';
@@ -58,6 +58,8 @@ import { SaveUI } from './ui/SaveUI.js';
 import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
 import { InputRouter } from './app/InputRouter.js';
+import { EV } from './core/constants/events.js';
+import { LS } from './core/constants/storage-keys.js';
 
 async function bootstrap() {
   const app = document.querySelector('#app');
@@ -106,25 +108,25 @@ async function bootstrap() {
   const AI_DIFFICULTY = 'normal';
   aiManager.setDifficulty(AI_DIFFICULTY);
   const hud = new HUD(bus);
-  bus.on('combat.kill', (p) => { if (p && p.killer && p.killer.isLocal) achievements.check('combat.kill', p); });
-  bus.on('combo.tier', (p) => achievements.check('combo.tier', p));
-  bus.on('skill.cast', (p) => { achievements.check('skill.cast', p); audio.playSound('ultimate'); });
-  bus.on('campaign.clear', (p) => achievements.check('campaign.clear', p));
-  bus.on('campaign.perfect', (p) => achievements.check('campaign.perfect', p));
-  bus.on('combat.backstab', (p) => achievements.check('combat.backstab', p));
-  bus.on('combat.perfectblock', (p) => achievements.check('combat.perfectblock', p));
-  bus.on('combat.dodge', (p) => achievements.check('combat.dodge', p));
-  bus.on('combat.cavalrykill', (p) => achievements.check('combat.cavalrykill', p));
-  bus.on('daily.completed', (p) => achievements.check('daily.completed', p));
-  bus.on('achievement.unlock', ({ name, reward }) => {
+  bus.on(EV.COMBAT_KILL, (p) => { if (p && p.killer && p.killer.isLocal) achievements.check(EV.COMBAT_KILL, p); });
+  bus.on(EV.COMBO_TIER, (p) => achievements.check(EV.COMBO_TIER, p));
+  bus.on(EV.SKILL_CAST, (p) => { achievements.check(EV.SKILL_CAST, p); audio.playSound('ultimate'); });
+  bus.on(EV.CAMPAIGN_CLEAR, (p) => achievements.check(EV.CAMPAIGN_CLEAR, p));
+  bus.on(EV.CAMPAIGN_PERFECT, (p) => achievements.check(EV.CAMPAIGN_PERFECT, p));
+  bus.on(EV.COMBAT_BACKSTAB, (p) => achievements.check(EV.COMBAT_BACKSTAB, p));
+  bus.on(EV.COMBAT_PERFECTBLOCK, (p) => achievements.check(EV.COMBAT_PERFECTBLOCK, p));
+  bus.on(EV.COMBAT_DODGE, (p) => achievements.check(EV.COMBAT_DODGE, p));
+  bus.on(EV.COMBAT_CAVALRYKILL, (p) => achievements.check(EV.COMBAT_CAVALRYKILL, p));
+  bus.on(EV.DAILY_COMPLETED, (p) => achievements.check(EV.DAILY_COMPLETED, p));
+  bus.on(EV.ACHIEVEMENT_UNLOCK, ({ name, reward }) => {
     if (reward.skillPoint) skills.addPoint(reward.skillPoint);
     if (reward.affix) affixes.grant(reward.affix[0], reward.affix[1]);
     if (reward.skin && skins) skins.unlock(reward.skin);
     hud.flash('成就解锁：' + name);
     audio.playSound('achievement');
   });
-  bus.on('affix.drop', ({ type, tier }) => hud.flash('词条掉落：' + type));
-  bus.on('boss.summon', ({ pos, team, count }) => {
+  bus.on(EV.AFFIX_DROP, ({ type, tier }) => hud.flash('词条掉落：' + type));
+  bus.on(EV.BOSS_SUMMON, ({ pos, team, count }) => {
     for (let i = 0; i < count; i++) {
       const e = new AIController({ team, passive: false, maxHp: Math.round(50 * aiManager.difficulty().maxHpMul) });
       e.setBus(bus); e.setWeapons([new Sword()]); e.setAIManager(aiManager);
@@ -145,12 +147,12 @@ async function bootstrap() {
   const skinsUI = new WeaponSkinsUI(skins, bus);
   const horses = new Horse(scene.scene);
   const formations = new FormationController();
-  bus.emit('daily.update', daily.challenges);
-  bus.on('fx.perfectBlock', () => { if (daily.track('perfect')) bus.emit('daily.update', daily.challenges); bus.emit('combat.perfectblock', {}); audio.playSound('block'); });
-  bus.on('fx.perfectDodge', () => { if (daily.track('dodge')) bus.emit('daily.update', daily.challenges); bus.emit('combat.dodge', {}); audio.playSound('dodge'); });
+  bus.emit(EV.DAILY_UPDATE, daily.challenges);
+  bus.on(EV.FX_PERFECTBLOCK, () => { if (daily.track('perfect')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_PERFECTBLOCK, {}); audio.playSound('block'); });
+  bus.on(EV.FX_PERFECTDODGE, () => { if (daily.track('dodge')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_DODGE, {}); audio.playSound('dodge'); });
   const progressUI = new ProgressionUI(progression, bus);
-  bus.emit('minimap.supply', (supply.points || []).map(p => ({ x: p.pos.x, z: p.pos.z })));
-  bus.on('combat.hit', ({ attacker, victim, damage, combo, heavy, backstab }) => {
+  bus.emit(EV.MINIMAP_SUPPLY, (supply.points || []).map(p => ({ x: p.pos.x, z: p.pos.z })));
+  bus.on(EV.COMBAT_HIT, ({ attacker, victim, damage, combo, heavy, backstab }) => {
     if (victim && victim.isLocal && attacker) {
       const angle = Math.atan2(attacker.position.x - victim.position.x, attacker.position.z - victim.position.z);
       hitDirection.show(angle, camera.yaw || 0);
@@ -161,12 +163,12 @@ async function bootstrap() {
       match.playerDamage += damage || 0;
     }
     if (victim && victim.isLocal) match.playerTaken += damage || 0;
-    if (backstab) { daily.track('backstab'); if (attacker && attacker.isLocal) bus.emit('combat.backstab', { attacker, victim }); }
-    bus.emit('daily.update', daily.challenges);
+    if (backstab) { daily.track('backstab'); if (attacker && attacker.isLocal) bus.emit(EV.COMBAT_BACKSTAB, { attacker, victim }); }
+    bus.emit(EV.DAILY_UPDATE, daily.challenges);
     audio.playSound('swing');
     audio.playSound('hit', { heavy, combo });
   });
-  bus.on('combat.kill', ({ victim, killer }) => {
+  bus.on(EV.COMBAT_KILL, ({ victim, killer }) => {
     if (killer && killer.isLocal) progression.recordKill();
     if (victim && victim.isLocal) progression.recordDeath();
     progressUI.refresh();
@@ -181,12 +183,12 @@ async function bootstrap() {
   const weather = new WeatherSystem(scene.scene, scene.sun || null, scene.hemi || null, audio);
   weather.setAudio(audio);
   const settings = new SettingsMenu(bus, audio);
-  bus.on('settings.quality', ({ quality }) => { if (renderer) renderer.setQuality(quality); });
-  bus.on('settings.sensitivity', ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
-  bus.on('settings.difficulty', ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
+  bus.on(EV.SETTINGS_QUALITY, ({ quality }) => { if (renderer) renderer.setQuality(quality); });
+  bus.on(EV.SETTINGS_SENSITIVITY, ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
+  bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
   // 启动应用延后到 player/aiManager 赋值后避免 TDZ
-  bus.on('hud.bossPhase', () => audio.playSound('ultimate'));
-  bus.on('combo.tier', (p) => audio.playSound('hit', { combo: p.combo || 0 }));
+  bus.on(EV.HUD_BOSSPHASE, () => audio.playSound('ultimate'));
+  bus.on(EV.COMBO_TIER, (p) => audio.playSound('hit', { combo: p.combo || 0 }));
 
   let player, ais = [], enemies = [];
   let remotes = [];
@@ -218,7 +220,7 @@ async function bootstrap() {
         player.takeDamage(msg.dmg, msg.heavy, null, performance.now() * 0.001);
       }
     });
-    bus.on('combat.hit', ({ victim, damage, heavy }) => {
+    bus.on(EV.COMBAT_HIT, ({ victim, damage, heavy }) => {
       if (victim && victim.netId && net.connected) net.sendHit(victim.netId, damage, heavy);
     });
   } else {
@@ -241,12 +243,12 @@ async function bootstrap() {
     getMode: () => mode
   });
   const saveUI = new SaveUI(bus, saveManager, () => saveOrch.capture(), () => saveOrch.reset());
-  bus.on('skins.changed', ({ weaponIdx }) => { if (player && player._weaponMesh) skins.applyToWeapon(player._weaponMesh, weaponIdx); });
+  bus.on(EV.SKINS_CHANGED, ({ weaponIdx }) => { if (player && player._weaponMesh) skins.applyToWeapon(player._weaponMesh, weaponIdx); });
   // 启动加载应用存档 + 定时/卸载自动存档
   saveOrch.applyOnBoot();
   saveOrch.startTimers();
   // 存档恢复后刷新依赖模块的 UI/事件（模块不再自加载，applyOnBoot 才注入数据）
-  bus.emit('daily.update', daily.challenges);
+  bus.emit(EV.DAILY_UPDATE, daily.challenges);
   progressUI.refresh();
 
   function spawnRed(redLayout, { bossWave = false } = {}) {
@@ -357,7 +359,7 @@ async function bootstrap() {
   hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式');
   setTimeout(() => hud.clearHint(), 5000);
   let tutorial = null;
-  try { if (!localStorage.getItem('tutorial_done')) tutorial = new Tutorial(); } catch (e) {}
+  try { if (!localStorage.getItem(LS.TUTORIAL_DONE)) tutorial = new Tutorial(); } catch (e) {}
 
   function loop() {
     time.tick(

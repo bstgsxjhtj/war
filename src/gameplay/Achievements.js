@@ -1,3 +1,5 @@
+import { EV } from '../core/constants/events.js';
+
 export const ACHIEVEMENTS = [
   { id: 'kill_1', cat: '战斗', name: '初战告捷', target: 1, event: 'combat.kill', reward: { skillPoint: 1 } },
   { id: 'kill_50', cat: '战斗', name: '五十人斩', target: 50, event: 'combat.kill', reward: { skillPoint: 1, affix: ['锋锐', 1] } },
@@ -29,7 +31,7 @@ export class Achievements {
       d.progress += 1;
       if (d.progress >= a.target) {
         d.unlocked = true;
-        if (this._bus) this._bus.emit('achievement.unlock', { id: a.id, name: a.name, reward: a.reward });
+        if (this._bus) this._bus.emit(EV.ACHIEVEMENT_UNLOCK, { id: a.id, name: a.name, reward: a.reward });
       }
       this._data[a.id] = d;
     }

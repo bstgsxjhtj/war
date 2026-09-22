@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { EV } from '../core/constants/events.js';
 
 // 攻城结构：城门(可破坏) + 投石机(占领后轰击)
 export class SiegeStructure {
@@ -66,7 +67,7 @@ export class SiegeStructure {
     if (this.gate.hp <= 0) {
       this.gate.broken = true;
       this.gate.group.visible = false;
-      this.bus.emit('combat.kill', { victim: this.gate, team: 1, killer: attacker });
+      this.bus.emit(EV.COMBAT_KILL, { victim: this.gate, team: 1, killer: attacker });
     }
   }
 

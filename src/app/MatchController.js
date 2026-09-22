@@ -3,6 +3,7 @@ import { States } from '../core/GameState.js';
 import { BossEnemy } from '../gameplay/BossEnemy.js';
 import { CavalryEnemy } from '../gameplay/Cavalry.js';
 import { ResultScreen } from '../ui/ResultScreen.js';
+import { EV } from '../core/constants/events.js';
 
 export class MatchController {
   constructor(deps) {
@@ -25,17 +26,17 @@ export class MatchController {
     this.surviveTimer = 0;
 
     const { bus } = deps;
-    bus.on('combat.kill', ({ team, killer, victim }) => {
+    bus.on(EV.COMBAT_KILL, ({ team, killer, victim }) => {
       if (team === 1) this.scoreB++; else this.scoreR++;
       this.deps.hud.setScore(this.scoreB, this.scoreR);
       if (killer && killer.isLocal) {
         this.playerKills++; this.deps.skills.addPoint(1); this.deps.hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => this.deps.hud.clearHint(), 1500); this.deps.daily.track('kills');
         if (victim && victim._isBoss) { this.deps.daily.track('bossKill'); this.deps.saveNow(); }
-        if (victim instanceof CavalryEnemy) bus.emit('combat.cavalrykill', { killer, victim });
-        bus.emit('daily.update', this.deps.daily.challenges);
+        if (victim instanceof CavalryEnemy) bus.emit(EV.COMBAT_CAVALRYKILL, { killer, victim });
+        bus.emit(EV.DAILY_UPDATE, this.deps.daily.challenges);
       }
     });
-    bus.on('round.restart', () => { if (this.deps.state.current === States.ENDED) this.restart(); });
+    bus.on(EV.ROUND_RESTART, () => { if (this.deps.state.current === States.ENDED) this.restart(); });
   }
 
   startRound() {
@@ -70,11 +71,11 @@ export class MatchController {
         saveNow();
         if (result === 'campaign_complete') {
           hud.flashEnd('战役通关！按 R 重玩');
-          bus.emit('campaign.clear', { stages: campaign.maxStages });
-          if (this.playerTaken === 0) bus.emit('campaign.perfect', {});
+          bus.emit(EV.CAMPAIGN_CLEAR, { stages: campaign.maxStages });
+          if (this.playerTaken === 0) bus.emit(EV.CAMPAIGN_PERFECT, {});
           progression.recordWin('S', 0);
           const _creward = daily.claim(); if (_creward > 0) { progression.addScore(_creward); hud.flash('每日挑战完成！+' + _creward + '分'); }
-          bus.emit('daily.update', daily.challenges);
+          bus.emit(EV.DAILY_UPDATE, daily.challenges);
           state.transit(States.ENDED);
           resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: 0, win: true });
         } else {
@@ -117,7 +118,7 @@ export class MatchController {
         if (timeSec < 90) daily.track('speedWin', timeSec);
         if (grade === 'S') daily.track('winGrade');
         const reward = daily.claim(); if (reward > 0) { progression.addScore(reward); hud.flash('每日挑战完成！+' + reward + '分'); progressUI.refresh(); }
-        bus.emit('daily.update', daily.challenges);
+        bus.emit(EV.DAILY_UPDATE, daily.challenges);
       }
       else { hud.flash('蓝方赢下本局！按 R 跳过'); state.transit(States.ROUND_END); this.roundEndTimer = 3; }
     } else if (winner === 'red') {

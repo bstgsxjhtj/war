@@ -1,3 +1,4 @@
+import { EV } from '../core/constants/events.js';
 import * as THREE from 'three';
 
 export class MiniMap {
@@ -16,7 +17,7 @@ export class MiniMap {
     this.ctx = this.canvas.getContext('2d');
     this._player = null; this._ais = []; this._camera = null;
     this._supply = [];
-    bus.on('minimap.supply', (pts) => { this._supply = pts || []; });
+    bus.on(EV.MINIMAP_SUPPLY, (pts) => { this._supply = pts || []; });
   }
 
   setRefs(player, ais, camera) {

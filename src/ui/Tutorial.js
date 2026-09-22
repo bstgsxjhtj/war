@@ -1,4 +1,5 @@
 // 新手引导：7 步操作教程，按对应键推进
+import { LS } from '../core/constants/storage-keys.js';
 export class Tutorial {
   constructor() {
     this.steps = [
@@ -47,7 +48,7 @@ export class Tutorial {
     this.active = false;
     this.el.innerHTML = '<div style="color:#4ade80;font-weight:600;">引导完成！按 M 切换模式，N 天气，Esc 设置</div>';
     setTimeout(() => { this.el.style.display = 'none'; }, 3000);
-    try { localStorage.setItem('tutorial_done', '1'); } catch (e) {}
+    try { localStorage.setItem(LS.TUTORIAL_DONE, '1'); } catch (e) {}
   }
 
   destroy() {

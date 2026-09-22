@@ -4,8 +4,11 @@
 
 格式 `域.动作`：`combat.hit`、`combat.kill`、`fx.shake`、`settings.quality`、`hud.flash`、`daily.update`、`skins.changed`……
 禁止发射无监听者的事件；新增事件需在本文件登记 payload 契约。
+**事件名常量化**：全部 bus 事件名收敛于 `src/core/constants/events.js`（`EV.XXX`），代码中禁止再写事件名字符串字面量。
 
 ## 2. localStorage 键登记
+
+**键名常量化**：全部 localStorage 键收敛于 `src/core/constants/storage-keys.js`（`LS.XXX`），代码中禁止再写键名字符串字面量。
 
 | 键 | 属主 |
 |---|---|
@@ -32,7 +35,7 @@
 
 - 私有字段 `_` 前缀仅为约定，禁止外部穿透（反例：`player._weaponMesh`）。
 - 面板字段命名、toggle/show-hide 风格向多数派看齐。
-- 魔法数字与事件名/存储键字符串逐步收敛到常量模块。
+- 事件名/存储键字符串已常量化（`core/constants/events.js`/`storage-keys.js`，见 §1/§2）；魔法数字（平衡数值/伤害/冷却）收敛待后续。
 
 ## 6. 依赖注入
 

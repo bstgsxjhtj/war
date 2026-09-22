@@ -1,10 +1,11 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { Character } from './Character.js';
 import { Sword } from './weapons/Sword.js';
 import { Bow } from './weapons/Bow.js';
 import { Spear } from './weapons/Spear.js';
 import { SwordShield } from './weapons/SwordShield.js';
 import { Warhammer } from './weapons/Warhammer.js';
+import { EV } from '../core/constants/events.js';
 
 // 本地玩家：Tab锁定 / 右键格挡(持刀) / 蓄力越肩(弓) / Q闪避
 export class Player extends Character {
@@ -28,8 +29,8 @@ export class Player extends Character {
     const onClick = () => { if (document.pointerLockElement !== canvas) canvas.requestPointerLock(); };
     const onLockChange = () => {
       this._locked = document.pointerLockElement === document.querySelector('#app');
-      if (this._locked) this._bus.emit('ui.locked');
-      else this._bus.emit('ui.locklost');
+      if (this._locked) this._bus.emit(EV.UI_LOCKED);
+      else this._bus.emit(EV.UI_LOCKLOST);
     };
     const onMouseMove = (e) => {
       if (!this._locked) return;
@@ -126,12 +127,12 @@ export class Player extends Character {
   trySkill(combat) {
     if (!combat || !this.alive || !this._weaponSkills) return;
     const idx = this.weaponIdx;
-    if (!this._weaponSkills.canCast(idx)) { this._bus?.emit('skill.reject', { weaponIdx: idx }); return; }
+    if (!this._weaponSkills.canCast(idx)) { this._bus?.emit(EV.SKILL_REJECT, { weaponIdx: idx }); return; }
     const now = performance.now() / 1000;
     const ok = this.weapon.skill(this, combat, now);
     if (ok) {
       const cdMul = 1 - (this._affixes?.affixBonus(this.weapon, '迅捷') || 0); this._weaponSkills.trigger(idx, cdMul);
-      this._bus?.emit('skill.cast', { weaponIdx: idx, name: this.weapon.skillName });
+      this._bus?.emit(EV.SKILL_CAST, { weaponIdx: idx, name: this.weapon.skillName });
     }
   }
 

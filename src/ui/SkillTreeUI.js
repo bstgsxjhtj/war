@@ -1,3 +1,4 @@
+import { EV } from '../core/constants/events.js';
 // 技能树 UI v3：拖拽排序 + localStorage 持久化 + 渐变+图标+进度圆点+Tab+悬停预览+升级动画+重置
 export class SkillTreeUI {
   constructor(bus, skill) {
@@ -50,7 +51,7 @@ export class SkillTreeUI {
   }
 
   toggle() { this.open ? this.hide() : this.show(); }
-  show() { this.el.style.display = 'flex'; requestAnimationFrame(() => this.el.style.opacity = '1'); this.open = true; this._render(); this.bus.emit('ui.locklost'); }
+  show() { this.el.style.display = 'flex'; requestAnimationFrame(() => this.el.style.opacity = '1'); this.open = true; this._render(); this.bus.emit(EV.UI_LOCKLOST); }
   hide() { this.el.style.opacity = '0'; setTimeout(() => { this.el.style.display = 'none'; }, 250); this.open = false; }
 
   _dots(level, max) {
@@ -181,9 +182,9 @@ export class SkillTreeUI {
     const saveBtn = actEl.querySelector('#sk-prof-save');
     const loadBtn = actEl.querySelector('#sk-prof-load');
     const delBtn = actEl.querySelector('#sk-prof-del');
-    if (saveBtn) saveBtn.addEventListener('click', () => { this.skill.saveProfile(active); this.bus.emit('hud.flash', { text: '\u5df2\u4fdd\u5b58\u5230 ' + active }); this._render(); });
-    if (loadBtn) loadBtn.addEventListener('click', () => { if (this.skill.loadProfile(active)) { this.bus.emit('hud.flash', { text: '\u5df2\u52a0\u8f7d ' + active }); this._render(); } });
-    if (delBtn) delBtn.addEventListener('click', () => { this.skill.deleteProfile(active); this.bus.emit('hud.flash', { text: '\u5df2\u5220\u9664 ' + active }); this._render(); });
+    if (saveBtn) saveBtn.addEventListener('click', () => { this.skill.saveProfile(active); this.bus.emit(EV.HUD_FLASH, { text: '\u5df2\u4fdd\u5b58\u5230 ' + active }); this._render(); });
+    if (loadBtn) loadBtn.addEventListener('click', () => { if (this.skill.loadProfile(active)) { this.bus.emit(EV.HUD_FLASH, { text: '\u5df2\u52a0\u8f7d ' + active }); this._render(); } });
+    if (delBtn) delBtn.addEventListener('click', () => { this.skill.deleteProfile(active); this.bus.emit(EV.HUD_FLASH, { text: '\u5df2\u5220\u9664 ' + active }); this._render(); });
     profEl.querySelectorAll('[data-prof]').forEach(el => {
       if (el.dataset.prof === active) { el.style.outline = '2px solid #ffd070'; el.style.outlineOffset = '-2px'; }
     });
@@ -204,7 +205,7 @@ export class SkillTreeUI {
     if (this._resetUsed) return;
     this._resetUsed = true;
     this.skill.reset();
-    this.bus.emit('hud.flash', { text: '\u6280\u80fd\u70b9\u5df2\u8fd4\u8fd8' });
+    this.bus.emit(EV.HUD_FLASH, { text: '\u6280\u80fd\u70b9\u5df2\u8fd4\u8fd8' });
     this._render();
   }
 }

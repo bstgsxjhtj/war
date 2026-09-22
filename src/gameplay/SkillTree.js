@@ -1,3 +1,5 @@
+import { LS } from '../core/constants/storage-keys.js';
+
 // 技能树 + 武器升级：4 技能 + 4 武器等级 + 拖拽排序 + localStorage 持久化
 export class SkillTree {
   constructor() {
@@ -67,10 +69,10 @@ export class SkillTree {
     };
   }
 
-  saveProfile(name) { try { localStorage.setItem('skilltree_profile_' + name, JSON.stringify(this.serialize())); return true; } catch (e) { return false; } }
+  saveProfile(name) { try { localStorage.setItem(LS.SKILLTREE_PROFILE_PREFIX + name, JSON.stringify(this.serialize())); return true; } catch (e) { return false; } }
   loadProfile(name) {
     try {
-      const d = JSON.parse(localStorage.getItem('skilltree_profile_' + name));
+      const d = JSON.parse(localStorage.getItem(LS.SKILLTREE_PROFILE_PREFIX + name));
       if (!d) return false;
       this.points = d.points || 0;
       for (const [k, v] of Object.entries(d.skills || {})) if (this.skills[k]) this.skills[k].level = v;
@@ -88,6 +90,6 @@ export class SkillTree {
     if (Array.isArray(data.weaponOrder) && data.weaponOrder.length === 4) this.weaponOrder = data.weaponOrder;
   }
 
-  hasProfile(name) { return !!localStorage.getItem('skilltree_profile_' + name); }
-  deleteProfile(name) { try { localStorage.removeItem('skilltree_profile_' + name); } catch (e) {} }
+  hasProfile(name) { return !!localStorage.getItem(LS.SKILLTREE_PROFILE_PREFIX + name); }
+  deleteProfile(name) { try { localStorage.removeItem(LS.SKILLTREE_PROFILE_PREFIX + name); } catch (e) {} }
 }

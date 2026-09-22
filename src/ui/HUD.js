@@ -1,3 +1,4 @@
+import { EV } from '../core/constants/events.js';
 // HUD：雷达/血条/耐力/连击/锁定/据点/模式/击杀横幅
 export class HUD {
   constructor(bus) {
@@ -82,7 +83,7 @@ export class HUD {
     });
     document.body.appendChild(this._errPanel);
 
-    bus.on('engine.error', ({ err, ts, frame }) => {
+    bus.on(EV.ENGINE_ERROR, ({ err, ts, frame }) => {
       this._errCount++;
       this._errLog.push({ msg: err && err.message ? err.message : String(err), ts, frame });
       if (this._errLog.length > 10) this._errLog.shift();
@@ -102,17 +103,17 @@ export class HUD {
     });
 
     this._locklost.addEventListener('click', () => document.querySelector('#app')?.requestPointerLock());
-    bus.on('ui.locklost', () => { this._locklost.style.display = 'flex'; });
-    bus.on('ui.locked', () => { this._locklost.style.display = 'none'; });
-    bus.on('hud.flash', ({ text } = {}) => { if (text) this.flash(text); });
-    bus.on('hud.miss', () => this.flash('落空'));
-    bus.on('combat.hit', ({ victim }) => {
+    bus.on(EV.UI_LOCKLOST, () => { this._locklost.style.display = 'flex'; });
+    bus.on(EV.UI_LOCKED, () => { this._locklost.style.display = 'none'; });
+    bus.on(EV.HUD_FLASH, ({ text } = {}) => { if (text) this.flash(text); });
+    bus.on(EV.HUD_MISS, () => this.flash('落空'));
+    bus.on(EV.COMBAT_HIT, ({ victim }) => {
       if (victim && victim.isLocal) {
         this._hp.style.background = 'linear-gradient(90deg,#f44,#fa3)';
         setTimeout(() => { this._hp.style.background = 'linear-gradient(90deg,#d33,#f70)'; }, 180);
       }
     });
-    bus.on('combat.kill', ({ killer, victim }) => {
+    bus.on(EV.COMBAT_KILL, ({ killer, victim }) => {
       if (killer && killer.isLocal) {
         if (killer.killstreak !== undefined) {
           killer._killstreak = (killer._killstreak || 0) + 1;
@@ -132,7 +133,7 @@ export class HUD {
     });
     document.body.appendChild(this._challengeEl);
     this._daily = null;
-    bus.on('daily.update', (challenges) => {
+    bus.on(EV.DAILY_UPDATE, (challenges) => {
       this._daily = challenges;
       this._renderChallenges();
     });
@@ -160,7 +161,7 @@ export class HUD {
     document.body.appendChild(this._comboEl);
     this._comboTimer = 0;
     this._comboTier = 0;
-    bus.on('combo.tier', ({ tier, count }) => {
+    bus.on(EV.COMBO_TIER, ({ tier, count }) => {
       this._comboTier = tier;
       this._comboEl.textContent = count + ' 连击';
       const colors = ['#fff', '#fff5c8', '#ffd700', '#ff4433'];
@@ -171,11 +172,11 @@ export class HUD {
       setTimeout(() => { this._comboEl.style.transform = 'scale(1)'; }, 100);
       this._comboTimer = 2;
     });
-    bus.on('combo.break', () => {
+    bus.on(EV.COMBO_BREAK, () => {
       this._comboEl.style.opacity = '0';
       this._comboTimer = 0.3;
     });
-    bus.on('combo.finisher', () => {
+    bus.on(EV.COMBO_FINISHER, () => {
       this._comboEl.textContent = '终结就绪';
       this._comboEl.style.color = '#ff4433';
       this._comboEl.style.display = 'block';
@@ -207,21 +208,21 @@ export class HUD {
       el.appendChild(cd);
       this._skillEls.push({ el, cd });
     }
-    bus.on('skill.cast', ({ weaponIdx, name }) => {
+    bus.on(EV.SKILL_CAST, ({ weaponIdx, name }) => {
       const s = this._skillEls[weaponIdx];
       if (!s) return;
       s.el.textContent = name || '?';
       s.cd.style.display = 'flex';
       s.cd.textContent = '8';
     });
-    bus.on('skill.reject', ({ weaponIdx }) => {
+    bus.on(EV.SKILL_REJECT, ({ weaponIdx }) => {
       const s = this._skillEls[weaponIdx];
       if (!s) return;
       s.el.style.transform = 'scale(1.15)';
       setTimeout(() => { s.el.style.transform = 'scale(1)'; }, 100);
     });
 
-    bus.on('combat.counter', ({ attacker, victim, mul }) => {
+    bus.on(EV.COMBAT_COUNTER, ({ attacker, victim, mul }) => {
       const isPlayerAttacker = attacker && attacker.isLocal;
       const isPlayerVictim = victim && victim.isLocal;
       if (isPlayerAttacker) {

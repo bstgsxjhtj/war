@@ -1,3 +1,5 @@
+import { EV } from '../core/constants/events.js';
+import { LS } from '../core/constants/storage-keys.js';
 export class SettingsMenu {
   constructor(bus, audio) {
     this.bus = bus; this.audio = audio; this.open = false;
@@ -40,21 +42,21 @@ export class SettingsMenu {
     this._volV = this.el.querySelector('#set-vol-v'); this._sfxV = this.el.querySelector('#set-sfx-v');
     this._bgmV = this.el.querySelector('#set-bgm-v'); this._envV = this.el.querySelector('#set-env-v');
     this._sensV = this.el.querySelector('#set-sens-v');
-    this._qual.addEventListener('change', () => { this.quality = this._qual.value; this.bus.emit('settings.quality', { quality: this.quality }); this._save(); });
-    this._diff.addEventListener('change', () => { this.difficulty = this._diff.value; this.bus.emit('settings.difficulty', { difficulty: this.difficulty }); this._save(); });
+    this._qual.addEventListener('change', () => { this.quality = this._qual.value; this.bus.emit(EV.SETTINGS_QUALITY, { quality: this.quality }); this._save(); });
+    this._diff.addEventListener('change', () => { this.difficulty = this._diff.value; this.bus.emit(EV.SETTINGS_DIFFICULTY, { difficulty: this.difficulty }); this._save(); });
     this._volEl.addEventListener('input', () => { const v = this._volEl.value/100; this._vol.master = v; this._volV.textContent = this._volEl.value+'%'; if(this.audio) this.audio.setVolume('master', v); this._save(); });
     this._sfxEl.addEventListener('input', () => { const v = this._sfxEl.value/100; this._vol.sfx = v; this._sfxV.textContent = this._sfxEl.value+'%'; if(this.audio) this.audio.setVolume('sfx', v); this._save(); });
     this._bgmEl.addEventListener('input', () => { const v = this._bgmEl.value/100; this._vol.bgm = v; this._bgmV.textContent = this._bgmEl.value+'%'; if(this.audio) this.audio.setVolume('bgm', v); this._save(); });
     this._envEl.addEventListener('input', () => { const v = this._envEl.value/100; this._vol.env = v; this._envV.textContent = this._envEl.value+'%'; if(this.audio) this.audio.setVolume('env', v); this._save(); });
-    this._sens.addEventListener('input', () => { this.sensitivity = this._sens.value/100; this._sensV.textContent = this.sensitivity.toFixed(1); this.bus.emit('settings.sensitivity', { sensitivity: this.sensitivity }); this._save(); });
+    this._sens.addEventListener('input', () => { this.sensitivity = this._sens.value/100; this._sensV.textContent = this.sensitivity.toFixed(1); this.bus.emit(EV.SETTINGS_SENSITIVITY, { sensitivity: this.sensitivity }); this._save(); });
     this.el.querySelector('#set-close').addEventListener('click', () => this.hide());
     this.el.addEventListener('click', (e) => { if (e.target === this.el) this.hide(); });
     this._load();
     if (this.audio) { this._vol = { master: this.audio.getVolume('master'), sfx: this.audio.getVolume('sfx'), bgm: this.audio.getVolume('bgm'), env: this.audio.getVolume('env') }; this._volEl.value = Math.round(this._vol.master*100); this._sfxEl.value = Math.round(this._vol.sfx*100); this._bgmEl.value = Math.round(this._vol.bgm*100); this._envEl.value = Math.round(this._vol.env*100); this._volV.textContent = this._volEl.value+'%'; this._sfxV.textContent = this._sfxEl.value+'%'; this._bgmV.textContent = this._bgmEl.value+'%'; this._envV.textContent = this._envEl.value+'%'; }
   }
-  _load() { try { const d = localStorage.getItem('settings'); if (d) { const v = JSON.parse(d); this.quality = v.quality ?? 'high'; this.difficulty = v.difficulty ?? 'normal'; this.sensitivity = v.sensitivity ?? 1; this._qual.value = this.quality; this._diff.value = this.difficulty; this._sens.value = Math.round(this.sensitivity*100); this._sensV.textContent = this.sensitivity.toFixed(1); } } catch (e) {} }
-  _save() { try { localStorage.setItem('settings', JSON.stringify({ quality: this.quality, sensitivity: this.sensitivity, difficulty: this.difficulty })); } catch (e) {} }
-  _applyAll() { if (this.audio) { this.audio.setVolume('master', this._vol.master); this.audio.setVolume('sfx', this._vol.sfx); this.audio.setVolume('bgm', this._vol.bgm); this.audio.setVolume('env', this._vol.env); } this.bus.emit('settings.quality', { quality: this.quality }); this.bus.emit('settings.sensitivity', { sensitivity: this.sensitivity }); this.bus.emit('settings.difficulty', { difficulty: this.difficulty }); }
+  _load() { try { const d = localStorage.getItem(LS.SETTINGS); if (d) { const v = JSON.parse(d); this.quality = v.quality ?? 'high'; this.difficulty = v.difficulty ?? 'normal'; this.sensitivity = v.sensitivity ?? 1; this._qual.value = this.quality; this._diff.value = this.difficulty; this._sens.value = Math.round(this.sensitivity*100); this._sensV.textContent = this.sensitivity.toFixed(1); } } catch (e) {} }
+  _save() { try { localStorage.setItem(LS.SETTINGS, JSON.stringify({ quality: this.quality, sensitivity: this.sensitivity, difficulty: this.difficulty })); } catch (e) {} }
+  _applyAll() { if (this.audio) { this.audio.setVolume('master', this._vol.master); this.audio.setVolume('sfx', this._vol.sfx); this.audio.setVolume('bgm', this._vol.bgm); this.audio.setVolume('env', this._vol.env); } this.bus.emit(EV.SETTINGS_QUALITY, { quality: this.quality }); this.bus.emit(EV.SETTINGS_SENSITIVITY, { sensitivity: this.sensitivity }); this.bus.emit(EV.SETTINGS_DIFFICULTY, { difficulty: this.difficulty }); }
   toggle() { this.open ? this.hide() : this.show(); }
   show() { this.el.style.display = 'flex'; this.open = true; if (this.audio) this.audio.resume(); this._applyAll(); }
   hide() { this.el.style.display = 'none'; this.open = false; }

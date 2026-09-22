@@ -35,11 +35,11 @@ export class WeaponSkinsUI extends UIPanel {
         const s = card.dataset.skin;
         if (this.skins.isUnlocked(s)) {
           this.skins.equip(w, s);
-          this.bus.emit('skins.changed', { weaponIdx: w, skinId: s });
+          this.bus.emit(EV.SKINS_CHANGED, { weaponIdx: w, skinId: s });
           this._render();
         } else {
           if (this.skins.unlock(s)) {
-            this.bus.emit('skins.changed', { weaponIdx: w, skinId: s });
+            this.bus.emit(EV.SKINS_CHANGED, { weaponIdx: w, skinId: s });
             this._render();
           }
         }

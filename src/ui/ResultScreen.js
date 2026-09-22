@@ -1,3 +1,4 @@
+import { EV } from '../core/constants/events.js';
 import * as THREE from 'three';
 
 // 结算页：每局结束击杀/伤害/用时/评分
@@ -57,6 +58,6 @@ export class ResultScreen {
   hide() {
     this.el.style.display = 'none';
     window.removeEventListener('keydown', this._keyHandler);
-    this.bus.emit('round.restart');
+    this.bus.emit(EV.ROUND_RESTART);
   }
 }

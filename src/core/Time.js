@@ -1,4 +1,6 @@
 // 时间与帧循环：固定逻辑步长 + 渲染插值，切后台保护
+import { EV } from './constants/events.js';
+
 export class Time {
   constructor(fixedStep = 1 / 60, bus = null) {
     this.fixedStep = fixedStep;
@@ -32,7 +34,7 @@ export class Time {
         onFixed(this.fixedStep);
       } catch (err) {
         console.error('[Time.tick] frame error', err);
-        if (this._bus) this._bus.emit('engine.error', { err, ts: now, frame: this.frame });
+        if (this._bus) this._bus.emit(EV.ENGINE_ERROR, { err, ts: now, frame: this.frame });
       }
       this._acc -= this.fixedStep;
       this.frame++;

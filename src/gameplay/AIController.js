@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Character } from './Character.js';
+import { EV } from '../core/constants/events.js';
 
 export class AIController extends Character {
   constructor({ team = 1 } = {}) {
@@ -160,11 +161,11 @@ export class AIController extends Character {
         this._state = 'attack';
         if (this._callReinforceCd <= 0) {
           this._callReinforceCd = diff ? diff.callReinforceCd : 60;
-          if (this._bus) this._bus.emit('ai.callReinforce', { pos: this.position.clone(), team: this.team, id: this });
+          if (this._bus) this._bus.emit(EV.AI_CALLREINFORCE, { pos: this.position.clone(), team: this.team, id: this });
         }
         if (this._spotCd <= 0) {
           this._spotCd = 15;
-          if (this._bus) this._bus.emit('ai.spotPlayer', { target, team: this.team, id: this });
+          if (this._bus) this._bus.emit(EV.AI_SPOTPLAYER, { target, team: this.team, id: this });
         }
         if (isBow) {
           this.setMove(dist < 18 ? -0.5 : 0, Math.sin(this._strafePhase) * 0.5);

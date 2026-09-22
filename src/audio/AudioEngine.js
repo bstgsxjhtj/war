@@ -1,3 +1,4 @@
+import { LS } from '../core/constants/storage-keys.js';
 export class AudioEngine {
   constructor() { this.ctx = null; this._vol = 0.7; this._sfxVol = 0.8; this._bgmVol = 0.5; this._envVol = 0.4; this._envSource = null; this._init(); this._loadVolume(); }
   _init() { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { this.ctx = null; } }
@@ -27,6 +28,6 @@ export class AudioEngine {
   _tone(freq, dur, type, vol, endFreq) { this._toneAt(freq, dur, type, vol, this.ctx ? this.ctx.currentTime : 0, endFreq); }
   _toneAt(freq, dur, type, vol, t, endFreq) { if (!this.ctx) return; const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t); if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t + dur); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g).connect(this.ctx.destination); o.start(t); o.stop(t + dur); }
   _noise(dur, filterFreq, vol) { if (!this.ctx) return; const len = this.ctx.sampleRate * dur; const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate); const d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; const src = this.ctx.createBufferSource(); src.buffer = buf; const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filterFreq; const g = this.ctx.createGain(); const t = this.ctx.currentTime; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); src.connect(f).connect(g).connect(this.ctx.destination); src.start(t); }
-  _saveVolume() { try { localStorage.setItem('audio_volume', JSON.stringify({ master: this._vol, sfx: this._sfxVol, bgm: this._bgmVol, env: this._envVol })); } catch (e) {} }
-  _loadVolume() { try { const d = localStorage.getItem('audio_volume'); if (d) { const v = JSON.parse(d); this._vol = v.master ?? 0.7; this._sfxVol = v.sfx ?? 0.8; this._bgmVol = v.bgm ?? 0.5; this._envVol = v.env ?? 0.4; } } catch (e) {} }
+  _saveVolume() { try { localStorage.setItem(LS.AUDIO_VOLUME, JSON.stringify({ master: this._vol, sfx: this._sfxVol, bgm: this._bgmVol, env: this._envVol })); } catch (e) {} }
+  _loadVolume() { try { const d = localStorage.getItem(LS.AUDIO_VOLUME); if (d) { const v = JSON.parse(d); this._vol = v.master ?? 0.7; this._sfxVol = v.sfx ?? 0.8; this._bgmVol = v.bgm ?? 0.5; this._envVol = v.env ?? 0.4; } } catch (e) {} }
 }

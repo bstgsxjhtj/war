@@ -1,9 +1,11 @@
 // 统一存档：savegame_v1 + 版本迁移 + 旧键一次性迁移后删除（游戏进度唯一事实来源）
-const LEGACY_GAME_KEYS = ['campaign_cleared', 'progression_v1', 'skilltree_v1', 'achievements', 'affixes', 'daily_challenge', 'weapon_skins'];
+import { LS } from '../core/constants/storage-keys.js';
+
+const LEGACY_GAME_KEYS = [LS.OLD_CAMPAIGN_CLEARED, LS.OLD_PROGRESSION, LS.OLD_SKILLTREE, LS.OLD_ACHIEVEMENTS, LS.OLD_AFFIXES, LS.OLD_DAILY, LS.OLD_SKINS];
 
 export class SaveManager {
   constructor() {
-    this._key = 'savegame_v1';
+    this._key = LS.SAVEGAME;
     this._data = this._load();
   }
 
@@ -76,11 +78,11 @@ export class SaveManager {
     const out = this._defaults();
     let any = false;
     try {
-      const cleared = JSON.parse(localStorage.getItem('campaign_cleared') || '0');
+      const cleared = JSON.parse(localStorage.getItem(LS.OLD_CAMPAIGN_CLEARED) || '0');
       if (Number.isFinite(cleared) && cleared > 0) { out.stage = Math.min(cleared, 9); out.campaignCompleted = cleared >= 10; any = true; }
     } catch (e) { /* ignore */ }
     try {
-      const p = JSON.parse(localStorage.getItem('progression_v1'));
+      const p = JSON.parse(localStorage.getItem(LS.OLD_PROGRESSION));
       if (p && typeof p === 'object') {
         out.progressionFull = p;
         if (typeof p.score === 'number') { out.score = p.score; any = true; }
@@ -90,7 +92,7 @@ export class SaveManager {
       }
     } catch (e) { /* ignore */ }
     try {
-      const s = JSON.parse(localStorage.getItem('skilltree_v1'));
+      const s = JSON.parse(localStorage.getItem(LS.OLD_SKILLTREE));
       if (s && typeof s === 'object') {
         if (typeof s.points === 'number') { out.skillPoints = s.points; any = true; }
         out.skillTree = { points: s.points || 0, skills: s.skills || {}, weaponLevel: s.weaponLevel || { 0: 1, 1: 1, 2: 1, 3: 1 }, skillOrder: s.skillOrder || ['power', 'vigor', 'agility', 'mastery'], weaponOrder: s.weaponOrder || [0, 1, 2, 3] };
@@ -98,19 +100,19 @@ export class SaveManager {
       }
     } catch (e) { /* ignore */ }
     try {
-      const ach = JSON.parse(localStorage.getItem('achievements'));
+      const ach = JSON.parse(localStorage.getItem(LS.OLD_ACHIEVEMENTS));
       if (ach && typeof ach === 'object') { out.achievements = ach; any = true; }
     } catch (e) { /* ignore */ }
     try {
-      const afx = JSON.parse(localStorage.getItem('affixes'));
+      const afx = JSON.parse(localStorage.getItem(LS.OLD_AFFIXES));
       if (Array.isArray(afx)) { out.affixInventory = afx; any = true; }
     } catch (e) { /* ignore */ }
     try {
-      const daily = JSON.parse(localStorage.getItem('daily_challenge'));
+      const daily = JSON.parse(localStorage.getItem(LS.OLD_DAILY));
       if (daily && typeof daily === 'object') { out.daily = daily; any = true; }
     } catch (e) { /* ignore */ }
     try {
-      const skins = JSON.parse(localStorage.getItem('weapon_skins'));
+      const skins = JSON.parse(localStorage.getItem(LS.OLD_SKINS));
       if (skins && typeof skins === 'object') { out.skins = skins; any = true; }
     } catch (e) { /* ignore */ }
     if (any) {

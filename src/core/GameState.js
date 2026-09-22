@@ -1,4 +1,6 @@
 // 状态机：准备/进行中/暂停/回合结束/结束（支持多局制）
+import { EV } from './constants/events.js';
+
 export const States = {
   READY: 'ready',
   PLAYING: 'playing',
@@ -42,7 +44,7 @@ export class GameState {
     }
     const from = this._state;
     this._state = to;
-    this.bus.emit('state.change', { from, to, payload });
+    this.bus.emit(EV.STATE_CHANGE, { from, to, payload });
     return true;
   }
 }

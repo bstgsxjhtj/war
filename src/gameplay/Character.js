@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { Health } from './Health.js';
 import { Stamina } from './Stamina.js';
 import { Sword } from './weapons/Sword.js';
@@ -8,6 +8,7 @@ import { SwordShield } from './weapons/SwordShield.js';
 import { Warhammer } from './weapons/Warhammer.js';
 import { TextureFactory } from '../render/TextureFactory.js';
 import { Skeleton } from './Skeleton.js';
+import { EV } from '../core/constants/events.js';
 
 // 角色：耐力+锁定+格挡+完美闪避+击飞+涉水(第三轮进化)
 export class Character {
@@ -242,7 +243,7 @@ export class Character {
       // 完美闪避：闪避刚开始0.12s内(_dodgeTimer>0.2)被攻击
       if (this._dodgeIFrame > 0 && this._dodgeTimer > 0.2 && !this._perfectDodge) {
         this._perfectDodge = true; this._perfectBuff = 2; this._dodgeIFrame = 0.45;
-        if (this._bus) this._bus.emit('fx.perfectDodge', { char: this });
+        if (this._bus) this._bus.emit(EV.FX_PERFECTDODGE, { char: this });
       }
       return 0;
     }
@@ -257,7 +258,7 @@ export class Character {
           if (this._perfectWindow > 0) {
             attacker._hurt = Math.max(attacker._hurt, 0.4); // 弹刀
             this.stamina.consume(0);
-            if (this._bus) this._bus.emit('fx.perfectBlock', { char: this });
+            if (this._bus) this._bus.emit(EV.FX_PERFECTBLOCK, { char: this });
             return 0;
           }
           if (!attacker.weapon.armorPierce) {
@@ -395,7 +396,7 @@ export class Character {
     const ground = terrain.heightAt(this.position.x, this.position.z);
     // 落地震动
     if (this.position.y <= ground && this.vy < -6) {
-      if (this._bus) this._bus.emit('fx.shake', { amount: 0.3 });
+      if (this._bus) this._bus.emit(EV.FX_SHAKE, { amount: 0.3 });
       this._launchRot = 0;
     }
     if (this.position.y <= ground) { this.position.y = ground; this.vy = 0; this.onGround = true; this._launchRot = 0; }
@@ -526,7 +527,7 @@ export class Character {
       combat.ultimateMelee(this, Math.PI * 2, 5, 6);
     }
     combat.hitstop = 0.2;
-    if (this._bus) this._bus.emit('fx.shake', { amount: 1.5 });
+    if (this._bus) this._bus.emit(EV.FX_SHAKE, { amount: 1.5 });
     return true;
   }
   startExecute(target) {
