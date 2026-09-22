@@ -57,6 +57,7 @@ import { SaveManager } from './gameplay/SaveManager.js';
 import { SaveUI } from './ui/SaveUI.js';
 import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
+import { Spawner } from './gameplay/Spawner.js';
 import { InputRouter } from './app/InputRouter.js';
 import { installUIStackEscape } from './ui/UIStack.js';
 import { EV } from './core/constants/events.js';
@@ -253,41 +254,10 @@ async function bootstrap() {
   bus.emit(EV.DAILY_UPDATE, daily.challenges);
   progressUI.refresh();
 
+  const spawner = new Spawner({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign });
+
   function spawnRed(redLayout, { bossWave = false } = {}) {
-    const aiWeaponMakers = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];
-    const unlocks = progression.unlocks;
-    for (let i = 0; i < redLayout.length; i++) {
-      let ai;
-      if (i === 0 && (campaign.currentStage.bossType || bossWave) && mode.name !== '训练场') {
-        ai = new BossEnemy({ team: 1, type: bossWave ? 'warlord' : (campaign.currentStage.bossType || 'warlord'), mini: bossWave ? false : (campaign.currentStage.mini || false) });
-      } else if (i === 1 && unlocks.elite && mode.name !== '训练场') {
-        ai = new EliteEnemy({ team: 1 });
-      } else if (i === 2 && mode.name !== '训练场' && progression.score >= 500) {
-        ai = new CavalryEnemy({ team: 1 });
-        const horse = horses.create();
-        ai.mount(horse);
-      } else {
-        ai = new AIController({ team: 1, passive: mode.name === '训练场', maxHp: mode.name === '训练场' ? 500 : Math.round(90 * aiManager.difficulty().maxHpMul) });
-      }
-      const p = redLayout[i];
-      ai.spawn(new THREE.Vector3(p.x, terrain.heightAt(p.x, p.z), p.z));
-      ai.setWeapons([aiWeaponMakers[i % aiWeaponMakers.length]()]);
-      ai.setCameraRef(camera);
-      ai.setAIManager(aiManager);
-      if (!ai._isBoss && !ai._isElite && Math.random() < 0.15) { ai.setIsElite(true); ai._eliteSkill = ['blockCounter','dodgeStrike','enrage'][Math.floor(Math.random()*3)]; }
-      scene.add(ai.root);
-      combat.register(ai);
-      if (ai._weaponMesh) weaponTrail.attach(ai._weaponMesh, ai.team === 1 ? 0xff8060 : 0x60a0ff);
-      ais.push(ai);
-    }
-    aiManager.assignSquad(ais);
-    if (mode.name !== '训练场' && ais.length >= 3) {
-      const shieldUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'SHIELD');
-      const bowUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'BOW');
-      if (shieldUsers.length >= 2) formations.createShieldWall(shieldUsers[0], shieldUsers.slice(1));
-      if (bowUsers.length >= 2) formations.createArcherLine(bowUsers[0], bowUsers.slice(1));
-    }
-    for (const ai of ais) ai.setAudio(audio);
+    spawner.spawnRed(redLayout, ais, { bossWave, modeName: mode.name });
   }
 
   function spawnAll() {
@@ -436,7 +406,7 @@ async function bootstrap() {
           if (match.escortTarget) match.escortTarget.update(dt, player);
           campaign.onTick(dt, {
             redAlive,
-            spawnReinforce: (n) => { for (let i = 0; i < n; i++) { const e = new AIController({ team: 1, passive: false, maxHp: Math.round(90 * (campaign.currentStage.difficulty || 1)) }); e.setBus(bus); e.setWeapons([new Spear()]); e.setAIManager(aiManager); if (!e._isBoss && !e._isElite && Math.random() < 0.15) { e.setIsElite(true); e._eliteSkill = ['blockCounter','dodgeStrike','enrage'][Math.floor(Math.random()*3)]; } const px = 160 + (Math.random() - 0.5) * 40; const pz = (Math.random() - 0.5) * 120; e.spawn(new THREE.Vector3(px, terrain.heightAt(px, pz), pz)); e.setCameraRef(camera); scene.add(e.root); combat.register(e); ais.push(e); } },
+            spawnReinforce: (n) => spawner.spawnReinforce(n, ais),
             boss: ais.find(a => a instanceof BossEnemy),
             progress: redAlive / (campaign.currentStage.enemyCount || 1),
             setWeather: (w) => weather.setMode(w),
