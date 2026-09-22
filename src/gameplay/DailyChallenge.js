@@ -1,8 +1,8 @@
 import { EV } from '../core/constants/events.js';
 
 const CHALLENGE_POOL = [
-  { id: 'kills5', desc: '单局击杀5人', target: 5, type: 'kills', reward: 50 },
-  { id: 'kills10', desc: '单局击杀10人', target: 10, type: 'kills', reward: 100 },
+  { id: 'kills5', desc: '今日累计击杀5人', target: 5, type: 'kills', reward: 50 },
+  { id: 'kills10', desc: '今日累计击杀10人', target: 10, type: 'kills', reward: 100 },
   { id: 'perfect3', desc: '完美格挡3次', target: 3, type: 'perfect', reward: 60 },
   { id: 'dodge5', desc: '完美闪避5次', target: 5, type: 'dodge', reward: 60 },
   { id: 'win_s', desc: '以S评分获胜', target: 1, type: 'winGrade', grade: 'S', reward: 120 },

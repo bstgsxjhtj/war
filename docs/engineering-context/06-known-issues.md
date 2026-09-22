@@ -26,13 +26,13 @@
 
 | # | 问题 | 状态 |
 |---|---|---|
-| 16 | 存档双轨：旧键与新档并行读写，重置后可复活 | ⬜（目标态见 02 架构文档 §4.2） |
-| 17 | 通关 stage=0 与新档无法区分（需 campaignCompleted 标志） | ⬜ |
-| 18 | 词条效果只在 AOE 路径生效，近战/箭矢不吃词条 | ⬜ |
-| 19 | 每日挑战"单局击杀"语义矛盾（resetSession 从未调用）；战役胜利不发每日奖励 | ✅部分修：战役通关补 daily.claim()；desc 语义/resetSession 仍 ⬜ |
+| 16 | 存档双轨：旧键与新档并行读写，重置后可复活 | ✅已修（2026-09-22 核实）：SaveManager 唯一事实来源，旧键仅 _migrateOld 只读迁移后删除；SaveOrchestrator.reset 清全部旧键 |
+| 17 | 通关 stage=0 与新档无法区分（需 campaignCompleted 标志） | ✅已修（2026-09-22 核实）：campaignCompleted 标志已落地 SaveManager serialize/默认值 + SaveOrchestrator capture/恢复 |
+| 18 | 词条效果只在 AOE 路径生效，近战/箭矢不吃词条 | ✅已修（2026-09-22）：_affixApply/_affixLeech 实现（此前缺失致箭矢/AOE TypeError 回归），近战/箭矢/AOE/大招四路径统一接入 |
+| 19 | 每日挑战"单局击杀"语义矛盾（resetSession 从未调用）；战役胜利不发每日奖励 | ✅已修（2026-09-22）：战役奖励此前已补 daily.claim()；desc 改"今日累计"口径贴实现，resetSession 保留供测试 |
 | 20 | 音量双份真相（settings vs audio_volume） | ✅已修：AudioEngine 加 getVolume，SettingsMenu 从 audio 读、_save 不再写 volume |
 | 21 | main.js 整文件死代码（旧入口） | ✅已修：删除 main.js |
-| 22 | tryUltimate 调用不存在的方法（死代码）+ rage getter 返回错误值 | ✅部分修：rage getter 改返回 _rage（语义正确）；tryUltimate 骨架保留为未完成功能（无调用者，不崩溃） |
+| 22 | tryUltimate 调用不存在的方法（死代码）+ rage getter 返回错误值 | ✅已修（2026-09-22）：rage getter 改返回 _rage；ultimateLine/ultimateMelee 已在 CombatSystem 实现，弓/重锤/枪/刀剑四类大招全通 |
 | 23 | _killstreak 体系断裂（HUD 分支永远走不到，Character 无 getter） | ✅已修：Character 加 get killstreak()，启用 HUD 连杀提示 |
 | 24 | DailyChallenge 构造不支持 bus 参数（测试与实现不匹配） | ✅已修：构造加可选 bus 参数 |
 
@@ -59,6 +59,10 @@
 | 2026-09-21 | P0 fix commit | #2 #4 #9 #10 #12(hud.flash) #13 #15 #24 |
 | 2026-09-21 | P1 fix commit | #11 #19(战役奖励) #20 #21 #22(rage) #23 |
 | 2026-09-21 | 收尾 fix commit（本轮） | #8 #12(全) #16 #17 #18 |
+| 2026-09-22 | b3b0905 | #18 真修：_affixApply/_affixLeech 补实现（原提交漏 helper 致箭矢/AOE TypeError 回归），近战/箭矢/AOE 三路径统一词条，7 用例 |
+| 2026-09-22 | 68a156d | 实现 ultimateMelee/ultimateLine 大招 API（原 tryUltimate 调不存在方法），spawnPierceArrow 加 opts 覆写修 Boss 连射/火球签名错误，5 用例 |
+| 2026-09-22 | 658746e | e2e 冒烟补攻击→伤害断言（__game 调试句柄），堵住箭矢/近战回归类问题 |
+| 2026-09-22 | 台账清理 | #12/#16/#17 核实已修标 ✅；#19 desc 改"今日累计"口径 |
 | 2026-09-21 | main_entry 三步拆分 commit | P2 架构债#1（MatchController/SaveOrchestrator/InputRouter） |
 | 2026-09-21 | 持久化双轨收敛 commits | P2 架构债#2（SaveManager 唯一事实来源 / 7 模块 serialize/restore / 6 旧键迁移后删除） |
 | 2026-09-21 | UI 类错位 commit | P2 架构债#3（ProgressionUI/WeaponSkinsUI 移至 ui/） |
