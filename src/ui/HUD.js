@@ -239,9 +239,29 @@ export class HUD {
   }
 
   setRefs(player, ais, camera) { this._player = player; this._ais = ais; this._camera = camera; }
-  setHealth(c) { this._hp.style.width = `${Math.max(0, c.health.ratio) * 100}%`; }
-  setStamina(s) { this._stam.style.width = `${Math.max(0, s.ratio) * 100}%`; this._stam.style.background = s.depleted ? 'linear-gradient(90deg,#36a,#a36)' : 'linear-gradient(90deg,#3ad,#8ef)'; }
-  setRage(c) { if (this._rage) { this._rage.style.width = `${Math.min(1, c.rage / 100) * 100}%`; this._rage.style.boxShadow = c.rage >= 100 ? '0 0 8px #fa4' : 'none'; } }
+
+  _write(el, prop, value) {
+    if (!this._domCache) { this._domCache = new WeakMap(); this._writeCount = 0; }
+    let m = this._domCache.get(el);
+    if (!m) { m = {}; this._domCache.set(el, m); }
+    if (m[prop] === value) return;
+    m[prop] = value;
+    this._writeCount++;
+    if (prop === 'textContent') el.textContent = value;
+    else if (prop === 'innerHTML') el.innerHTML = value;
+    else el.style[prop] = value;
+  }
+
+  setHealth(c) { this._write(this._hp, 'width', `${Math.max(0, c.health.ratio) * 100}%`); }
+  setStamina(s) {
+    this._write(this._stam, 'width', `${Math.max(0, s.ratio) * 100}%`);
+    this._write(this._stam, 'background', s.depleted ? 'linear-gradient(90deg,#36a,#a36)' : 'linear-gradient(90deg,#3ad,#8ef)');
+  }
+  setRage(c) {
+    if (!this._rage) return;
+    this._write(this._rage, 'width', `${Math.min(1, c.rage / 100) * 100}%`);
+    this._write(this._rage, 'boxShadow', c.rage >= 100 ? '0 0 8px #fa4' : 'none');
+  }
   flashKillstreak(n) { const msg = n >= 3 ? `${n}连杀！` : '击杀！'; this._kill.textContent = msg; this._kill.style.opacity = '1'; this._killTimer = 1.4; }
   setScore(b, r) { this._score.textContent = `蓝方 ${b}  |  ${r} 红方`; }
   setRound(b, r, target) { this._round.textContent = `局比分 ${b} - ${r}（先到 ${target} 胜）`; }
@@ -276,8 +296,11 @@ export class HUD {
     this._weapon.innerHTML = html;
   }
   setCharge(c) {
-    if (c > 0.01) { this._charge.style.display = 'block'; this._chargeFill.style.width = `${Math.min(1, c) * 100}%`; this._chargeFill.style.boxShadow = c >= 1 ? '0 0 10px #ff5533' : 'none'; }
-    else this._charge.style.display = 'none';
+    if (c > 0.01) {
+      this._write(this._charge, 'display', 'block');
+      this._write(this._chargeFill, 'width', `${Math.min(1, c) * 100}%`);
+      this._write(this._chargeFill, 'boxShadow', c >= 1 ? '0 0 10px #ff5533' : 'none');
+    } else this._write(this._charge, 'display', 'none');
   }
   setCombo(c) {
     if (c.comboTimer > 0) {
