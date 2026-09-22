@@ -58,6 +58,7 @@ import { SaveUI } from './ui/SaveUI.js';
 import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
 import { Spawner } from './gameplay/Spawner.js';
+import { wireAchievements } from './app/AchievementWiring.js';
 import { InputRouter } from './app/InputRouter.js';
 import { installUIStackEscape } from './ui/UIStack.js';
 import { EV } from './core/constants/events.js';
