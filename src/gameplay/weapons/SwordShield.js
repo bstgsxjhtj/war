@@ -31,8 +31,4 @@ export class SwordShield extends Weapon {
     g.add(blade, tip, shield, boss);
     return g;
   }
-  _perform(attacker, combat, opts) {
-    combat.resolveMelee(attacker, this, (opts.combo | 0), (opts.now ?? 0));
-    return { type: AttackType.MELEE };
-  }
 }

@@ -21,6 +21,12 @@ export class Weapon {
 
   get ready() { return this._timer <= 0; }
   tick(dt) { if (this._timer > 0) this._timer -= dt; }
-  _perform(_attacker, _combat, _opts) { throw new Error('未实现'); }
+
+  // 默认近战攻击；投射物子类（Bow）覆写
+  _perform(attacker, combat, opts) {
+    combat.resolveMelee(attacker, this, (opts.combo | 0), (opts.now ?? 0));
+    return { type: AttackType.MELEE };
+  }
+
   skill(_attacker, _combat, _now) { return false; }
 }

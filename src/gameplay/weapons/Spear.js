@@ -28,9 +28,5 @@ export class Spear extends Weapon {
     g.add(shaft, head, tassel);
     return g;
   }
-  _perform(attacker, combat, opts) {
-    combat.resolveMelee(attacker, this, (opts.combo | 0), (opts.now ?? 0));
-    return { type: AttackType.MELEE };
-  }
   skill(a, c, now) { a._lunge(6); c.resolveMelee(a, this, 2, now); return true; }
 }

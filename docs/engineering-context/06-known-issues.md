@@ -67,3 +67,4 @@
 | 2026-09-21 | ultimate 音效去重 commit | 修复 combat.kill 音效重复（移除 MatchController 调用 + audio 依赖，保留 main_entry 进度处理器单一音源） |
 | 2026-09-21 | UIPanel 基类 commit | UI 面板四胞胎消除：新增 UIPanel 基类，AffixesUI/AchievementsUI/WeaponSkinsUI/SaveUI 继承（7 单测） |
 | 2026-09-21 | 常量化 commit | 事件名/存储键收敛 core/constants/，20 文件 90+ 处字面量替换；平衡数值拆分独立条目 |
+| 2026-09-21 | Weapon 基类 commit | 近战武器 _perform 上提 Weapon 基类（Sword/Spear/SwordShield/Warhammer 去重复，Bow 保留覆写），3 单测守卫 |

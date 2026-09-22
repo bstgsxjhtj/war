@@ -34,9 +34,5 @@ export class Sword extends Weapon {
     return g;
   }
 
-  _perform(attacker, combat, opts) {
-    combat.resolveMelee(attacker, this, (opts.combo | 0), (opts.now ?? 0));
-    return { type: AttackType.MELEE };
-  }
   skill(a, c, now) { c.spawnAoE(a.position, 4, 40, a, now); return true; }
 }
