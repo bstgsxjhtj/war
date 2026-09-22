@@ -69,5 +69,5 @@ export class MiniMap {
     ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
   }
 
-  setWorldSize(s) { this.worldSize = s; }
+  setWorldSize(s) { if (this.worldSize !== s) this.worldSize = s; }
 }

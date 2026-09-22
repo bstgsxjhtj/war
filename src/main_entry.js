@@ -404,7 +404,7 @@ async function bootstrap() {
         weaponTrail.update(dt, now);
         hitDirection.update(dt);
         hitStop.update(dt);
-        miniMap.setWorldSize(MapGenerator.MAPS[currentMapKey].size[0]);
+        if (_lastMiniMapKey !== currentMapKey) { _lastMiniMapKey = currentMapKey; miniMap.setWorldSize(MapGenerator.MAPS[currentMapKey].size[0]); }
         miniMap.update(dt);
         progressUI.update(dt);
         hud.setHealth(player);
