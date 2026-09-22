@@ -66,6 +66,10 @@
 | 2026-09-22 | e22f12b | Spawner 下沉：spawnRed/spawnReinforce 收进 gameplay/Spawner.js，精英技能随机去重，+7 用例 |
 | 2026-09-22 | 4bc9280 | AIController 构造尊重 passive/maxHp（此前被静默丢弃——隐藏 bug），+9 决策路径用例 |
 | 2026-09-22 | 943835c | HUD 高频 setter 接入 _write 脏检查（WeakMap 缓存），消除每帧重复 DOM 写入，+7 用例 |
+| 2026-09-22 | 1a0c3b6 | Terrain.heightAt/isWater/waterDepth 8 用例（确定性/出生区平坦/河床/桥面/台地/外部覆写） |
+| 2026-09-22 | f685d3a | WeaponTrail 环形缓冲+预分配 Vector3 消除每帧分配；箭矢 lookAt/落点去 clone、Mesh 池化 |
+| 2026-09-22 | 0a5336d | Character.update() 189 行拆分为 9 个语义子函数，行为不变 |
+| 2026-09-22 | 73e8b88 | 成就接线下沉 app/AchievementWiring.js（10 触发源+奖励分发），+5 用例 |
 | 2026-09-21 | main_entry 三步拆分 commit | P2 架构债#1（MatchController/SaveOrchestrator/InputRouter） |
 | 2026-09-21 | 持久化双轨收敛 commits | P2 架构债#2（SaveManager 唯一事实来源 / 7 模块 serialize/restore / 6 旧键迁移后删除） |
 | 2026-09-21 | UI 类错位 commit | P2 架构债#3（ProgressionUI/WeaponSkinsUI 移至 ui/） |

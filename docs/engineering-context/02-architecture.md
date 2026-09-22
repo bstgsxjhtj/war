@@ -33,6 +33,7 @@ ESM 依赖图必须保持无环（DAG）。
    ② `app/SaveOrchestrator`（capture/reset/applyOnBoot/tickPlayTime/startTimers）
    ③ `app/InputRouter`（R/M/,/C/D/N/Escape + 音频解锁）。main_entry 仅剩组合根装配、spawnAll/spawnRed 与主循环；跨模块可变状态（player/ais/mode）经 getter/setter 回调注入。
    ④ `gameplay/Spawner`（✅2026-09-22 下沉）：红队兵种生成（Boss/精英/骑兵门槛、武器轮换、阵型编排）与战役增援 spawnReinforce 收进 Spawner，精英技能随机逻辑去重；main_entry 的 spawnRed 只剩一行委托。
+   ⑤ `app/AchievementWiring`（✅2026-09-22 下沉）：成就 10 触发源 check + 解锁奖励分发 + 词条掉落提示收敛为 wireAchievements(bus, deps)，晚绑定依赖经 getter 注入。
 2. ~~**持久化双轨**~~（✅2026-09-21 偿还）：SaveManager（savegame_v1）成为游戏进度唯一事实来源；Progression/SkillTree/CampaignMode/Achievements/Affixes/DailyChallenge/WeaponSkins 七模块停止自写旧键，改为 serialize/restore 由 SaveOrchestrator 统一采集与恢复；6 个旧键（campaign_cleared/progression_v1/skilltree_v1/achievements/affixes/daily_challenge/weapon_skins）在首次启动一次性迁移后删除。保留独立键：settings/audio_volume/tutorial_done/skilltree_profile_*（UI/音频偏好与多档位特性）。
 3. ~~**UI 类错位**~~（✅2026-09-21 偿还）：ProgressionUI 与 WeaponSkinsUI 从 gameplay/ 抽出至 `ui/ProgressionUI.js`、`ui/WeaponSkinsUI.js`，gameplay 层只留领域模型；ui/ 单向依赖 gameplay（仅引用 SKINS 等常量/数据类）的约定现对全部 UI 一致。
 4. ~~**依赖注入不统一**~~（✅2026-09-21 偿还）：约定落地到 05 §6——必选依赖（bus）走构造、可选依赖（audio/affixes）走 setter、总线属性统一 `_bus`；DailyChallenge/Achievements 改为构造注入 bus（顺带修复 DailyChallenge 未传 bus 导致 `daily.completed` 事件死掉的 bug），Player 4 处 emit 统一 `_bus`。Character 群"注册时注入"为显式例外。
