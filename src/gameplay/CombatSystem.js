@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { ParticleFX } from '../render/ParticleFX.js';
 import { EV } from '../core/constants/events.js';
 
@@ -120,6 +120,19 @@ export class CombatSystem {
 
   setAffixes(a) { this._affixes = a; }
 
+  _affixApply(attacker, weapon, dmg) {
+    if (!this._affixes || !weapon) return dmg;
+    let out = dmg * (1 + this._affixes.affixBonus(weapon, '锋锐'));
+    if (Math.random() < this._affixes.affixBonus(weapon, '暴怒')) out *= 2;
+    return out;
+  }
+
+  _affixLeech(attacker, lost) {
+    if (!this._affixes || !attacker || !attacker.health || !attacker.weapon) return;
+    const leech = this._affixes.affixBonus(attacker.weapon, '吸血');
+    if (leech > 0) attacker.health.hp = Math.min(attacker.health.maxHp, attacker.health.hp + lost * leech);
+  }
+
   resolveMelee(attacker, weapon, combo, now = 0) {
     let baseDmg = weapon.comboDamage ? (weapon.comboDamage[combo] ?? weapon.damage) : weapon.damage;
     if (attacker._perfectBuff > 0) baseDmg *= 1.5;
@@ -146,10 +159,11 @@ export class CombatSystem {
         const perfect = !!attacker._perfectRebound;
         if (perfect) attacker._perfectRebound = false;
         const comboMul = this._comboSys ? this._comboSys.onHit(countered, perfect, now) : 1;
-        const dmg = baseDmg * counterMul * (isBackstab ? 2 : 1) * comboMul;
+        const dmg = this._affixApply(attacker, weapon, baseDmg * counterMul * (isBackstab ? 2 : 1) * comboMul);
         const lost = c.takeDamage(dmg, heavy || isBackstab, attacker, now);
         if (lost > 0) {
           this._emitHit(attacker, c, lost, weapon.name, 0xff3322, combo, heavy, now, isBackstab);
+          this._affixLeech(attacker, lost);
           c._curVel.addScaledVector(attacker.forward, knock * 2.5);
           if (launch) { if (launch.y) c.vy += launch.y; if (launch.rot) c._launchRot = launch.rot; }
         }
