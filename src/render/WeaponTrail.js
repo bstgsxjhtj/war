@@ -18,7 +18,9 @@ export class WeaponTrail {
     const line = new THREE.LineSegments(geometry, material);
     line.frustumCulled = false;
     this.scene.add(line);
-    const trail = { line, positions, history: [], active: false, color };
+    const history = [];
+    for (let i = 0; i < this._maxSeg; i++) history.push({ tail: new THREE.Vector3(), tip: new THREE.Vector3() });
+    const trail = { line, positions, history, head: 0, count: 0, active: false, color };
     weaponMesh.userData._trail = trail;
     this._trails.push(trail);
     return trail;
@@ -26,7 +28,7 @@ export class WeaponTrail {
 
   activate(weaponMesh) {
     const trail = weaponMesh.userData._trail;
-    if (trail) { trail.active = true; trail.history = []; }
+    if (trail) { trail.active = true; trail.head = 0; trail.count = 0; }
   }
 
   deactivate(weaponMesh) {
@@ -35,24 +37,27 @@ export class WeaponTrail {
   }
 
   update(dt, now) {
+    const tmpT = this._tmpT || (this._tmpT = new THREE.Vector3());
+    const tmpP = this._tmpP || (this._tmpP = new THREE.Vector3());
     for (const trail of this._trails) {
       if (!trail.line.parent) continue;
       const wp = trail.line;
       if (!trail.active) {
-        if (trail.history.length > 0) trail.history.shift();
-        if (trail.history.length === 0) {
+        if (trail.count > 0) { trail.head = (trail.head + 1) % this._maxSeg; trail.count--; }
+        if (trail.count === 0) {
           wp.geometry.setDrawRange(0, 0);
           continue;
         }
       } else {
-        const tail = wp.parent.localToWorld(new THREE.Vector3(0, 0, -0.6));
-        const tip = wp.parent.localToWorld(new THREE.Vector3(0, 0, 0.8));
-        trail.history.unshift({ tail, tip });
-        if (trail.history.length > this._maxSeg) trail.history.pop();
+        trail.head = (trail.head - 1 + this._maxSeg) % this._maxSeg;
+        if (trail.count < this._maxSeg) trail.count++;
+        const slot = trail.history[trail.head];
+        slot.tail.copy(wp.parent.localToWorld(tmpT.set(0, 0, -0.6)));
+        slot.tip.copy(wp.parent.localToWorld(tmpP.set(0, 0, 0.8)));
       }
-      const segs = Math.min(trail.history.length - 1, this._maxSeg - 1);
+      const segs = Math.min(trail.count - 1, this._maxSeg - 1);
       for (let i = 0; i < segs; i++) {
-        const a = trail.history[i], b = trail.history[i + 1];
+        const a = trail.history[(trail.head + i) % this._maxSeg], b = trail.history[(trail.head + i + 1) % this._maxSeg];
         const idx = i * 6;
         trail.positions[idx] = a.tail.x; trail.positions[idx+1] = a.tail.y; trail.positions[idx+2] = a.tail.z;
         trail.positions[idx+3] = b.tail.x; trail.positions[idx+4] = b.tail.y; trail.positions[idx+5] = b.tail.z;

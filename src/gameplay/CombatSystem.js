@@ -22,6 +22,8 @@ export class CombatSystem {
     this._weatherEffects = null;
     this._tmpOrigin = new THREE.Vector3();
     this._tmpTo = new THREE.Vector3();
+    this._tmpAim = new THREE.Vector3();
+    this._arrowPool = [];
 
     // 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率
     this._counterMatrix = COUNTER_MATRIX;
@@ -276,10 +278,11 @@ export class CombatSystem {
       a.pos.addScaledVector(a.vel, dt);
       a.life -= dt;
       a.mesh.position.copy(a.pos);
-      a.mesh.lookAt(a.pos.clone().add(a.vel));
+      this._tmpAim.copy(a.pos).add(a.vel);
+      a.mesh.lookAt(this._tmpAim);
       let hit = false;
       if (a.life <= 0) hit = true;
-      if (a.pos.y <= terrain.heightAt(a.pos.x, a.pos.z) - 0.2) { this.spawnHitFX(a.pos.clone(), 0xccaa66); hit = true; }
+      if (a.pos.y <= terrain.heightAt(a.pos.x, a.pos.z) - 0.2) { this.spawnHitFX(a.pos, 0xccaa66); hit = true; }
       for (const c of this.characters) {
         if (!c.alive || c.team === a.team) continue;
         const cap = c.capsule;
@@ -291,7 +294,7 @@ export class CombatSystem {
           hit = true; break;
         }
       }
-      if (hit) { this.scene.remove(a.mesh); this.arrows.splice(i, 1); }
+      if (hit) { this._releaseArrow(a); this.arrows.splice(i, 1); }
     }
 
     let anyActive = false;
