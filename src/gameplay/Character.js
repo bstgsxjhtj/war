@@ -310,52 +310,86 @@ export class Character {
     for (const w of this.weapons) w.tick(dt);
     this.tickCombo(dt);
     if (this._killstreakTimer > 0) { this._killstreakTimer -= dt; if (this._killstreakTimer <= 0) this._killstreak = 0; }
-    if (this._executing > 0) {
-      this._executing -= dt;
-      if (this._executingTarget && this._executingTarget.alive) {
-        this._tmpExec = this._tmpExec || new THREE.Vector3();
-        this._tmpExec.copy(this.position).addScaledVector(this.forward, 1.2);
-        this._executingTarget.position.lerp(this._tmpExec, 0.3);
-        this.weaponPivot.rotation.z = Math.sin((1.2 - this._executing) * Math.PI / 1.2) * 1.5;
-      }
-      if (this._executing <= 0) {
-        if (this._executingTarget && this._executingTarget.alive) this._executingTarget.takeDamage(9999, true, this, now);
-        this.weaponPivot.rotation.z = 0;
-      }
-      return;
-    }
-    if (this._iFrame > 0) this._iFrame -= dt;
-    if (this._dodgeOverride > 0) this._dodgeOverride -= dt;
-    if (this._perfectWindow > 0) this._perfectWindow -= dt;
-    if (this._perfectBuff > 0) this._perfectBuff -= dt;
+    if (this._executing > 0) { this._tickExecuting(dt, now); return; }
+    this._tickTimers(dt);
     this.stamina.regen(dt * ((this._weatherEffects && this._weatherEffects.staminaRegenMul) || 1), this._attacking || this._dodgeTimer > 0 || this._blocking);
     if (this._charging) this._charge = Math.min(1, this._charge + dt / 1.2);
     if (this.weapon.pullString) this.weapon.pullString(this._charging ? this._charge : 0);
 
-    if (!this.alive) {
-      if (this._deadTimer > 0) {
-        this._deadTimer -= dt;
-        const k = Math.min(1, (1.2 - this._deadTimer) / 0.4);
-        this.root.rotation.x = -Math.PI / 2 * k;
-        this.root.position.y = this.position.y - 0.3 * k;
-        if (this._deadTimer <= 0) this.root.visible = false;
-      }
-      return;
-    }
+    if (!this.alive) { this._tickDeath(dt); return; }
 
     if (this._dodgeTimer > 0) {
       this._dodgeTimer -= dt;
       if (this._dodgeIFrame > 0) this._dodgeIFrame -= dt;
     }
 
+    this._tickYaw(dt);
+    const spd = this._calcSpeed(dt);
+    this._tickPhysics(dt, terrain, combat, spd);
+
+    const moving = Math.hypot(this._curVel.x, this._curVel.z);
+    if (moving > 0.5 && this.onGround && this._dodgeTimer <= 0) {
+      const f = this._sprint ? 1.6 : 1;
+      const sw = Math.sin(now * 0.018 * f);
+      this.root.position.y += sw * 0.05;
+    }
+
+    this._tickAttackPose(dt, now);
+    this._tickAnimState(dt, now, moving);
+    this._tickHurtFlash(dt);
+
+    this.cape.material.uniforms.uTime.value = now;
+    this.cape.material.uniforms.uMove.value = moving;
+    // 脚步音
+    if (this._footstepTimer > 0) this._footstepTimer -= dt;
+    if (moving > 0.5 && this.onGround && this._audio && !this._attacking && this._dodgeTimer <= 0 && this._footstepTimer <= 0) {
+      if (this.isLocal) this._audio.footstep();
+      this._footstepTimer = 0.35;
+    }
+  }
+
+  _tickExecuting(dt, now) {
+    this._executing -= dt;
+    if (this._executingTarget && this._executingTarget.alive) {
+      this._tmpExec = this._tmpExec || new THREE.Vector3();
+      this._tmpExec.copy(this.position).addScaledVector(this.forward, 1.2);
+      this._executingTarget.position.lerp(this._tmpExec, 0.3);
+      this.weaponPivot.rotation.z = Math.sin((1.2 - this._executing) * Math.PI / 1.2) * 1.5;
+    }
+    if (this._executing <= 0) {
+      if (this._executingTarget && this._executingTarget.alive) this._executingTarget.takeDamage(9999, true, this, now);
+      this.weaponPivot.rotation.z = 0;
+    }
+  }
+
+  _tickTimers(dt) {
+    if (this._iFrame > 0) this._iFrame -= dt;
+    if (this._dodgeOverride > 0) this._dodgeOverride -= dt;
+    if (this._perfectWindow > 0) this._perfectWindow -= dt;
+    if (this._perfectBuff > 0) this._perfectBuff -= dt;
+  }
+
+  _tickDeath(dt) {
+    if (this._deadTimer > 0) {
+      this._deadTimer -= dt;
+      const k = Math.min(1, (1.2 - this._deadTimer) / 0.4);
+      this.root.rotation.x = -Math.PI / 2 * k;
+      this.root.position.y = this.position.y - 0.3 * k;
+      if (this._deadTimer <= 0) this.root.visible = false;
+    }
+  }
+
+  _tickYaw(dt) {
     let dy = this._targetYaw - this._yaw;
     while (dy > Math.PI) dy -= Math.PI * 2;
     while (dy < -Math.PI) dy += Math.PI * 2;
     this._yaw += dy * Math.min(1, dt * 12);
     this.forward.set(Math.sin(this._yaw), 0, Math.cos(this._yaw)).normalize();
     this.root.rotation.y = this._yaw;
+  }
 
-    // 移动限速：攻击分段 + 涉水减速 + 格挡减速
+  // 移动限速：攻击分段 + 涉水减速 + 格挡减速
+  _calcSpeed(dt) {
     let spd = this.speed * (this._sprint ? this.sprintMul : 1);
     if (this._attacking) {
       const t = 1 - Math.max(0, this._anim) / this._animDur;
@@ -371,6 +405,10 @@ export class Character {
       spd *= 0.3;
       if (this._attacking) this._attacking = false;
     }
+    return spd;
+  }
+
+  _tickPhysics(dt, terrain, combat, spd) {
     // 涉水减速
     this._inWater = terrain.isWater ? terrain.isWater(this.position.x, this.position.z) : false;
     if (this._inWater) { spd *= 0.6; if (this._sprint) spd = this.speed * 0.6; }
@@ -422,15 +460,10 @@ export class Character {
     }
     this.root.position.copy(this.position);
     if (this._launchRot) this.root.rotation.z += this._launchRot * dt;
+  }
 
-    const moving = Math.hypot(this._curVel.x, this._curVel.z);
-    if (moving > 0.5 && this.onGround && this._dodgeTimer <= 0) {
-      const f = this._sprint ? 1.6 : 1;
-      const sw = Math.sin(now * 0.018 * f);
-      this.root.position.y += sw * 0.05;
-    }
-
-    // 攻击/格挡姿态
+  // 攻击/格挡姿态
+  _tickAttackPose(dt, now) {
     if (this._blocking) {
       this.weaponPivot.rotation.set(-0.8, 0, 0.3);
     } else if (this._attacking) {
@@ -456,7 +489,9 @@ export class Character {
       this.weaponPivot.rotation.y += (0 - this.weaponPivot.rotation.y) * 0.2;
       this.weaponPivot.rotation.z += (0 - this.weaponPivot.rotation.z) * 0.2;
     }
+  }
 
+  _tickAnimState(dt, now, moving) {
     let skelState = 'idle';
     let skelT = 0;
     if (!this.alive) { skelState = 'death'; skelT = Math.min(1, this._deadTimer / 1.0); }
@@ -474,7 +509,9 @@ export class Character {
     }
     this.skeleton.applyState(skelState, skelT, { speed: moving, sprint: this._sprint, now: now * 0.001 });
     this.skeleton.update(dt);
+  }
 
+  _tickHurtFlash(dt) {
     if (this._hurt > 0) {
       this._hurt -= dt;
       const k = Math.max(0, this._hurt) / 0.3;
@@ -484,15 +521,6 @@ export class Character {
     } else if (this._emisDirty) {
       for (const m of this._mats) { m.emissive.setRGB(0, 0, 0); m.emissiveIntensity = m === this._mats[0] ? 0.12 : 0; }
       this._emisDirty = false;
-    }
-
-    this.cape.material.uniforms.uTime.value = now;
-    this.cape.material.uniforms.uMove.value = moving;
-    // 脚步音
-    if (this._footstepTimer > 0) this._footstepTimer -= dt;
-    if (moving > 0.5 && this.onGround && this._audio && !this._attacking && this._dodgeTimer <= 0 && this._footstepTimer <= 0) {
-      if (this.isLocal) this._audio.footstep();
-      this._footstepTimer = 0.35;
     }
   }
 
