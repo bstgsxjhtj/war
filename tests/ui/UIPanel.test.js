@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UIPanel } from '../../src/ui/UIPanel.js';
+import { UIStack, installUIStackEscape } from '../../src/ui/UIStack.js';
 
 function key(code) {
   document.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
 }
 
 describe('UIPanel 基类（面板四胞胎共性）', () => {
-  beforeEach(() => { document.body.innerHTML = ''; });
+  beforeEach(() => { document.body.innerHTML = ''; UIStack._stack.length = 0; });
 
   it('构造创建居中面板容器并挂到 body，默认隐藏', () => {
     const p = new UIPanel({ id: 'test-panel', toggleKey: 'KeyT' });
@@ -40,14 +41,15 @@ describe('UIPanel 基类（面板四胞胎共性）', () => {
     expect(p.el.style.display).toBe('none');
   });
 
-  it('Escape 在可见时隐藏，隐藏时无操作', () => {
+  it('Escape 由 UIStack 统一关闭栈顶面板', () => {
+    installUIStackEscape();
     const p = new UIPanel({ id: 'test-panel', toggleKey: 'KeyT' });
     p.show();
-    key('Escape');
+    expect(UIStack.top).toBe(p);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', bubbles: true, cancelable: true }));
     expect(p.visible).toBe(false);
     expect(p.el.style.display).toBe('none');
-    key('Escape');
-    expect(p.visible).toBe(false);
+    expect(UIStack.empty).toBe(true);
   });
 
   it('show 时调用 render 一次，hide 不调用', () => {

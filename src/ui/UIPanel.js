@@ -1,4 +1,6 @@
-// 面板基类：居中弹窗 + toggleKey 开关 + Escape 关闭；子类覆写 render() 提供内容
+// 面板基类：居中弹窗 + toggleKey 开关；Escape 由 UIStack 统一关闭栈顶；子类覆写 render() 提供内容
+import { UIStack } from './UIStack.js';
+
 export class UIPanel {
   constructor({ id, toggleKey, width = '480px', position = 'center', style = {} } = {}) {
     this.toggleKey = toggleKey;
@@ -22,7 +24,6 @@ export class UIPanel {
 
   _onKey(e) {
     if (e.code === this.toggleKey) { e.preventDefault(); this.toggle(); }
-    else if (e.code === 'Escape' && this.visible) this.hide();
   }
 
   toggle() { this.visible ? this.hide() : this.show(); }
@@ -30,12 +31,14 @@ export class UIPanel {
   show() {
     this.visible = true;
     this.el.style.display = 'block';
+    UIStack.push(this);
     this.render();
   }
 
   hide() {
     this.visible = false;
     this.el.style.display = 'none';
+    UIStack.remove(this);
   }
 
   render() {}

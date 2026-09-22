@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventBus } from '../../src/core/EventBus.js';
 import { GameState, States } from '../../src/core/GameState.js';
 import { InputRouter } from '../../src/app/InputRouter.js';
+import { UIStack } from '../../src/ui/UIStack.js';
 import { Domination } from '../../src/gameplay/GameMode.js';
 
 function makeDeps(overrides = {}) {
@@ -15,7 +16,7 @@ function makeDeps(overrides = {}) {
     campaign: { stage: 0, currentStage: { name: '破晓' }, spawnLayout: () => ({ mapKey: 'plain', red: [] }) },
     daily: { challenges: [{ done: true }, { done: false }] },
     weather: { mode: 'clear', toggle: vi.fn(), setMode: vi.fn() },
-    settings: { toggle: vi.fn() },
+    settings: { show: vi.fn(), hide: vi.fn() },
     audio: { resume: vi.fn() },
     match: { restart: vi.fn(), startRound: vi.fn(), roundEndTimer: 5 },
     getMode: () => mode,
@@ -58,9 +59,18 @@ describe('InputRouter', () => {
     expect(deps.hud.flash).toHaveBeenCalledWith('天气：雨');
   });
 
-  it('Escape 打开/关闭设置', () => {
+  it('Escape 在面板栈空时打开设置', () => {
+    UIStack._stack.length = 0;
     key('Escape');
-    expect(deps.settings.toggle).toHaveBeenCalled();
+    expect(deps.settings.show).toHaveBeenCalled();
+  });
+
+  it('Escape 在面板栈非空时不打开设置（由 UIStack 关栈顶）', () => {
+    UIStack._stack.length = 0;
+    UIStack.push({ hide: vi.fn() });
+    key('Escape');
+    expect(deps.settings.show).not.toHaveBeenCalled();
+    UIStack._stack.length = 0;
   });
 
   it('KeyR 在 ENDED 时重开对局', () => {

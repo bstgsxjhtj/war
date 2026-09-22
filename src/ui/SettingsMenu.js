@@ -58,6 +58,6 @@ export class SettingsMenu {
   _save() { try { localStorage.setItem(LS.SETTINGS, JSON.stringify({ quality: this.quality, sensitivity: this.sensitivity, difficulty: this.difficulty })); } catch (e) {} }
   _applyAll() { if (this.audio) { this.audio.setVolume('master', this._vol.master); this.audio.setVolume('sfx', this._vol.sfx); this.audio.setVolume('bgm', this._vol.bgm); this.audio.setVolume('env', this._vol.env); } this.bus.emit(EV.SETTINGS_QUALITY, { quality: this.quality }); this.bus.emit(EV.SETTINGS_SENSITIVITY, { sensitivity: this.sensitivity }); this.bus.emit(EV.SETTINGS_DIFFICULTY, { difficulty: this.difficulty }); }
   toggle() { this.open ? this.hide() : this.show(); }
-  show() { this.el.style.display = 'flex'; this.open = true; if (this.audio) this.audio.resume(); this._applyAll(); }
-  hide() { this.el.style.display = 'none'; this.open = false; }
+  show() { this.el.style.display = 'flex'; this.open = true; UIStack.push(this); if (this.audio) this.audio.resume(); this._applyAll(); }
+  hide() { this.el.style.display = 'none'; this.open = false; UIStack.remove(this); }
 }

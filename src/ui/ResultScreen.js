@@ -46,7 +46,7 @@ export class ResultScreen {
     ].join('');
     this.el.style.display = 'flex';
     this.el.querySelector('#rs-continue').addEventListener('click', () => this.hide());
-    this._keyHandler = (e) => { if (e.code === 'KeyR' || e.code === 'Escape') this.hide(); };
+    this._keyHandler = (e) => { if (e.code === 'KeyR') this.hide(); };
     window.addEventListener('keydown', this._keyHandler);
   }
 
@@ -57,6 +57,7 @@ export class ResultScreen {
 
   hide() {
     this.el.style.display = 'none';
+    UIStack.remove(this);
     window.removeEventListener('keydown', this._keyHandler);
     this.bus.emit(EV.ROUND_RESTART);
   }

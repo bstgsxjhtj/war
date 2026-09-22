@@ -58,6 +58,7 @@ import { SaveUI } from './ui/SaveUI.js';
 import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
 import { InputRouter } from './app/InputRouter.js';
+import { installUIStackEscape } from './ui/UIStack.js';
 import { EV } from './core/constants/events.js';
 import { LS } from './core/constants/storage-keys.js';
 
@@ -348,6 +349,7 @@ async function bootstrap() {
     getPlayer: () => player
   });
   inputRouter.install();
+  installUIStackEscape();
 
 
   spawnAll();

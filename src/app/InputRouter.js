@@ -1,6 +1,7 @@
 // 全局输入路由：R/M/,/C/D/N/Escape 按键与音频解锁（自 main_entry 拆出，只搬代码不改行为）
 // 注意：面板键 I/J/V/H/K 由面板组件自监听，此处不得绑定（见 04-ui-design 按键表）
 import { States } from '../core/GameState.js';
+import { UIStack } from '../ui/UIStack.js';
 import { Deathmatch, Domination, SiegeMode } from '../gameplay/GameMode.js';
 import { WaveMode } from '../gameplay/WaveMode.js';
 import { MapGenerator } from '../world/MapGenerator.js';
@@ -55,6 +56,6 @@ export class InputRouter {
       hud.flash('每日挑战：' + done + '/' + daily.challenges.length + ' 完成');
     }
     if (e.code === 'KeyN') { weather.toggle(); const wm = { clear: '晴', rain: '雨', night: '夜', snow: '雪', storm: '雷暴' }; hud.flash('天气：' + (wm[weather.mode] || weather.mode)); setTimeout(() => hud.clearHint(), 1500); }
-    if (e.code === 'Escape') settings.toggle();
+    if (e.code === 'Escape' && UIStack.empty) settings.show();
   }
 }

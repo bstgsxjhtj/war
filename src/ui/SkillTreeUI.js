@@ -51,8 +51,8 @@ export class SkillTreeUI {
   }
 
   toggle() { this.open ? this.hide() : this.show(); }
-  show() { this.el.style.display = 'flex'; requestAnimationFrame(() => this.el.style.opacity = '1'); this.open = true; this._render(); this.bus.emit(EV.UI_LOCKLOST); }
-  hide() { this.el.style.opacity = '0'; setTimeout(() => { this.el.style.display = 'none'; }, 250); this.open = false; }
+  show() { this.el.style.display = 'flex'; requestAnimationFrame(() => this.el.style.opacity = '1'); this.open = true; UIStack.push(this); this._render(); this.bus.emit(EV.UI_LOCKLOST); }
+  hide() { this.el.style.opacity = '0'; setTimeout(() => { this.el.style.display = 'none'; }, 250); this.open = false; UIStack.remove(this); }
 
   _dots(level, max) {
     let s = '';

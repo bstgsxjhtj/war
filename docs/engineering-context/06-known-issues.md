@@ -45,12 +45,12 @@
 - ~~监听器生命周期（bus.on 返回 off / 跨回合注册集中 bootstrap / spawnAll 内禁注册）~~ ✅2026-09-21 完成，见 02 架构文档 §4.5 与 05 §7；三条款经查均已满足，加回归守卫锁定
 - ~~combat.kill 的 ultimate 音效重复：main_entry（progression 处理器 L173）与 MatchController（比分处理器）各调一次 audio.playSound('ultimate')，每次击杀播两声。架构债 #5 调查时发现，非生命周期问题，择机去重（保留比分处理器一处）~~ ✅2026-09-21 修复：移除 MatchController 的 ultimate 调用，保留 main_entry 进度处理器为唯一击杀音源；顺带从 MatchController deps 移除 audio
 - ~~UI 面板四胞胎 → UIPanel 基类~~ ✅2026-09-21 完成：新增 `src/ui/UIPanel.js` 基类（居中/定位容器 + toggleKey + Escape + show/hide/toggle/render 契约），AffixesUI/AchievementsUI/WeaponSkinsUI/SaveUI 继承之，消除四份重复的面板样板；SkillTreeUI 因全屏遮罩+opacity+ui.locklost 语义保持独立；7 单测守卫
-- 近战武器 _perform 上提 Weapon 基类
+- ~~近战武器 _perform 上提 Weapon 基类~~ ✅2026-09-21 完成
 - ~~事件名/存储键常量模块化~~ ✅2026-09-21 完成：新增 `src/core/constants/events.js`（EV，36 个 bus 事件）与 `src/core/constants/storage-keys.js`（LS，11 个键）收敛全仓事件名与 localStorage 键，替换 20 文件 90+ 处字面量；05 §1/§2 加常量化约定；平衡数值常量待后续单独处理
-- 平衡数值常量模块化（伤害/冷却/阈值等魔法数字）
-- 每帧 Vector3 分配池化；miniMap.setWorldSize 每帧调用
-- 测试缺口：Character/CombatSystem 主路径/GameMode/MapGenerator
-- Escape 多面板同时响应（需统一 UI 栈）
+- ~~平衡数值常量模块化（伤害/冷却/阈值等魔法数字）~~ ✅2026-09-22 完成：新增 `src/core/constants/balance.js`（WEAPON_STATS），5 武器构造参数收敛
+- ~~每帧 Vector3 分配池化；miniMap.setWorldSize 每帧调用~~ ✅2026-09-22 部分偿还：miniMap.setWorldSize 改地图键变化才调用 + MiniMap 内部早退；Vector3 维持既有实例字段模式（_tmpOrigin/_vDir 等）
+- ~~测试缺口：Character/CombatSystem 主路径/GameMode/MapGenerator~~ ✅2026-09-22 完成：Character.takeDamage 7 用例 + GameMode 4 + MapGenerator 4 + CombatSystem.resolveMelee 4
+- ~~Escape 多面板同时响应（需统一 UI 栈）~~ ✅2026-09-22 完成：新增 `src/ui/UIStack.js`，面板 show/hide 入出栈，捕获阶段只关栈顶；UIPanel/SkillTreeUI/SettingsMenu/ResultScreen 移除各自 Escape 监听，InputRouter 栈空才开设置；04 §3 约定
 
 ## 修复记录
 
@@ -68,3 +68,7 @@
 | 2026-09-21 | UIPanel 基类 commit | UI 面板四胞胎消除：新增 UIPanel 基类，AffixesUI/AchievementsUI/WeaponSkinsUI/SaveUI 继承（7 单测） |
 | 2026-09-21 | 常量化 commit | 事件名/存储键收敛 core/constants/，20 文件 90+ 处字面量替换；平衡数值拆分独立条目 |
 | 2026-09-21 | Weapon 基类 commit | 近战武器 _perform 上提 Weapon 基类（Sword/Spear/SwordShield/Warhammer 去重复，Bow 保留覆写），3 单测守卫 |
+| 2026-09-22 | balance 常量 commit | 平衡数值常量化（WEAPON_STATS，5 武器） |
+| 2026-09-22 | miniMap commit | setWorldSize 改地图键变化才调用 + MiniMap 内部早退 |
+| 2026-09-22 | 测试缺口 commit | Character.takeDamage/GameMode/MapGenerator/CombatSystem.resolveMelee 共 19 用例 |
+| 2026-09-22 | UIStack commit | Escape 统一 UI 栈：新增 UIStack，4 类面板接入，多面板同时响应消除 |
