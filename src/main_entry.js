@@ -78,6 +78,7 @@ async function bootstrap() {
 
   let currentMapKey = MapGenerator.recommendMap('死斗');
   let currentMapName = MapGenerator.MAPS[currentMapKey].name;
+  let _lastMiniMapKey = null;
   let terrain, env;
   function loadMap(mapKey) {
     if (terrain) { scene.remove(terrain.mesh); }
