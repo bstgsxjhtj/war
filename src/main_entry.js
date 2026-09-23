@@ -438,6 +438,7 @@ async function bootstrap() {
         hud.setCombo(player);
         hud.setSkillCooldowns(weaponSkills);
         if (mode.name === '据点') { mode.onTick(dt, combat.characters); hud.setDomination(mode); }
+        if (tutorial) tutorial.update(dt);
         hud.update(dt);
         if (mode.name === '战役') {
           hud.setMode(campaign.displayName, campaign.stageInfo);
