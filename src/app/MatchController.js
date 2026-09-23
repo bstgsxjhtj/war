@@ -36,7 +36,7 @@ export class MatchController {
         bus.emit(EV.DAILY_UPDATE, this.deps.daily.challenges);
       }
     });
-    bus.on(EV.ROUND_RESTART, () => { if (this.deps.state.current === States.ENDED) this.restart(); });
+    bus.on(EV.ROUND_RESTART, () => { if (this.deps.state.current === States.ENDED && !this._restarting) this.restart(); });
   }
 
   startRound() {
@@ -52,10 +52,13 @@ export class MatchController {
   }
 
   restart() {
+    if (this._restarting) return;
+    this._restarting = true;
     this.deps.resultScreen.hide();
     this.roundB = 0; this.roundR = 0;
     this.deps.hud.setRound(this.roundB, this.roundR, this.targetWins);
     this.startRound();
+    this._restarting = false;
   }
 
   checkWin() {

@@ -1,4 +1,5 @@
 import { EV } from '../core/constants/events.js';
+import { UIStack } from './UIStack.js';
 import * as THREE from 'three';
 
 // 结算页：每局结束击杀/伤害/用时/评分
@@ -16,6 +17,7 @@ export class ResultScreen {
   constructor(bus) {
     this.bus = bus;
     this.el = document.createElement('div');
+    this.el.id = 'result-screen';
     Object.assign(this.el.style, {
       position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', width: '100vw', height: '100vh',
       background: 'radial-gradient(circle at 50% 40%, rgba(20,20,40,.92), rgba(0,0,0,.96))',
@@ -45,6 +47,7 @@ export class ResultScreen {
       '</div>'
     ].join('');
     this.el.style.display = 'flex';
+    UIStack.push(this);
     this.el.querySelector('#rs-continue').addEventListener('click', () => this.hide());
     this._keyHandler = (e) => { if (e.code === 'KeyR') this.hide(); };
     window.addEventListener('keydown', this._keyHandler);

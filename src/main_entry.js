@@ -330,7 +330,7 @@ async function bootstrap() {
 
 
   spawnAll();
-  window.__game = { get player() { return player; }, get ais() { return ais; }, combat };
+  window.__game = { get player() { return player; }, get ais() { return ais; }, combat, get match() { return match; }, get state() { return state; } };
   const affixesUI = new AffixesUI(affixes, player);
   const achievementsUI = new AchievementsUI(achievements);
   state.transit(States.PLAYING);
