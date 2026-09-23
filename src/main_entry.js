@@ -311,6 +311,15 @@ async function bootstrap() {
       if (s.objective === 'Boss限时') { match.timeLimit = 120; }
       if (s.objective === '生存') { match.surviveTimer = s.surviveTime || 90; }
     }
+    if (mode.name === '战役') {
+      weather.enableAutoSchedule(false);
+      weather.clearForecast();
+      weather.setMode('clear');
+    } else {
+      weather.enableAutoSchedule(true);
+      weather.clearForecast();
+      weather.scheduleNext(['rain','night','snow','storm'][Math.floor(Math.random() * 4)], 30 + Math.random() * 30);
+    }
     enemies = [player, ...ais];
     hud.setRefs(player, ais, camera);
     miniMap.setRefs(player, ais, camera.cam);
@@ -390,6 +399,10 @@ async function bootstrap() {
         weaponTrail.update(dt, now);
         hitDirection.update(dt);
         hitStop.update(dt);
+        weather.update(dt);
+        const _fc = weather.forecast;
+        if (_fc) { const _wm = { clear: '晴', rain: '雨', night: '夜', snow: '雪', storm: '雷暴' }; hud.setWeatherForecast(Math.ceil(_fc.timer) + 's 后 ' + (_wm[_fc.mode] || _fc.mode)); }
+        else hud.setWeatherForecast(null);
         if (_lastMiniMapKey !== currentMapKey) { _lastMiniMapKey = currentMapKey; miniMap.setWorldSize(MapGenerator.MAPS[currentMapKey].size[0]); }
         miniMap.update(dt);
         progressUI.update(dt);

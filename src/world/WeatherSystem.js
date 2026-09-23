@@ -14,6 +14,8 @@ export class WeatherSystem {
     this._snow = null;
     this._lightning = null;
     this._lightningTimer = 0;
+    this._forecast = null;
+    this._autoSchedule = false;
     this._initRain();
     this._initSnow();
     this._initLightning();
@@ -74,6 +76,22 @@ export class WeatherSystem {
 
   get mode() { return this._mode; }
 
+  get forecast() { return this._forecast; }
+
+  scheduleNext(mode, delay) {
+    if (this._modes.indexOf(mode) >= 0) this._forecast = { mode, timer: delay };
+  }
+
+  clearForecast() { this._forecast = null; }
+
+  enableAutoSchedule(enabled) { this._autoSchedule = enabled; }
+
+  _scheduleRandom() {
+    const _wm = ['clear', 'rain', 'night', 'snow', 'storm'];
+    const next = _wm[Math.floor(Math.random() * _wm.length)];
+    this.scheduleNext(next, 30 + Math.random() * 30);
+  }
+
   getCombatEffects() {
     switch (this._mode) {
       case 'rain':
@@ -120,6 +138,15 @@ export class WeatherSystem {
   }
 
   update(dt) {
+    if (this._forecast) {
+      this._forecast.timer -= dt;
+      if (this._forecast.timer <= 0) {
+        const m = this._forecast.mode;
+        this._forecast = null;
+        this.setMode(m);
+        if (this._autoSchedule) this._scheduleRandom();
+      }
+    }
     if (this._rain.visible) {
       const pos = this._rainGeo.attributes.position;
       for (let i = 0; i < pos.count; i++) {

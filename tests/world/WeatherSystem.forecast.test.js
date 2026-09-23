@@ -1,0 +1,61 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { WeatherSystem } from '../../src/world/WeatherSystem.js';
+
+describe('WeatherSystem forecast', () => {
+  let scene, weather;
+  beforeEach(() => {
+    scene = { add: vi.fn(), fog: null };
+    weather = new WeatherSystem(scene, null, null, null);
+  });
+
+  it('scheduleNext 设置预报', () => {
+    weather.scheduleNext('rain', 10);
+    expect(weather.forecast).toEqual({ mode: 'rain', timer: 10 });
+  });
+
+  it('scheduleNext 忽略无效模式', () => {
+    weather.scheduleNext('foggy', 10);
+    expect(weather.forecast).toBeNull();
+  });
+
+  it('clearForecast 清除预报', () => {
+    weather.scheduleNext('rain', 10);
+    weather.clearForecast();
+    expect(weather.forecast).toBeNull();
+  });
+
+  it('update 倒计时减少但未到零时不切换', () => {
+    weather.scheduleNext('night', 5);
+    weather.update(2);
+    expect(weather.forecast.timer).toBeCloseTo(3);
+    expect(weather.mode).toBe('clear');
+  });
+
+  it('update 倒计时归零自动切换模式', () => {
+    weather.scheduleNext('night', 3);
+    weather.update(3.5);
+    expect(weather.forecast).toBeNull();
+    expect(weather.mode).toBe('night');
+  });
+
+  it('enableAutoSchedule 开启后切换模式后自动安排下一次', () => {
+    weather.enableAutoSchedule(true);
+    weather.scheduleNext('night', 2);
+    weather.update(2.5);
+    expect(weather.forecast).not.toBeNull();
+    expect(weather.forecast.timer).toBeGreaterThan(0);
+    expect(weather.mode).toBe('night');
+  });
+
+  it('enableAutoSchedule 关闭时切换模式后不自动安排', () => {
+    weather.enableAutoSchedule(false);
+    weather.scheduleNext('night', 2);
+    weather.update(2.5);
+    expect(weather.forecast).toBeNull();
+    expect(weather.mode).toBe('night');
+  });
+
+  it('forecast 初始为 null', () => {
+    expect(weather.forecast).toBeNull();
+  });
+});

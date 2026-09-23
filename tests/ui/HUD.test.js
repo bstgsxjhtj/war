@@ -79,4 +79,13 @@ describe('HUD', () => {
     hud.setHealth({ health: { ratio: 0.6 } });
     expect(hud._writeCount).toBe(base + 1);
   });
+
+  it('setWeatherForecast 显示和隐藏天气预告', () => {
+    const hud = mkHud();
+    hud.setWeatherForecast('10s 后 雨');
+    expect(hud._wforecast.textContent).toBe('10s 后 雨');
+    expect(hud._wforecast.style.display).toBe('block');
+    hud.setWeatherForecast(null);
+    expect(hud._wforecast.style.display).toBe('none');
+  });
 });

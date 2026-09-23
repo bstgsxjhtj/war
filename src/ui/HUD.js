@@ -37,6 +37,7 @@ export class HUD {
       <div id="round" style="position:absolute;top:42px;left:50%;transform:translateX(-50%);color:#ffd070;font-size:13px;text-shadow:0 1px 2px #000;"></div>
       <div id="modeName" style="position:absolute;top:62px;left:50%;transform:translateX(-50%);color:#8cf;font-size:12px;text-shadow:0 1px 2px #000;">模式：死斗</div>
       <div id="dom" style="position:absolute;top:84px;left:50%;transform:translateX(-50%);display:none;color:#fff;font-size:12px;text-shadow:0 1px 2px #000;text-align:center;"></div>
+      <div id="wforecast" style="position:absolute;top:106px;left:50%;transform:translateX(-50%);color:#8df;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
       <div id="weapon" style="position:absolute;right:24px;bottom:24px;color:#cde;font-size:14px;text-shadow:0 1px 2px #000;">[1] 刀  [2] 弓</div>
       <div id="keys" style="position:absolute;right:24px;bottom:48px;color:#bcd;font-size:11px;text-shadow:0 1px 2px #000;opacity:.6;text-align:right;line-height:1.6;">WASD · Shift冲刺 · Space跳<br>Q/双击 闪避 · LMB攻击 · RMB格挡/蓄力 · Tab锁定 · 1-4武器 · M模式</div>
       <div id="hint" style="position:absolute;top:62%;left:50%;transform:translateX(-50%);color:#ffd;text-align:center;font-size:15px;text-shadow:0 1px 2px #000;max-width:80%;"></div>
@@ -51,6 +52,7 @@ export class HUD {
     this._round = this.el.querySelector('#round');
     this._modeName = this.el.querySelector('#modeName');
     this._dom = this.el.querySelector('#dom');
+    this._wforecast = this.el.querySelector('#wforecast');
     this._hint = this.el.querySelector('#hint');
     this._kill = this.el.querySelector('#kill');
     this._charge = this.el.querySelector('#charge');
@@ -272,6 +274,10 @@ export class HUD {
       this._modeName.textContent = '模式：' + name;
     }
     this._dom.style.display = name === '据点' ? 'block' : 'none';
+  }
+  setWeatherForecast(text) {
+    if (text) { this._wforecast.textContent = text; this._wforecast.style.display = 'block'; }
+    else { this._wforecast.style.display = 'none'; }
   }
   _renderChallenges() {
     if (!this._daily) { this._challengeEl.innerHTML = ''; return; }
