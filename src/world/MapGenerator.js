@@ -138,13 +138,14 @@ export class MapGenerator {
     },
   };
 
-  static generate(mapKey) {
+  static generate(mapKey, opts = {}) {
     const def = this.MAPS[mapKey] || this.MAPS.field;
     const terrain = new Terrain(def.size[0], def.size[1], {
       heightFn: def.heightFn,
       river: def.river,
       bridge: def.bridge_,
       plateaus: [],
+      textures: opts.textures,
     });
     terrain._extWater = def.waterFn;
     return { terrain, layout: def.layout, name: def.name, spawns: def.spawns, size: def.size };

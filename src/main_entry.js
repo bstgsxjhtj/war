@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TextureFactory } from './render/TextureFactory.js';
 import { EventBus } from './core/EventBus.js';
 import { GameState, States } from './core/GameState.js';
 import { Time } from './core/Time.js';
@@ -82,10 +83,14 @@ async function bootstrap() {
   let currentMapName = MapGenerator.MAPS[currentMapKey].name;
   let _lastMiniMapKey = null;
   let terrain, env;
+  const _terrainTextures = {
+    map: TextureFactory.noise(256, 256, '#5a6a3a', 30, 24),
+    normalMap: TextureFactory.normal(256, 256, 0.4)
+  };
   function loadMap(mapKey) {
     if (terrain) { scene.remove(terrain.mesh); }
     if (env) { scene.remove(env.group); }
-    const r = MapGenerator.generate(mapKey);
+    const r = MapGenerator.generate(mapKey, { textures: _terrainTextures });
     terrain = r.terrain;
     env = new Environment(terrain, r.layout);
     scene.add(terrain.mesh);

@@ -56,7 +56,9 @@ export class Terrain {
     }
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: TextureFactory.noise(256, 256, '#5a6a3a', 30, 24), normalMap: TextureFactory.normal(256, 256, 0.4), roughness: 0.95, flatShading: true });
+    // 纹理由上层注入（world 不依赖 render）；未注入时用纯色材质
+    const tex = opts.textures || {};
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: tex.map || null, normalMap: tex.normalMap || null, roughness: 0.95, flatShading: true });
     this.mesh = new THREE.Mesh(geo, mat);
     this.mesh.receiveShadow = true;
     this._geo = geo;
