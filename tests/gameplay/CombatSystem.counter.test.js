@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { CombatSystem, COUNTER_MATRIX } from '../../src/gameplay/CombatSystem.js';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 function makeW(cls) { return { weaponClass: cls }; }
 
@@ -30,5 +30,30 @@ describe('CombatSystem._counterMul', () => {
     expect(cs._counterMul(null, makeW('SHIELD'))).toBe(1);
     expect(cs._counterMul(makeW('HEAVY'), null)).toBe(1);
     expect(cs._counterMul({}, {})).toBe(1);
+  });
+});
+
+describe('CombatSystem.createDamageNumber 克制变色', () => {
+  let cs;
+  beforeEach(() => {
+    cs = Object.create(CombatSystem.prototype);
+    cs._numSprites = [{ spr: { visible: false, position: { copy: vi.fn() } }, life: 0, vy: 0 }];
+    cs._numCtx = { clearRect: vi.fn(), fillText: vi.fn(), strokeText: vi.fn() };
+    cs._numTex = { needsUpdate: false };
+  });
+
+  it('非克制命中使用默认色', () => {
+    cs.createDamageNumber({ x: 0, y: 1, z: 0 }, 20, false);
+    expect(cs._numCtx.fillStyle).toBe('#ffe070');
+  });
+
+  it('克制命中使用青色', () => {
+    cs.createDamageNumber({ x: 0, y: 1, z: 0 }, 20, true);
+    expect(cs._numCtx.fillStyle).toBe('#66ddff');
+  });
+
+  it('高伤非克制使用红色', () => {
+    cs.createDamageNumber({ x: 0, y: 1, z: 0 }, 50, false);
+    expect(cs._numCtx.fillStyle).toBe('#ff5533');
   });
 });

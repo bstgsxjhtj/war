@@ -198,6 +198,7 @@ async function bootstrap() {
   // 启动应用延后到 player/aiManager 赋值后避免 TDZ
   bus.on(EV.HUD_BOSSPHASE, () => audio.playSound('ultimate'));
   bus.on(EV.COMBAT_ULTIMATE, () => audio.playSound('ultimate'));
+  bus.on(EV.COMBAT_COUNTER, () => audio.playSound('counter'));
   bus.on(EV.COMBO_TIER, (p) => audio.playSound('hit', { combo: p.combo || 0 }));
 
   let player, ais = [], enemies = [];
