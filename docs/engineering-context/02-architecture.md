@@ -7,7 +7,7 @@ main_entry.js（组合根 / composition root）
    ├── app/         → 组合根辅助：MatchController（比分/回合/胜负）、SaveOrchestrator（存档编排）、InputRouter（全局按键）；依赖 core/gameplay/world/ui
    ├── ui/          → 单向依赖 gameplay（仅引用常量/数据类）
    ├── gameplay/    → 可依赖 core、render 的纯工厂/特效接口（显式例外）
-   ├── world/       → 依赖 core（bus）
+   ├── world/       → 依赖 core（bus）；纹理由组合根经 opts.textures 注入（✅2026-09-22 移除 render 依赖）
    ├── engine/      → 依赖 render
    └── core/        → EventBus / GameState / Time，不依赖任何上层
 net/ audio/ render/ 为基础设施，被上层使用。

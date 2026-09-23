@@ -70,6 +70,9 @@
 | 2026-09-22 | f685d3a | WeaponTrail 环形缓冲+预分配 Vector3 消除每帧分配；箭矢 lookAt/落点去 clone、Mesh 池化 |
 | 2026-09-22 | 0a5336d | Character.update() 189 行拆分为 9 个语义子函数，行为不变 |
 | 2026-09-22 | 73e8b88 | 成就接线下沉 app/AchievementWiring.js（10 触发源+奖励分发），+5 用例 |
+| 2026-09-22 | 061b943 | playwright webServer 改 reuseExistingServer:false，杜绝残留 preview 服务旧 dist 假失败 |
+| 2026-09-22 | 0c8cfc3 | Terrain 纹理改 opts.textures 注入，消除 world→render 分层违规（分层依赖清零） |
+| 2026-09-22 | 661acb8 | ComboSystem/AIManager/UnitFormation 补测 +18 用例 |
 | 2026-09-21 | main_entry 三步拆分 commit | P2 架构债#1（MatchController/SaveOrchestrator/InputRouter） |
 | 2026-09-21 | 持久化双轨收敛 commits | P2 架构债#2（SaveManager 唯一事实来源 / 7 模块 serialize/restore / 6 旧键迁移后删除） |
 | 2026-09-21 | UI 类错位 commit | P2 架构债#3（ProgressionUI/WeaponSkinsUI 移至 ui/） |
