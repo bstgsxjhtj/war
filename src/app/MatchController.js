@@ -3,6 +3,7 @@ import { States } from '../core/GameState.js';
 import { BossEnemy } from '../gameplay/BossEnemy.js';
 import { CavalryEnemy } from '../gameplay/Cavalry.js';
 import { ResultScreen } from '../ui/ResultScreen.js';
+import { WaveMode } from '../gameplay/WaveMode.js';
 import { EV } from '../core/constants/events.js';
 
 export class MatchController {
@@ -54,6 +55,13 @@ export class MatchController {
   startRound() {
     this.scoreB = 0; this.scoreR = 0;
     this.playerKills = 0; this.playerDamage = 0; this.playerDeathCause = null; this.matchStartTime = performance.now();
+    const mode = this.deps.getMode();
+    if (mode.name === '波次' || mode.name === '无尽') {
+      this.targetWins = 1;
+      mode.wave = 0; mode.alive = 0;
+    } else {
+      this.targetWins = 2;
+    }
     this.deps.hud.setScore(0, 0);
     this.deps.hud.clearHint();
     this.deps.spawnAll();
@@ -122,13 +130,19 @@ export class MatchController {
     } else {
       winner = mode.checkWin(player.alive, ais.some(a => a.alive));
     }
+    let _wave, _bestWave;
+    if (mode.name === '波次' || mode.name === '无尽') {
+      WaveMode.saveBest(mode.wave);
+      _wave = mode.wave;
+      _bestWave = WaveMode.loadBest();
+    }
     if (winner === 'blue') {
       this.roundB++; hud.setRound(this.roundB, this.roundR, this.targetWins);
       if (this.roundB >= this.targetWins) {
         hud.flashEnd('蓝方获胜！按 R 重新开始'); camera.setKillCam(player); state.transit(States.ENDED);
         const grade = ResultScreen.gradeOf ? ResultScreen.gradeOf(this.playerKills, this.playerDamage, (performance.now() - this.matchStartTime) / 1000) : 'A';
         progression.recordWin(grade, (performance.now() - this.matchStartTime) / 1000); progressUI.refresh();
-        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: true, deathCause: this.playerDeathCause });
+        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: true, deathCause: this.playerDeathCause, wave: _wave, bestWave: _bestWave });
         if (this.playerTaken === 0) daily.track('noDamageWin');
         const timeSec = (performance.now() - this.matchStartTime) / 1000;
         if (timeSec < 90) daily.track('speedWin', timeSec);
@@ -143,7 +157,7 @@ export class MatchController {
         hud.flashEnd('红方获胜！按 R 重新开始');
         if (player.lastAttacker) camera.setKillCam(player.lastAttacker);
         state.transit(States.ENDED); progression.recordLoss(); progressUI.refresh();
-        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: false, deathCause: this.playerDeathCause });
+        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: false, deathCause: this.playerDeathCause, wave: _wave, bestWave: _bestWave });
       }
       else { hud.flash('红方赢下本局！按 R 跳过'); state.transit(States.ROUND_END); this.roundEndTimer = 3; }
     }

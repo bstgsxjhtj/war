@@ -13,5 +13,6 @@ export const LS = {
   SETTINGS: 'settings',
   AUDIO_VOLUME: 'audio_volume',
   TUTORIAL_DONE: 'tutorial_done',
-  SKILLTREE_PROFILE_PREFIX: 'skilltree_profile_'
+  SKILLTREE_PROFILE_PREFIX: 'skilltree_profile_',
+  WAVE_BEST: 'wave_best'
 };

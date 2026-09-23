@@ -88,4 +88,13 @@ describe('HUD', () => {
     hud.setWeatherForecast(null);
     expect(hud._wforecast.style.display).toBe('none');
   });
+
+  it('setWave 显示波数和历史最高', () => {
+    const hud = mkHud();
+    hud.setWave(5, 10, false);
+    expect(hud._round.textContent).toContain('第 5 波');
+    expect(hud._round.textContent).toContain('最高 10 波');
+    hud.setWave(3, 0, true);
+    expect(hud._round.textContent).toBe('第 3 波');
+  });
 });

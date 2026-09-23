@@ -31,7 +31,7 @@ export class InputRouter {
     if (e.code === 'KeyM' && (state.current === States.ENDED || state.current === States.ROUND_END || state.current === States.PLAYING && !this.deps.getPlayer()?.alive)) {
       const { bus, getMode, setMode, loadMap, mapName } = this.deps;
       const mode = getMode();
-      setMode(mode.name === '死斗' ? new Domination(bus) : (mode.name === '据点' ? new SiegeMode(bus) : (mode.name === '攻城' ? new WaveMode(bus) : (mode.name === '波次' ? campaign : new Deathmatch(bus)))));
+      setMode(mode.name === '死斗' ? new Domination(bus) : (mode.name === '据点' ? new SiegeMode(bus) : (mode.name === '攻城' ? new WaveMode(bus) : (mode.name === '波次' ? new WaveMode(bus, true) : (mode.name === '无尽' ? campaign : new Deathmatch(bus))))));
       const newMode = getMode();
       if (newMode.name === '战役') {
         const layout = campaign.spawnLayout();

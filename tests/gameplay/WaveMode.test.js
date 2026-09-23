@@ -1,5 +1,5 @@
 import { WaveMode } from '../../src/gameplay/WaveMode.js';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 describe('WaveMode', () => {
   it('初始 wave=0', () => {
@@ -50,5 +50,58 @@ describe('WaveMode', () => {
     w.onKill();
     w.onKill();
     expect(w.alive).toBe(0);
+  });
+});
+
+describe('WaveMode endless', () => {
+  it('endless 模式 name 无尽 targetWave Infinity', () => {
+    const w = new WaveMode({}, true);
+    expect(w.name).toBe('无尽');
+    expect(w.endless).toBe(true);
+    expect(w.targetWave).toBe(Infinity);
+  });
+
+  it('endless 模式 checkWin 永不返回 blue', () => {
+    const w = new WaveMode({}, true);
+    w.wave = 100;
+    expect(w.checkWin(true, false)).toBe(null);
+  });
+
+  it('endless 模式蓝死仍返 red', () => {
+    const w = new WaveMode({}, true);
+    expect(w.checkWin(false, true)).toBe('red');
+  });
+
+  it('endless 模式敌人数量更多', () => {
+    const w = new WaveMode({}, true);
+    for (let i = 0; i < 5; i++) w.spawnLayout();
+    expect(w.wave).toBe(5);
+    const lay = w.spawnLayout();
+    expect(lay.red.length).toBeGreaterThanOrEqual(7);
+  });
+});
+
+describe('WaveMode best score', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('loadBest 初始为 0', () => {
+    expect(WaveMode.loadBest()).toBe(0);
+  });
+
+  it('saveBest 保存最高波数', () => {
+    WaveMode.saveBest(5);
+    expect(WaveMode.loadBest()).toBe(5);
+  });
+
+  it('saveBest 仅保存更高值', () => {
+    WaveMode.saveBest(10);
+    WaveMode.saveBest(3);
+    expect(WaveMode.loadBest()).toBe(10);
+  });
+
+  it('saveBest 0 不覆盖已有值', () => {
+    WaveMode.saveBest(5);
+    WaveMode.saveBest(0);
+    expect(WaveMode.loadBest()).toBe(5);
   });
 });

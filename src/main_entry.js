@@ -307,7 +307,7 @@ async function bootstrap() {
     if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx);
     let redLayout, bossWave = false;
     if (mode.name === '战役') redLayout = campaign.spawnLayout().red;
-    else if (mode.name === '波次') { const lay = mode.spawnLayout(); redLayout = lay.red; bossWave = lay.isBoss; }
+    else if (mode.name === '波次' || mode.name === '无尽') { const lay = mode.spawnLayout(); redLayout = lay.red; bossWave = lay.isBoss; }
     else redLayout = spawns.red;
     spawnRed(redLayout, { bossWave });
     if (mode.name === '战役') {
@@ -448,7 +448,10 @@ async function bootstrap() {
             setWeather: (w) => weather.setMode(w),
           });
         }
-        if (mode.name === '波次' && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
+        if (mode.name === '波次' || mode.name === '无尽') {
+          hud.setWave(mode.wave, WaveMode.loadBest(), mode.endless);
+        }
+        if ((mode.name === '波次' || mode.name === '无尽') && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
           const lay = mode.spawnLayout();
           spawnRed(lay.red, { bossWave: lay.isBoss });
           enemies = [player, ...ais];

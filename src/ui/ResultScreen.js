@@ -50,6 +50,7 @@ export class ResultScreen {
     const gap = ResultScreen.gradeGap(data.kills || 0, data.damage || 0, data.time || 0);
     const gapHtml = gap ? '<div style="font-size:13px;color:#9a8;margin-top:8px;">\u8ddd ' + gap.next + ' \u8bc4\u7ea7\uff1a\u8fd8\u5dee ' + gap.gap + ' \u5206</div>' : '';
     const deathHtml = (!win && data.deathCause) ? '<div style="font-size:13px;color:#a66;margin-top:4px;">\u6b7b\u56e0\uff1a' + data.deathCause + '</div>' : '';
+    const waveHtml = (data.wave != null) ? '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px;margin-top:8px;"><div style="font-size:11px;color:#888;">\u6ce2\u6570</div><div style="font-size:24px;font-weight:700;color:#8df;">\u7b2c ' + data.wave + ' \u6ce2</div>' + (data.bestWave > 0 ? '<div style="font-size:12px;color:#ffd070;margin-top:4px;">\u5386\u53f2\u6700\u9ad8\uff1a\u7b2c ' + data.bestWave + ' \u6ce2</div>' : '') + '</div>' : '';
     this.el.innerHTML = [
       '<div style="background:linear-gradient(145deg,#1a1a2e,#0f0f1a);border:1px solid #4a3a6a;border-radius:16px;padding:36px 48px;text-align:center;color:#eee;box-shadow:0 12px 48px rgba(0,0,0,.6);min-width:380px;">',
       '<div style="font-size:42px;font-weight:800;color:' + titleClr + ';margin-bottom:4px;">' + title + '</div>',
@@ -60,6 +61,7 @@ export class ResultScreen {
       '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px;"><div style="font-size:11px;color:#888;">\u7528\u65f6</div><div style="font-size:20px;font-weight:700;color:#aef;">' + this._fmtTime(data.time || 0) + '</div></div>',
       '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px;"><div style="font-size:11px;color:#888;">\u8bc4\u5206</div><div style="font-size:32px;font-weight:800;color:' + gradeClr + ';">' + grade + '</div>' + gapHtml + deathHtml + '</div>',
       '</div>',
+      waveHtml,
       '<button id="rs-continue" style="padding:12px 32px;background:linear-gradient(90deg,#3a5a4a,#2a4a3a);border:1px solid #4a8;border-radius:8px;color:#fff;cursor:pointer;font-size:15px;font-family:inherit;font-weight:600;width:100%;">\u7ee7\u7eed (R)</button>',
       '</div>'
     ].join('');
