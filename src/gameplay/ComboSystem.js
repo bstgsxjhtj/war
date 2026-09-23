@@ -29,10 +29,15 @@ export class ComboSystem {
 
   onHurt() {
     if (this.count > 0 || this._finisher) {
-      this.count = 0;
-      this._tier = 0;
+      this.count = Math.floor(this.count / 2);
       this._finisher = false;
-      this._bus?.emit(EV.COMBO_BREAK, { count: 0 });
+      if (this.count <= 0) {
+        this.count = 0;
+        this._tier = 0;
+        this._bus?.emit(EV.COMBO_BREAK, { count: 0 });
+      } else {
+        this._updateTier();
+      }
     }
   }
 

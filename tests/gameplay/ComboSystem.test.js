@@ -40,7 +40,26 @@ describe('ComboSystem', () => {
     expect(cs.hasFinisher).toBe(false);
   });
 
-  it('受击清空连击并发 COMBO_BREAK', () => {
+  it('受击减半连击（高连击数不归零）', () => {
+    const bus = new EventBus();
+    let broken = 0;
+    bus.on(EV.COMBO_BREAK, () => broken++);
+    const cs = new ComboSystem(bus);
+    for (let i = 0; i < 10; i++) cs.onHit(false, false, i);
+    expect(cs.count).toBe(10);
+    cs.onHurt();
+    expect(cs.count).toBe(5);
+    expect(broken).toBe(0);
+    cs.onHurt();
+    expect(cs.count).toBe(2);
+    cs.onHurt();
+    expect(cs.count).toBe(1);
+    cs.onHurt();
+    expect(cs.count).toBe(0);
+    expect(broken).toBe(1);
+  });
+
+  it('低连击数受击归零发 COMBO_BREAK', () => {
     const bus = new EventBus();
     let broken = 0;
     bus.on(EV.COMBO_BREAK, () => broken++);
