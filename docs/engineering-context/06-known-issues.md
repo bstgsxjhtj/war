@@ -51,6 +51,7 @@
 - ~~每帧 Vector3 分配池化；miniMap.setWorldSize 每帧调用~~ ✅2026-09-22 部分偿还：miniMap.setWorldSize 改地图键变化才调用 + MiniMap 内部早退；Vector3 维持既有实例字段模式（_tmpOrigin/_vDir 等）
 - ~~测试缺口：Character/CombatSystem 主路径/GameMode/MapGenerator~~ ✅2026-09-22 完成：Character.takeDamage 7 用例 + GameMode 4 + MapGenerator 4 + CombatSystem.resolveMelee 4
 - ~~Escape 多面板同时响应（需统一 UI 栈）~~ ✅2026-09-22 完成：新增 `src/ui/UIStack.js`，面板 show/hide 入出栈，捕获阶段只关栈顶；UIPanel/SkillTreeUI/SettingsMenu/ResultScreen 移除各自 Escape 监听，InputRouter 栈空才开设置；04 §3 约定
+- **WeaponTrail trail.line.parent 指向 scene 根（恒等变换）**：update 中 `wp.parent.localToWorld(...)` 的 `wp = trail.line`，其 parent 是 scene 而非武器 mesh 的父节点，导致 trail 位置始终为固定偏移（0,0,-0.6)/(0,0,0.8）不随武器移动。系既有设计偏差（非本轮回归），暂记观察项，不影响游戏运行；后续如需 trail 跟随武器，需在 attach 时缓存 weaponMesh 引用并改用其 parent 的 matrixWorld
 
 ## 修复记录
 
@@ -86,3 +87,6 @@
 | 2026-09-22 | miniMap commit | setWorldSize 改地图键变化才调用 + MiniMap 内部早退 |
 | 2026-09-22 | 测试缺口 commit | Character.takeDamage/GameMode/MapGenerator/CombatSystem.resolveMelee 共 19 用例 |
 | 2026-09-22 | UIStack commit | Escape 统一 UI 栈：新增 UIStack，4 类面板接入，多面板同时响应消除 |
+| 2026-09-23 | 2d3395b | e2e 扩展换图/模式切换/胜负/重开 4 场景；修 ResultScreen 未 import UIStack 致 hide 崩溃；修 MatchController.restart 重入递归爆栈（_restarting 保护）；playwright timeout 120s；+2 单测 |
+| 2026-09-23 | 7d6082a | WeaponTrail localToWorld 优化：2 次 updateWorldMatrix 遍历合并为 1 次 + 2 次 applyMatrix4 原地计算；+8 单测 |
+| 2026-09-23 | fb5fb95 | main_entry 主循环瘦身：移除 ROUND_END 双渲染、trajectory 预分配 Vector3 消除每帧 3 次分配、__mp 改 getter 消除每帧对象分配、合并重复 mode.name 检查、ais.filter 改计数循环消除每帧临时数组 |
