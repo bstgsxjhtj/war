@@ -331,6 +331,7 @@ async function bootstrap() {
 
   spawnAll();
   window.__game = { get player() { return player; }, get ais() { return ais; }, combat, get match() { return match; }, get state() { return state; } };
+  window.__mp = { get connected() { return net.connected; }, get id() { return net.id; }, get remotes() { return remotes.length; } };
   const affixesUI = new AffixesUI(affixes, player);
   const achievementsUI = new AchievementsUI(achievements);
   state.transit(States.PLAYING);
@@ -341,6 +342,10 @@ async function bootstrap() {
   let tutorial = null;
   try { if (!localStorage.getItem(LS.TUTORIAL_DONE)) tutorial = new Tutorial(); } catch (e) {}
 
+  const _trajOrigin = new THREE.Vector3();
+  const _trajOffset = new THREE.Vector3(0, 1.5, 0);
+  const _trajFwd = new THREE.Vector3();
+
   function loop() {
     time.tick(
       (dt) => {
@@ -350,7 +355,6 @@ async function bootstrap() {
           env.update(dt, now);
           water.update(dt, now);
           if (match.roundEndTimer <= 0) match.startRound();
-          renderer.render();
           return;
         }
         if (state.current !== States.PLAYING) { env.update(dt, now); return; }
@@ -389,20 +393,23 @@ async function bootstrap() {
         progressUI.update(dt);
         hud.setHealth(player);
         hud.setStamina(player.stamina);
-        hud.setRage(player); window.__mp = { connected: net.connected, id: net.id, remotes: remotes.length };
+        hud.setRage(player);
         hud.setCharge(player.charge);
         if (player.weapon.type === 'projectile' && player.charge > 0.05) {
-          const origin = player.position.clone().add(new THREE.Vector3(0, 1.5, 0)).add(player.forward.clone().multiplyScalar(0.7));
-          trajectory.show(origin, player.forward, player.weapon.speedFor ? player.weapon.speedFor(player.charge) : 50);
+          _trajOrigin.copy(player.position).add(_trajOffset);
+          _trajFwd.copy(player.forward).multiplyScalar(0.7);
+          _trajOrigin.add(_trajFwd);
+          trajectory.show(_trajOrigin, player.forward, player.weapon.speedFor ? player.weapon.speedFor(player.charge) : 50);
         } else trajectory.hide();
         hud.setWeapon(player.weaponIdx, player.weapons.length);
         hud.setCombo(player);
         hud.setSkillCooldowns(weaponSkills);
         if (mode.name === '据点') { mode.onTick(dt, combat.characters); hud.setDomination(mode); }
         hud.update(dt);
-        if (mode.name === '战役') hud.setMode('战役', campaign.stageInfo);
         if (mode.name === '战役') {
-          const redAlive = ais.filter(a => a.alive).length;
+          hud.setMode('战役', campaign.stageInfo);
+          let redAlive = 0;
+          for (const a of ais) if (a.alive) redAlive++;
           if (match.defenseTimer > 0) match.defenseTimer -= dt;
           if (match.timeLimit > 0) match.timeLimit -= dt;
           if (match.surviveTimer > 0) {
