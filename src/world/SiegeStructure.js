@@ -79,6 +79,21 @@ export class SiegeStructure {
     return false;
   }
 
+  get collisionBoxes() {
+    const boxes = [];
+    for (const cx of [-5, 5]) {
+      boxes.push({ minX: cx - 2, maxX: cx + 2, minZ: 39, maxZ: 41 });
+    }
+    boxes.push({ minX: -2, maxX: 2, minZ: 39.7, maxZ: 40.3 });
+    for (const side of [-1, 1]) {
+      for (let i = 1; i <= 3; i++) {
+        const cx = side * (5 + i * 4);
+        boxes.push({ minX: cx - 2, maxX: cx + 2, minZ: 39, maxZ: 41 });
+      }
+    }
+    return boxes;
+  }
+
   update(dt, combat) {
     if (!this.trebuchet.occupied) return;
     this.trebuchet.timer -= dt;

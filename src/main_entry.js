@@ -38,6 +38,7 @@ import { TrainingMode } from './gameplay/TrainingMode.js';
 import { Tutorial } from './ui/Tutorial.js';
 import { AudioEngine } from './audio/AudioEngine.js';
 import { WeatherSystem } from './world/WeatherSystem.js';
+import { EnvironmentHazards } from './gameplay/EnvironmentHazards.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
 import { WaveMode } from './gameplay/WaveMode.js';
 import { ResultScreen } from './ui/ResultScreen.js';
@@ -83,6 +84,7 @@ async function bootstrap() {
   let currentMapName = MapGenerator.MAPS[currentMapKey].name;
   let _lastMiniMapKey = null;
   let terrain, env;
+  let envHazards;
   const _terrainTextures = {
     map: TextureFactory.noise(256, 256, '#5a6a3a', 30, 24),
     normalMap: TextureFactory.normal(256, 256, 0.4)
@@ -92,6 +94,7 @@ async function bootstrap() {
     if (env) { scene.remove(env.group); }
     const r = MapGenerator.generate(mapKey, { textures: _terrainTextures });
     terrain = r.terrain;
+    if (envHazards) envHazards.setTerrain(terrain);
     env = new Environment(terrain, r.layout);
     scene.add(terrain.mesh);
     scene.add(env.group);
@@ -191,6 +194,10 @@ async function bootstrap() {
   const audio = new AudioEngine();
   const weather = new WeatherSystem(scene.scene, scene.sun || null, scene.hemi || null, audio);
   weather.setAudio(audio);
+  envHazards = new EnvironmentHazards(bus);
+  envHazards.setTerrain(terrain);
+  weather.onLightning((pos) => envHazards.onLightningStrike(pos));
+  for (const box of siege.collisionBoxes) envHazards.addWallBox(box);
   const settings = new SettingsMenu(bus, audio);
   bus.on(EV.SETTINGS_QUALITY, ({ quality }) => { if (renderer) renderer.setQuality(quality); });
   bus.on(EV.SETTINGS_SENSITIVITY, ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
@@ -381,6 +388,7 @@ async function bootstrap() {
         for (const a of ais) a.update(ldt, terrain, combat, enemies, now);
         for (const rp of remotes) rp.update(ldt, terrain, combat, now);
         combat.update(ldt, terrain, now);
+        envHazards.update(ldt, combat.characters);
         comboSys.update(ldt, now);
         horses.update(ldt);
         formations.update(ldt);

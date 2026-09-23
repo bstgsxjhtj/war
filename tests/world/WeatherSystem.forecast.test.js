@@ -58,4 +58,24 @@ describe('WeatherSystem forecast', () => {
   it('forecast 初始为 null', () => {
     expect(weather.forecast).toBeNull();
   });
+
+  it('onLightning callback fires with strike position in storm mode', () => {
+    let strikePos = null;
+    weather.onLightning((pos) => { strikePos = pos; });
+    weather.setMode('storm');
+    weather.update(0.1);
+    expect(strikePos).not.toBeNull();
+    expect(strikePos.x).toBeGreaterThanOrEqual(-40);
+    expect(strikePos.x).toBeLessThanOrEqual(40);
+    expect(strikePos.z).toBeGreaterThanOrEqual(-40);
+    expect(strikePos.z).toBeLessThanOrEqual(40);
+  });
+
+  it('onLightning does not fire in non-storm mode', () => {
+    let called = false;
+    weather.onLightning(() => { called = true; });
+    weather.setMode('night');
+    weather.update(0.1);
+    expect(called).toBe(false);
+  });
 });

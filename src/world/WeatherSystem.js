@@ -16,6 +16,7 @@ export class WeatherSystem {
     this._lightningTimer = 0;
     this._forecast = null;
     this._autoSchedule = false;
+    this._onLightning = null;
     this._initRain();
     this._initSnow();
     this._initLightning();
@@ -60,6 +61,8 @@ export class WeatherSystem {
   }
 
   setAudio(a) { this._audio = a; }
+
+  onLightning(cb) { this._onLightning = cb; }
 
   setMode(mode) {
     if (this._modes.indexOf(mode) >= 0) {
@@ -172,6 +175,7 @@ export class WeatherSystem {
         this._lightningTimer = 2 + Math.random() * 4;
         this._lightning.intensity = 8;
         this._lightning.position.set((Math.random() - 0.5) * 80, 25, (Math.random() - 0.5) * 80);
+        if (this._onLightning) this._onLightning({ x: this._lightning.position.x, z: this._lightning.position.z });
         if (this.audio) this.audio.hit(true);
         setTimeout(() => { this._lightning.intensity = 0; }, 80);
         setTimeout(() => { this._lightning.intensity = 5; }, 160);
