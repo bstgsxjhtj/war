@@ -440,7 +440,7 @@ async function bootstrap() {
         if (mode.name === '据点') { mode.onTick(dt, combat.characters); hud.setDomination(mode); }
         hud.update(dt);
         if (mode.name === '战役') {
-          hud.setMode('战役', campaign.stageInfo);
+          hud.setMode(campaign.displayName, campaign.stageInfo);
           let redAlive = 0;
           for (const a of ais) if (a.alive) redAlive++;
           if (match.defenseTimer > 0) match.defenseTimer -= dt;

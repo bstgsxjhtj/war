@@ -12,9 +12,10 @@ export const STAGES = [
 ];
 
 export class CampaignMode {
-  constructor(bus) {
+  constructor(bus, nightmare = false) {
     this.bus = bus;
     this.name = '战役';
+    this.nightmare = nightmare;
     this.stage = 0;
     this.maxStages = STAGES.length;
     this.cleared = 0;
@@ -23,12 +24,18 @@ export class CampaignMode {
     this._weatherShifted = false;
   }
 
+  get displayName() { return this.nightmare ? '噩梦战役' : '战役'; }
+
   serialize() { return { cleared: this.cleared }; }
   restore(data = {}) {
     if (data && typeof data.cleared === 'number') this.cleared = data.cleared;
   }
 
-  get currentStage() { return STAGES[Math.min(this.stage, STAGES.length - 1)]; }
+  get currentStage() {
+    const s = STAGES[Math.min(this.stage, STAGES.length - 1)];
+    if (!this.nightmare) return s;
+    return { ...s, difficulty: s.difficulty * 1.35, enemyCount: s.enemyCount + 2 };
+  }
   get stageInfo() { return { ...this.currentStage, index: this.stage, total: this.maxStages, cleared: this.cleared }; }
 
   spawnLayout() {

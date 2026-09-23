@@ -31,7 +31,18 @@ export class InputRouter {
     if (e.code === 'KeyM' && (state.current === States.ENDED || state.current === States.ROUND_END || state.current === States.PLAYING && !this.deps.getPlayer()?.alive)) {
       const { bus, getMode, setMode, loadMap, mapName } = this.deps;
       const mode = getMode();
-      setMode(mode.name === '死斗' ? new Domination(bus) : (mode.name === '据点' ? new SiegeMode(bus) : (mode.name === '攻城' ? new WaveMode(bus) : (mode.name === '波次' ? new WaveMode(bus, true) : (mode.name === '无尽' ? campaign : new Deathmatch(bus))))));
+      let next;
+      if (mode.name === '死斗') next = new Domination(bus);
+      else if (mode.name === '据点') next = new SiegeMode(bus);
+      else if (mode.name === '攻城') next = new WaveMode(bus);
+      else if (mode.name === '波次') next = new WaveMode(bus, true);
+      else if (mode.name === '无尽') next = campaign;
+      else if (mode.name === '战役' && !campaign.nightmare && campaign.cleared >= campaign.maxStages) {
+        campaign.nightmare = true; campaign.reset(); next = campaign;
+        hud.flash('噩梦战役开启：敌人更强！'); setTimeout(() => hud.clearHint(), 2500);
+      }
+      else next = new Deathmatch(bus);
+      setMode(next);
       const newMode = getMode();
       if (newMode.name === '战役') {
         const layout = campaign.spawnLayout();
