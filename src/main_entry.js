@@ -36,6 +36,7 @@ import { SkillTree } from './gameplay/SkillTree.js';
 import { SkillTreeUI } from './ui/SkillTreeUI.js';
 import { TrainingMode } from './gameplay/TrainingMode.js';
 import { Tutorial } from './ui/Tutorial.js';
+import { DeathFeedback, killerLabel } from './ui/DeathFeedback.js';
 import { AudioEngine } from './audio/AudioEngine.js';
 import { WeatherSystem } from './world/WeatherSystem.js';
 import { EnvironmentHazards } from './gameplay/EnvironmentHazards.js';
@@ -153,6 +154,7 @@ async function bootstrap() {
   const weaponTrail = new WeaponTrail(scene.scene);
   const hitDirection = new HitDirection();
   const hitStop = new HitStop();
+  const deathFeedback = new DeathFeedback();
   const progression = new Progression();
   const campaign = new CampaignMode(bus);
   const daily = new DailyChallenge(progression, bus);
@@ -199,6 +201,12 @@ async function bootstrap() {
   envHazards.setTerrain(terrain);
   const assist = new DifficultyAssist(aiManager, (msg) => { hud.flash(msg); setTimeout(() => hud.clearHint(), 2500); }, AI_DIFFICULTY);
   bus.on(EV.COMBAT_KILL, ({ victim }) => { if (victim && victim.isLocal && !victim.alive) assist.onPlayerDeath(); });
+  bus.on(EV.COMBAT_KILL, ({ victim, killer }) => {
+    if (!(victim && victim.isLocal) || !killer) return;
+    const angle = Math.atan2(killer.position.x - victim.position.x, killer.position.z - victim.position.z);
+    const mul = COUNTER_MATRIX[killer.weapon?.weaponClass]?.[victim.weapon?.weaponClass] ?? 1;
+    deathFeedback.show({ label: killerLabel(killer), countered: mul > 1.2, angle, camYaw: camera.yaw || 0 });
+  });
   bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => assist.setBaseLevel(difficulty));
   weather.onLightning((pos) => envHazards.onLightningStrike(pos));
   for (const box of siege.collisionBoxes) envHazards.addWallBox(box);
@@ -283,6 +291,7 @@ async function bootstrap() {
     combat.clear();
     horses.dispose();
     formations.clear();
+    deathFeedback.hide();
     if (player) { if (player.dispose) player.dispose(); scene.remove(player.root); }
     for (const a of ais) scene.remove(a.root);
     ais = [];
@@ -469,6 +478,8 @@ async function bootstrap() {
           hud.flash('第 ' + mode.wave + ' 波来袭！');
           setTimeout(() => hud.clearHint(), 1500);
         }
+        deathFeedback.update(dt);
+        if (deathFeedback.paused) return;
         match.checkWin();
       },
       () => { renderer.render(); }
