@@ -75,7 +75,12 @@ export class SiegeStructure {
   tryOccupy(character) {
     if (!character || !character.alive) return false;
     const d = character.position.distanceTo(this.trebuchet.position);
-    if (d < 3) { this.trebuchet.team = character.team; this.trebuchet.occupied = true; return true; }
+    if (d < 3) {
+      if (this.trebuchet.occupied && this.trebuchet.team === character.team) return false;
+      this.trebuchet.team = character.team;
+      this.trebuchet.occupied = true;
+      return true;
+    }
     return false;
   }
 
@@ -94,14 +99,24 @@ export class SiegeStructure {
     return boxes;
   }
 
-  update(dt, combat) {
+  update(dt, combat, enemies = null) {
     if (!this.trebuchet.occupied) return;
     this.trebuchet.timer -= dt;
     if (this.trebuchet.timer <= 0) {
       this.trebuchet.timer = this.trebuchet.cooldown;
+      // 目标：优先最近存活敌方，否则轰击城门
+      let target = this.gate.position.clone();
+      if (enemies && enemies.length) {
+        let nearest = null, minD = Infinity;
+        for (const e of enemies) {
+          if (!e.alive || e.team === this.trebuchet.team) continue;
+          const d = e.position.distanceTo(this.trebuchet.position);
+          if (d < minD) { minD = d; nearest = e; }
+        }
+        if (nearest) target = nearest.position.clone();
+      }
       // 发射投石
       const origin = this.trebuchet.position.clone().add(new THREE.Vector3(0, 5, 0));
-      const target = this.gate.position.clone();
       const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), new THREE.MeshStandardMaterial({ color: 0x555555, flatShading: true }));
       mesh.position.copy(origin); this.scene.add(mesh);
       const vel = target.clone().sub(origin).multiplyScalar(0.5); vel.y += 8;

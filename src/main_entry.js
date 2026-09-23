@@ -403,7 +403,13 @@ async function bootstrap() {
         water.update(dt, now);
         scene.updateCloud(now);
         supply.update(player, dt, now);
-        siege.update(dt, combat);
+        siege.update(dt, combat, enemies);
+        // 投石机争夺：靠近自动占领/夺占
+        const _prevT = siege.trebuchet.team;
+        if (player.alive && siege.tryOccupy(player) && _prevT !== player.team) hud.flash('已占领投石机！');
+        for (const a of ais) {
+          if (a.alive && a.team !== _prevT && siege.tryOccupy(a) && _prevT === 0) hud.flash('投石机被敌方占领！');
+        }
         weaponTrail.update(dt, now);
         hitDirection.update(dt);
         hitStop.update(dt);
