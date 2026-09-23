@@ -1,4 +1,6 @@
 // 波次生存模式：递增难度 + 每5波 Boss + 无尽模式 + 本地最佳波数
+import { LS } from '../core/constants/storage-keys.js';
+
 export class WaveMode {
   constructor(bus, endless = false) {
     this.bus = bus;
@@ -34,14 +36,14 @@ export class WaveMode {
   get waveInfo() { return { wave: this.wave, target: this.endless ? Infinity : this.targetWave, alive: this.alive }; }
 
   static loadBest() {
-    try { return parseInt(localStorage.getItem('wave_best')) || 0; } catch { return 0; }
+    try { return parseInt(localStorage.getItem(LS.WAVE_BEST)) || 0; } catch { return 0; }
   }
 
   static saveBest(wave) {
     try {
       if (wave <= 0) return;
       const cur = WaveMode.loadBest();
-      if (wave > cur) localStorage.setItem('wave_best', String(wave));
+      if (wave > cur) localStorage.setItem(LS.WAVE_BEST, String(wave));
     } catch {}
   }
 }

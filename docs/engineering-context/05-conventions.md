@@ -18,6 +18,7 @@
 | audio_volume | AudioEngine（音量，独立保留，05 §5 "音量只留 AudioEngine 一处"） |
 | tutorial_done | Tutorial（一次性引导标志，独立保留） |
 | skilltree_profile_* | SkillTree（多档位技能方案，独立保留） |
+| wave_best | WaveMode（波次/无尽模式历史最高波数，独立保留） |
 
 ## 3. 测试规范
 

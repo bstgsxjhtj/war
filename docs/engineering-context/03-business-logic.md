@@ -22,6 +22,18 @@
 - objective 类型与 checkWin 的对应：歼灭→全灭敌人；Boss→ctx.boss 死亡；生存→surviveWavesDone；护送→目标存活到达。
 - `onStageClear()` 推进 stage；通关后 stage 回 0（配合 cleared 记录历史最高）。
 - main_entry 的 checkWin 直接调用 `campaign.onStageClear()`（CampaignMode 不发事件）。
+- **噩梦战役**：`CampaignMode(bus, nightmare=true)`，难度 ×1.35、敌数 +2，name 保持 '战役'（复用全部战役分支逻辑），displayName 为 '噩梦战役'；战役通关后 M 键循环解锁。
+
+## 3.1 本轮玩法增强（2026-09-23 P0-P3）
+
+- **大招（怒气）**：受击 +5 / 完美格挡/闪避 +15 / 命中 +3，满 100 后 T 键释放（Character.tryUltimate），COMBAT_ULTIMATE 事件。
+- **连击护盾**：受击连击数减半而非清零（ComboSystem.onHurt）。
+- **克制可视化**：克制伤害数字青色 (#66ddff) + counter 音效（COMBAT_COUNTER）。
+- **天气预告**：非战役模式每 30-60s 随机换天气，HUD `#wforecast` 倒计时显示（WeatherSystem.scheduleNext）。
+- **环境杀**：EnvironmentHazards——深水 40 DPS、城墙碰撞 15 DPS、雷暴落雷半径 6 内 50 伤害。
+- **无尽模式**：WaveMode(bus, true)，敌人增长更快（上限 12），历史最高波数存 wave_best。
+- **投石机争夺**：靠近自动占领/夺占（SiegeStructure.tryOccupy），占领后轰击最近敌方。
+- **动态难度辅助**：DifficultyAssist——连续 2 次死亡降一档（easy 为下限），获胜逐步恢复，HUD 提示。
 
 ## 4. 成就事件契约
 
