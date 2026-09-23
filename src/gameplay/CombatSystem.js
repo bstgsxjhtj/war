@@ -77,6 +77,7 @@ export class CombatSystem {
   }
 
   _emitHit(attacker, victim, damage, weaponName, color, combo = 0, heavy = false, now = 0, backstab = false) {
+    if (attacker && attacker.addRage) attacker.addRage(3);
     const counterMul = this._counterMul(attacker.weapon, victim.weapon);
     if (counterMul > 1.2) this.bus.emit(EV.COMBAT_COUNTER, { attacker, victim, mul: counterMul });
     this.bus.emit(EV.COMBAT_HIT, { attacker, victim, damage, weapon: weaponName, combo, heavy, backstab });

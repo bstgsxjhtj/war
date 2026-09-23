@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { Health } from './Health.js';
 import { Stamina } from './Stamina.js';
 import { Sword } from './weapons/Sword.js';
@@ -65,6 +65,7 @@ export class Character {
 
   get weapon() { return this.weapons[this.weaponIdx]; }
   get rage() { return this._rage; }
+  addRage(amount) { this._rage = Math.min(this.maxRage, this._rage + amount); }
   get killstreak() { return this._killstreak; }
 
   _build() {
@@ -243,6 +244,7 @@ export class Character {
       // 完美闪避：闪避刚开始0.12s内(_dodgeTimer>0.2)被攻击
       if (this._dodgeIFrame > 0 && this._dodgeTimer > 0.2 && !this._perfectDodge) {
         this._perfectDodge = true; this._perfectBuff = 2; this._dodgeIFrame = 0.45;
+        this.addRage(15);
         if (this._bus) this._bus.emit(EV.FX_PERFECTDODGE, { char: this });
       }
       return 0;
@@ -258,6 +260,7 @@ export class Character {
           if (this._perfectWindow > 0) {
             attacker._hurt = Math.max(attacker._hurt, 0.4); // 弹刀
             this.stamina.consume(0);
+            this.addRage(15);
             if (this._bus) this._bus.emit(EV.FX_PERFECTBLOCK, { char: this });
             return 0;
           }
@@ -273,6 +276,7 @@ export class Character {
     if (attacker) this.lastAttacker = attacker;
     if (!this.health.alive && this.alive) { this.die(attacker); }
     else if (lost > 0 && this.alive) {
+      this.addRage(5);
       if (this._comboSys) this._comboSys.onHurt();
       const recent = (now - this._lastHurtTime) < 0.5;
       const base = heavy ? 0.3 : 0.22;
@@ -555,7 +559,7 @@ export class Character {
       combat.ultimateMelee(this, Math.PI * 2, 5, 6);
     }
     combat.hitstop = 0.2;
-    if (this._bus) this._bus.emit(EV.FX_SHAKE, { amount: 1.5 });
+    if (this._bus) { this._bus.emit(EV.FX_SHAKE, { amount: 1.5 }); this._bus.emit(EV.COMBAT_ULTIMATE, { char: this }); }
     return true;
   }
   startExecute(target) {

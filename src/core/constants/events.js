@@ -8,6 +8,7 @@ export const EV = {
   COMBAT_DODGE: 'combat.dodge',
   COMBAT_CAVALRYKILL: 'combat.cavalrykill',
   COMBAT_COUNTER: 'combat.counter',
+  COMBAT_ULTIMATE: 'combat.ultimate',
   // 连击
   COMBO_TIER: 'combo.tier',
   COMBO_BREAK: 'combo.break',
