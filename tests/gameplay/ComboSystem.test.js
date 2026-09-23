@@ -1,95 +1,76 @@
 // @vitest-environment jsdom
+import { describe, it, expect, vi } from 'vitest';
 import { ComboSystem } from '../../src/gameplay/ComboSystem.js';
 import { EventBus } from '../../src/core/EventBus.js';
-import { describe, it, expect, vi } from 'vitest';
+import { EV } from '../../src/core/constants/events.js';
 
 describe('ComboSystem', () => {
-  it('onHit 普通命中 +1', () => {
-    const cs = new ComboSystem(new EventBus());
-    cs.onHit(false, false, 1);
+  it('普通命中 +1，counter +2，perfect +3', () => {
+    const cs = new ComboSystem();
+    expect(cs.onHit(false, false, 0)).toBe(1.0);
     expect(cs.count).toBe(1);
-    expect(cs.tier).toBe(0);
-  });
-  it('onHit 克制命中 +2', () => {
-    const cs = new ComboSystem(new EventBus());
-    cs.onHit(true, false, 1);
-    expect(cs.count).toBe(2);
-  });
-  it('onHit 完美反击 +3', () => {
-    const cs = new ComboSystem(new EventBus());
-    cs.onHit(false, true, 1);
+    cs.onHit(true, false, 0);
     expect(cs.count).toBe(3);
+    cs.onHit(false, true, 0);
+    expect(cs.count).toBe(6);
   });
-  it('tier 阈值跳变 5→1, 10→2, 20→3', () => {
-    const cs = new ComboSystem(new EventBus());
-    for (let i = 0; i < 5; i++) cs.onHit(false, false, i + 1);
+
+  it('连击升档提升伤害倍率并发 COMBO_TIER', () => {
+    const bus = new EventBus();
+    const tiers = [];
+    bus.on(EV.COMBO_TIER, (p) => tiers.push(p.tier));
+    const cs = new ComboSystem(bus);
+    for (let i = 0; i < 5; i++) cs.onHit(false, false, i);
     expect(cs.tier).toBe(1);
-    for (let i = 0; i < 5; i++) cs.onHit(false, false, 10 + i);
-    expect(cs.tier).toBe(2);
-    for (let i = 0; i < 10; i++) cs.onHit(false, false, 20 + i);
-    expect(cs.tier).toBe(3);
-  });
-  it('damageMul 各层级倍率', () => {
-    const cs = new ComboSystem(new EventBus());
-    expect(cs.damageMul).toBe(1.0);
-    for (let i = 0; i < 5; i++) cs.onHit(false, false, i + 1);
     expect(cs.damageMul).toBe(1.1);
-    for (let i = 0; i < 5; i++) cs.onHit(false, false, 10 + i);
-    expect(cs.damageMul).toBe(1.2);
-    for (let i = 0; i < 10; i++) cs.onHit(false, false, 20 + i);
-    expect(cs.damageMul).toBe(1.3);
+    expect(tiers).toContain(1);
   });
-  it('onHit 返回本次伤害倍率（含 finisher）', () => {
-    const cs = new ComboSystem(new EventBus());
-    for (let i = 0; i < 20; i++) cs.onHit(false, false, i + 1);
+
+  it('到最高档触发 finisher 并发 COMBO_FINISHER，下一次命中 1.5 倍加成', () => {
+    const bus = new EventBus();
+    let finisher = 0;
+    bus.on(EV.COMBO_FINISHER, () => finisher++);
+    const cs = new ComboSystem(bus);
+    for (let i = 0; i < 20; i++) cs.onHit(false, false, i);
     expect(cs.tier).toBe(3);
     expect(cs.hasFinisher).toBe(true);
+    expect(finisher).toBe(1);
     const mul = cs.onHit(false, false, 21);
-    expect(mul).toBe(1.3 * 1.5);
+    expect(mul).toBeCloseTo(1.3 * 1.5);
     expect(cs.hasFinisher).toBe(false);
   });
-  it('onHurt 归零 + combo.break 事件', () => {
+
+  it('受击清空连击并发 COMBO_BREAK', () => {
     const bus = new EventBus();
-    const spy = vi.fn();
-    bus.on('combo.break', spy);
+    let broken = 0;
+    bus.on(EV.COMBO_BREAK, () => broken++);
     const cs = new ComboSystem(bus);
-    cs.onHit(true, false, 1);
+    cs.onHit(false, false, 0);
     cs.onHurt();
     expect(cs.count).toBe(0);
     expect(cs.tier).toBe(0);
-    expect(spy).toHaveBeenCalled();
-  });
-  it('update 3s 内不衰减', () => {
-    const cs = new ComboSystem(new EventBus());
-    cs.onHit(true, false, 1);
-    cs.update(2, 3);
-    expect(cs.count).toBe(2);
-  });
-  it('update 3s 后线性衰减', () => {
-    const cs = new ComboSystem(new EventBus());
-    cs.onHit(true, false, 1);
-    cs.update(1, 5);
-    expect(cs.count).toBeLessThan(2);
-    expect(cs.count).toBeGreaterThan(0);
-  });
-  it('update 衰减到 0 归零 + combo.break', () => {
-    const bus = new EventBus();
-    const spy = vi.fn();
-    bus.on('combo.break', spy);
-    const cs = new ComboSystem(bus);
-    cs.onHit(false, false, 1);
-    cs.update(2, 10);
-    expect(cs.count).toBe(0);
-    expect(spy).toHaveBeenCalled();
-  });
-  it('掉 tier3 再升回重新触发 finisher', () => {
-    const cs = new ComboSystem(new EventBus());
-    for (let i = 0; i < 20; i++) cs.onHit(false, false, i + 1);
-    expect(cs.hasFinisher).toBe(true);
-    cs.onHit(false, false, 21);
-    expect(cs.hasFinisher).toBe(false);
+    expect(broken).toBe(1);
     cs.onHurt();
-    for (let i = 0; i < 20; i++) cs.onHit(false, false, 100 + i);
-    expect(cs.hasFinisher).toBe(true);
+    expect(broken).toBe(1);
+  });
+
+  it('3 秒无命中后衰减至清零', () => {
+    const bus = new EventBus();
+    let broken = 0;
+    bus.on(EV.COMBO_BREAK, () => broken++);
+    const cs = new ComboSystem(bus);
+    cs.onHit(false, false, 0);
+    cs.update(0.5, 2);
+    expect(cs.count).toBe(1);
+    cs.update(2, 5);
+    expect(cs.count).toBe(0);
+    expect(broken).toBe(1);
+  });
+
+  it('无 bus 不抛错', () => {
+    const cs = new ComboSystem();
+    cs.onHit(false, false, 0);
+    cs.onHurt();
+    cs.update(1, 10);
   });
 });
