@@ -17,6 +17,7 @@ export class MatchController {
     this.playerKills = 0;
     this.playerDamage = 0;
     this.playerTaken = 0;
+    this.playerDeathCause = null;
     this.matchStartTime = performance.now();
     // 战役目标状态（spawnAll 重置、主循环推进、checkWin 判定）
     this.escortTarget = null;
@@ -41,7 +42,7 @@ export class MatchController {
 
   startRound() {
     this.scoreB = 0; this.scoreR = 0;
-    this.playerKills = 0; this.playerDamage = 0; this.matchStartTime = performance.now();
+    this.playerKills = 0; this.playerDamage = 0; this.playerDeathCause = null; this.matchStartTime = performance.now();
     this.deps.hud.setScore(0, 0);
     this.deps.hud.clearHint();
     this.deps.spawnAll();
@@ -67,6 +68,7 @@ export class MatchController {
     const player = this.deps.getPlayer();
     const ais = this.deps.getAis();
     if (state.current !== States.PLAYING) return;
+    if (!player.alive && !this.playerDeathCause && player.lastAttacker) this.playerDeathCause = (player.lastAttacker.weapon?.name) || '未知';
     if (mode.name === '战役') {
       const winner = campaign.checkWin(player.alive, ais.some(a => a.alive), siege.gate, { boss: ais.find(a => a instanceof BossEnemy), escortTarget: this.escortTarget, defenseTimer: this.defenseTimer, surviveWavesDone: this.surviveWavesDone, timeLimit: this.timeLimit, redAlive: ais.filter(a => a.alive).length });
       if (winner === 'blue') {
@@ -80,7 +82,7 @@ export class MatchController {
           const _creward = daily.claim(); if (_creward > 0) { progression.addScore(_creward); hud.flash('每日挑战完成！+' + _creward + '分'); }
           bus.emit(EV.DAILY_UPDATE, daily.challenges);
           state.transit(States.ENDED);
-          resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: 0, win: true });
+          resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: 0, win: true, deathCause: this.playerDeathCause });
         } else {
           const layout = campaign.spawnLayout();
           this.deps.loadMap(layout.mapKey);
@@ -93,7 +95,7 @@ export class MatchController {
       } else if (winner === 'red') {
         hud.flashEnd('战役失败！按 R 重试本关');
         state.transit(States.ENDED);
-        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: 0, win: false });
+        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: 0, win: false, deathCause: this.playerDeathCause });
         return;
       }
       return;
@@ -115,7 +117,7 @@ export class MatchController {
         hud.flashEnd('蓝方获胜！按 R 重新开始'); camera.setKillCam(player); state.transit(States.ENDED);
         const grade = ResultScreen.gradeOf ? ResultScreen.gradeOf(this.playerKills, this.playerDamage, (performance.now() - this.matchStartTime) / 1000) : 'A';
         progression.recordWin(grade, (performance.now() - this.matchStartTime) / 1000); progressUI.refresh();
-        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: true });
+        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: true, deathCause: this.playerDeathCause });
         if (this.playerTaken === 0) daily.track('noDamageWin');
         const timeSec = (performance.now() - this.matchStartTime) / 1000;
         if (timeSec < 90) daily.track('speedWin', timeSec);
@@ -130,7 +132,7 @@ export class MatchController {
         hud.flashEnd('红方获胜！按 R 重新开始');
         if (player.lastAttacker) camera.setKillCam(player.lastAttacker);
         state.transit(States.ENDED); progression.recordLoss(); progressUI.refresh();
-        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: false });
+        resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: false, deathCause: this.playerDeathCause });
       }
       else { hud.flash('红方赢下本局！按 R 跳过'); state.transit(States.ROUND_END); this.roundEndTimer = 3; }
     }
