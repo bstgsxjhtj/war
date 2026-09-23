@@ -39,6 +39,7 @@ import { Tutorial } from './ui/Tutorial.js';
 import { AudioEngine } from './audio/AudioEngine.js';
 import { WeatherSystem } from './world/WeatherSystem.js';
 import { EnvironmentHazards } from './gameplay/EnvironmentHazards.js';
+import { DifficultyAssist } from './gameplay/DifficultyAssist.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
 import { WaveMode } from './gameplay/WaveMode.js';
 import { ResultScreen } from './ui/ResultScreen.js';
@@ -196,6 +197,9 @@ async function bootstrap() {
   weather.setAudio(audio);
   envHazards = new EnvironmentHazards(bus);
   envHazards.setTerrain(terrain);
+  const assist = new DifficultyAssist(aiManager, (msg) => { hud.flash(msg); setTimeout(() => hud.clearHint(), 2500); }, AI_DIFFICULTY);
+  bus.on(EV.COMBAT_KILL, ({ victim }) => { if (victim && victim.isLocal && !victim.alive) assist.onPlayerDeath(); });
+  bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => assist.setBaseLevel(difficulty));
   weather.onLightning((pos) => envHazards.onLightningStrike(pos));
   for (const box of siege.collisionBoxes) envHazards.addWallBox(box);
   const settings = new SettingsMenu(bus, audio);
@@ -251,7 +255,7 @@ async function bootstrap() {
     getMode: () => mode
   });
   const match = new MatchController({
-    bus, state, hud, resultScreen, camera, progression, progressUI, daily, skills, campaign, siege, weather, affixes,
+    bus, state, hud, resultScreen, camera, progression, progressUI, daily, skills, campaign, siege, weather, affixes, assist,
     spawnAll: () => spawnAll(),
     saveNow: () => saveOrch.saveNow(),
     loadMap: (k) => loadMap(k),

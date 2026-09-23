@@ -82,7 +82,7 @@ export class MatchController {
   }
 
   checkWin() {
-    const { state, hud, campaign, siege, progression, progressUI, daily, bus, resultScreen, camera, saveNow } = this.deps;
+    const { state, hud, campaign, siege, progression, progressUI, daily, bus, resultScreen, camera, saveNow, assist } = this.deps;
     const mode = this.deps.getMode();
     const player = this.deps.getPlayer();
     const ais = this.deps.getAis();
@@ -139,6 +139,7 @@ export class MatchController {
     if (winner === 'blue') {
       this.roundB++; hud.setRound(this.roundB, this.roundR, this.targetWins);
       if (this.roundB >= this.targetWins) {
+        if (assist) assist.onPlayerWin();
         hud.flashEnd('蓝方获胜！按 R 重新开始'); camera.setKillCam(player); state.transit(States.ENDED);
         const grade = ResultScreen.gradeOf ? ResultScreen.gradeOf(this.playerKills, this.playerDamage, (performance.now() - this.matchStartTime) / 1000) : 'A';
         progression.recordWin(grade, (performance.now() - this.matchStartTime) / 1000); progressUI.refresh();
