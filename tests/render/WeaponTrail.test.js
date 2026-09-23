@@ -109,4 +109,17 @@ describe('HitStop', () => {
     expect(hs.active).toBe(false);
     expect(hs.timeScale).toBe(1);
   });
+
+  it('完美格挡慢动作：trigger(0.15, 0.3) 给出 0.3x 慢放并按时恢复', () => {
+    const hs = new HitStop();
+    hs.trigger(0.15, 0.3);
+    expect(hs.active).toBe(true);
+    expect(hs.timeScale).toBe(0.3);
+    hs.update(0.14);
+    expect(hs.active).toBe(true);
+    expect(hs.timeScale).toBe(0.3);
+    hs.update(0.02);
+    expect(hs.active).toBe(false);
+    expect(hs.timeScale).toBe(1);
+  });
 });

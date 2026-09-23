@@ -10,6 +10,7 @@ export class AudioEngine {
     if (type === 'swing') this.swing();
     else if (type === 'hit') this.hit(opts.heavy, opts.combo);
     else if (type === 'block') this.block();
+    else if (type === 'perfectblock') this.perfectBlock();
     else if (type === 'dodge') this.dodge();
     else if (type === 'ultimate' || type === 'kill') this.ultimate();
     else if (type === 'click') this.click();
@@ -21,6 +22,7 @@ export class AudioEngine {
   hit(heavy = false, combo = 0) { const f = Math.min(800, 250 + combo * 50); this._noise(heavy ? 0.28 : 0.14, heavy ? 500 : f, this._volOf('sfx') * (heavy ? 0.4 : 0.3)); }
   footstep() { this._noise(0.05, 90, this._volOf('sfx') * 0.12); }
   block() { this._tone(700, 0.12, 'square', this._volOf('sfx') * 0.22, 400); }
+  perfectBlock() { this._tone(80, 0.25, 'sine', this._volOf('sfx') * 0.35, 40); this._noise(0.15, 200, this._volOf('sfx') * 0.2); }
   ultimate() { this._tone(120, 0.5, 'sawtooth', this._volOf('sfx') * 0.35, 60); this._noise(0.4, 800, this._volOf('sfx') * 0.3); }
   dodge() { this._tone(400, 0.1, 'triangle', this._volOf('sfx') * 0.15, 200); }
   counter() { this._tone(880, 0.15, 'triangle', this._volOf('sfx') * 0.25, 1320); }

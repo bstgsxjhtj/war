@@ -9,7 +9,7 @@ import { Camera } from './engine/Camera.js';
 import { Terrain } from './world/Terrain.js';
 import { Environment } from './world/Environment.js';
 import { Water } from './world/Water.js';
-import { CombatSystem } from './gameplay/CombatSystem.js';
+import { CombatSystem, COUNTER_MATRIX } from './gameplay/CombatSystem.js';
 import { ComboSystem } from './gameplay/ComboSystem.js';
 import { WeaponSkills } from './gameplay/WeaponSkills.js';
 import { AIManager } from './gameplay/AIManager.js';
@@ -163,7 +163,7 @@ async function bootstrap() {
   const horses = new Horse(scene.scene);
   const formations = new FormationController();
   bus.emit(EV.DAILY_UPDATE, daily.challenges);
-  bus.on(EV.FX_PERFECTBLOCK, () => { if (daily.track('perfect')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_PERFECTBLOCK, {}); audio.playSound('block'); hitStop.trigger(0.3, 0.05); bus.emit(EV.FX_SHAKE, { amount: 0.6 }); });
+  bus.on(EV.FX_PERFECTBLOCK, () => { if (daily.track('perfect')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_PERFECTBLOCK, {}); audio.playSound('perfectblock'); hitStop.trigger(0.15, 0.3); bus.emit(EV.FX_SHAKE, { amount: 0.6 }); });
   bus.on(EV.FX_PERFECTDODGE, () => { if (daily.track('dodge')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_DODGE, {}); audio.playSound('dodge'); });
   const progressUI = new ProgressionUI(progression, bus);
   bus.emit(EV.MINIMAP_SUPPLY, (supply.points || []).map(p => ({ x: p.pos.x, z: p.pos.z })));
@@ -391,7 +391,7 @@ async function bootstrap() {
         if (state.current !== States.PLAYING) { env.update(dt, now); return; }
 
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
-        const ldt = (combat.hitstop > 0 || hitStop.active) ? 0 : dt;
+        const ldt = (combat.hitstop > 0 || deathFeedback.paused) ? 0 : (hitStop.active ? hitStop.timeScale * dt : dt);
 
         const weatherFx = weather.getCombatEffects();
         player._weatherEffects = weatherFx;

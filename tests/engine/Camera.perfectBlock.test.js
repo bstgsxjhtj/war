@@ -37,4 +37,17 @@ describe('Camera 完美格挡慢动作', () => {
     new Camera(bus);
     expect(bus.on).toHaveBeenCalledWith(EV.FX_PERFECTBLOCK, expect.any(Function));
   });
+
+  it('COMBAT_ULTIMATE 触发 FOV 收缩到 45（大招顿帧）', () => {
+    const bus = makeBus();
+    const cam = new Camera(bus);
+    bus.emit(EV.COMBAT_ULTIMATE, {});
+    expect(cam._curFov).toBe(45);
+  });
+
+  it('Camera 构造时注册了 COMBAT_ULTIMATE 监听', () => {
+    const bus = makeBus();
+    new Camera(bus);
+    expect(bus.on).toHaveBeenCalledWith(EV.COMBAT_ULTIMATE, expect.any(Function));
+  });
 });

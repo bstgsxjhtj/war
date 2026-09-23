@@ -122,4 +122,20 @@ describe('AudioEngine', () => {
     expect(a._volOf('bgm')).toBe(0.25);
     expect(a._volOf('env')).toBe(0.2);
   });
+
+  it('playSound perfectblock 调用 perfectBlock', () => {
+    const a = new AudioEngine();
+    const spy = vi.spyOn(a, 'perfectBlock');
+    a.playSound('perfectblock');
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('perfectBlock 播放低频 80Hz 正弦 + 短噪声', () => {
+    const a = new AudioEngine();
+    const toneSpy = vi.spyOn(a, '_tone');
+    const noiseSpy = vi.spyOn(a, '_noise');
+    a.perfectBlock();
+    expect(toneSpy).toHaveBeenCalledWith(80, expect.any(Number), 'sine', expect.any(Number), 40);
+    expect(noiseSpy).toHaveBeenCalled();
+  });
 });
