@@ -52,8 +52,11 @@ export class WeaponTrail {
         trail.head = (trail.head - 1 + this._maxSeg) % this._maxSeg;
         if (trail.count < this._maxSeg) trail.count++;
         const slot = trail.history[trail.head];
-        slot.tail.copy(wp.parent.localToWorld(tmpT.set(0, 0, -0.6)));
-        slot.tip.copy(wp.parent.localToWorld(tmpP.set(0, 0, 0.8)));
+        const parent = wp.parent;
+        parent.updateWorldMatrix(true, false);
+        const mw = parent.matrixWorld;
+        slot.tail.copy(tmpT.set(0, 0, -0.6).applyMatrix4(mw));
+        slot.tip.copy(tmpP.set(0, 0, 0.8).applyMatrix4(mw));
       }
       const segs = Math.min(trail.count - 1, this._maxSeg - 1);
       for (let i = 0; i < segs; i++) {
