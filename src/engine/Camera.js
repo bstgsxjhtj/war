@@ -25,6 +25,7 @@ export class Camera {
     });
     if (bus) bus.on(EV.FX_SHAKE, ({ amount }) => this.addShake(amount));
     if (bus) bus.on(EV.FX_PERFECTDODGE, () => { this.addShake(0.5); this._curFov = 52; this.timeScale = 0.5; });
+    if (bus) bus.on(EV.FX_PERFECTBLOCK, () => { this.addShake(0.6); this._curFov = 50; });
   }
 
   addShake(amount) { this._shake = Math.min(0.9, this._shake + amount); }

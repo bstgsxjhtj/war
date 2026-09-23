@@ -157,7 +157,7 @@ async function bootstrap() {
   const horses = new Horse(scene.scene);
   const formations = new FormationController();
   bus.emit(EV.DAILY_UPDATE, daily.challenges);
-  bus.on(EV.FX_PERFECTBLOCK, () => { if (daily.track('perfect')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_PERFECTBLOCK, {}); audio.playSound('block'); });
+  bus.on(EV.FX_PERFECTBLOCK, () => { if (daily.track('perfect')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_PERFECTBLOCK, {}); audio.playSound('block'); hitStop.trigger(0.3, 0.05); bus.emit(EV.FX_SHAKE, { amount: 0.6 }); });
   bus.on(EV.FX_PERFECTDODGE, () => { if (daily.track('dodge')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_DODGE, {}); audio.playSound('dodge'); });
   const progressUI = new ProgressionUI(progression, bus);
   bus.emit(EV.MINIMAP_SUPPLY, (supply.points || []).map(p => ({ x: p.pos.x, z: p.pos.z })));
