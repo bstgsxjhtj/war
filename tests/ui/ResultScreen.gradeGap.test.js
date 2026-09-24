@@ -54,3 +54,29 @@ describe('ResultScreen.show 渲染差一点反馈', () => {
     expect(rs.el.innerHTML).not.toContain('死因');
   });
 });
+
+describe('ResultScreen.show 死因统计', () => {
+  let rs, bus;
+  beforeEach(() => {
+    bus = { emit: vi.fn(), on: vi.fn() };
+    rs = new ResultScreen(bus);
+  });
+
+  it('deathStats 渲染 top3 死因', () => {
+    rs.show({ kills: 0, damage: 10, time: 30, win: false, deathStats: { causes: [{ name: '长矛', count: 2 }, { name: '战锤', count: 1 }], total: 3, countered: 1 } });
+    expect(rs.el.innerHTML).toContain('长矛');
+    expect(rs.el.innerHTML).toContain('2');
+    expect(rs.el.innerHTML).toContain('战锤');
+  });
+
+  it('deathStats 渲染克制占比', () => {
+    rs.show({ kills: 0, damage: 10, time: 30, win: false, deathStats: { causes: [{ name: '长矛', count: 2 }], total: 4, countered: 2 } });
+    expect(rs.el.innerHTML).toContain('克制');
+    expect(rs.el.innerHTML).toContain('50');
+  });
+
+  it('无 deathStats 时不渲染死因统计区', () => {
+    rs.show({ kills: 5, damage: 150, time: 50, win: true });
+    expect(rs.el.innerHTML).not.toContain('死因统计');
+  });
+});

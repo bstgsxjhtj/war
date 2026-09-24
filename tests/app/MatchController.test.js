@@ -129,3 +129,63 @@ describe('MatchController', () => {
     expect(deps.resultScreen.show).not.toHaveBeenCalled();
   });
 });
+
+describe('MatchController 死因统计', () => {
+  it('combat.kill 玩家死亡时记录死因', () => {
+    const { deps, bus } = makeDeps();
+    const mc = new MatchController(deps);
+    bus.emit('combat.kill', { team: 1, killer: { weapon: { name: '长矛', weaponClass: 'SPEAR' } }, victim: { isLocal: true, weapon: { weaponClass: 'SHIELD' } } });
+    expect(mc.deathCount).toBe(1);
+    expect(mc.deathCauses['长矛']).toBe(1);
+  });
+
+  it('多次死亡累计死因', () => {
+    const { deps, bus } = makeDeps();
+    const mc = new MatchController(deps);
+    const k1 = { weapon: { name: '长矛', weaponClass: 'SPEAR' } };
+    const k2 = { weapon: { name: '战锤', weaponClass: 'HEAVY' } };
+    const v = { isLocal: true, weapon: { weaponClass: 'SHIELD' } };
+    bus.emit('combat.kill', { team: 1, killer: k1, victim: v });
+    bus.emit('combat.kill', { team: 1, killer: k1, victim: v });
+    bus.emit('combat.kill', { team: 1, killer: k2, victim: v });
+    expect(mc.deathCount).toBe(3);
+    expect(mc.deathCauses['长矛']).toBe(2);
+    expect(mc.deathCauses['战锤']).toBe(1);
+  });
+
+  it('被克制致死时 counterDeaths 递增', () => {
+    const { deps, bus } = makeDeps();
+    const mc = new MatchController(deps);
+    bus.emit('combat.kill', { team: 1, killer: { weapon: { name: '长矛', weaponClass: 'SPEAR' } }, victim: { isLocal: true, weapon: { weaponClass: 'SHIELD' } } });
+    expect(mc.counterDeaths).toBe(1);
+  });
+
+  it('非克制致死不增 counterDeaths', () => {
+    const { deps, bus } = makeDeps();
+    const mc = new MatchController(deps);
+    bus.emit('combat.kill', { team: 1, killer: { weapon: { name: '剑', weaponClass: 'SWORD' } }, victim: { isLocal: true, weapon: { weaponClass: 'SWORD' } } });
+    expect(mc.counterDeaths).toBe(0);
+  });
+
+  it('startRound 重置死因统计', () => {
+    const { deps, bus } = makeDeps();
+    const mc = new MatchController(deps);
+    bus.emit('combat.kill', { team: 1, killer: { weapon: { name: '长矛', weaponClass: 'SPEAR' } }, victim: { isLocal: true, weapon: { weaponClass: 'SHIELD' } } });
+    mc.startRound();
+    expect(mc.deathCount).toBe(0);
+    expect(mc.deathCauses).toEqual({});
+    expect(mc.counterDeaths).toBe(0);
+  });
+
+  it('resultScreen.show 收到 deathStats 含 top3 与克制占比', () => {
+    const { deps, bus, state, mode } = makeDeps();
+    mode.checkWin = vi.fn(() => 'red');
+    const mc = new MatchController(deps);
+    bus.emit('combat.kill', { team: 1, killer: { weapon: { name: '长矛', weaponClass: 'SPEAR' } }, victim: { isLocal: true, weapon: { weaponClass: 'SHIELD' } } });
+    toPlaying(state); mc.checkWin();
+    toPlaying(state); mc.checkWin();
+    expect(deps.resultScreen.show).toHaveBeenCalledWith(expect.objectContaining({
+      deathStats: expect.objectContaining({ total: 1, countered: 1 })
+    }));
+  });
+});
