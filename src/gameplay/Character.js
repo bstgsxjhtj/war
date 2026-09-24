@@ -279,6 +279,7 @@ export class Character {
           if (!attacker.weapon.armorPierce) {
             amount *= 0.3;
             this.stamina.consume(12);
+            if (this._bus) this._bus.emit(EV.FX_BLOCK, { char: this });
           }
         }
       }

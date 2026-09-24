@@ -49,6 +49,13 @@ describe('Character.takeDamage 主路径', () => {
     expect(lost).toBeCloseTo(30);
   });
 
+  it('普通格挡触发 FX_BLOCK 音效事件 (P1-4)', () => {
+    c.forward.set(0, 0, 1);
+    c._blocking = true;
+    c.takeDamage(100, false, makeAttacker(0, 2), 1);
+    expect(bus.emit).toHaveBeenCalledWith(EV.FX_BLOCK, expect.objectContaining({ char: c }));
+  });
+
   it('完美格挡窗口免伤并弹刀', () => {
     const atk = makeAttacker(0, 2);
     c.forward.set(0, 0, 1);

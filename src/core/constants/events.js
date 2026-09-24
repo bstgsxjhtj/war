@@ -33,6 +33,7 @@ export const EV = {
   // 特效
   FX_SHAKE: 'fx.shake',
   FX_PERFECTBLOCK: 'fx.perfectBlock',
+  FX_BLOCK: 'fx.block',
   FX_PERFECTDODGE: 'fx.perfectDodge',
   FX_BOSSROAR: 'fx.bossRoar',
   FX_DODGE: 'fx.dodge',
