@@ -127,24 +127,6 @@ async function bootstrap() {
   const AI_DIFFICULTY = 'normal';
   aiManager.setDifficulty(AI_DIFFICULTY);
   const hud = new HUD(bus);
-  bus.on(EV.COMBAT_KILL, (p) => { if (p && p.killer && p.killer.isLocal) achievements.check(EV.COMBAT_KILL, p); });
-  bus.on(EV.COMBO_TIER, (p) => achievements.check(EV.COMBO_TIER, p));
-  bus.on(EV.SKILL_CAST, (p) => { achievements.check(EV.SKILL_CAST, p); audio.playSound('ultimate'); });
-  bus.on(EV.CAMPAIGN_CLEAR, (p) => achievements.check(EV.CAMPAIGN_CLEAR, p));
-  bus.on(EV.CAMPAIGN_PERFECT, (p) => achievements.check(EV.CAMPAIGN_PERFECT, p));
-  bus.on(EV.COMBAT_BACKSTAB, (p) => achievements.check(EV.COMBAT_BACKSTAB, p));
-  bus.on(EV.COMBAT_PERFECTBLOCK, (p) => achievements.check(EV.COMBAT_PERFECTBLOCK, p));
-  bus.on(EV.COMBAT_DODGE, (p) => achievements.check(EV.COMBAT_DODGE, p));
-  bus.on(EV.COMBAT_CAVALRYKILL, (p) => achievements.check(EV.COMBAT_CAVALRYKILL, p));
-  bus.on(EV.DAILY_COMPLETED, (p) => achievements.check(EV.DAILY_COMPLETED, p));
-  bus.on(EV.ACHIEVEMENT_UNLOCK, ({ name, reward }) => {
-    if (reward.skillPoint) skills.addPoint(reward.skillPoint);
-    if (reward.affix) affixes.grant(reward.affix[0], reward.affix[1]);
-    if (reward.skin && skins) skins.unlock(reward.skin);
-    hud.flash('成就解锁：' + name);
-    audio.playSound('achievement');
-  });
-  bus.on(EV.AFFIX_DROP, ({ type, tier }) => hud.flash('词条掉落：' + type));
   bus.on(EV.BOSS_SUMMON, ({ pos, team, count }) => {
     for (let i = 0; i < count; i++) {
       const e = new AIController({ team, passive: false, maxHp: Math.round(50 * aiManager.difficulty().maxHpMul) });
@@ -207,6 +189,7 @@ async function bootstrap() {
   const skillUI = new SkillTreeUI(bus, skills);
   const saveManager = new SaveManager();
   const audio = new AudioEngine();
+  wireAchievements(bus, { achievements, getSkills: () => skills, getAffixes: () => affixes, getSkins: () => skins, hud, audio });
   const weather = new WeatherSystem(scene.scene, scene.sun || null, scene.hemi || null, audio);
   weather.setAudio(audio);
   envHazards = new EnvironmentHazards(bus);
