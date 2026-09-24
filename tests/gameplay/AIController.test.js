@@ -68,12 +68,35 @@ describe('AIController 决策', () => {
     expect(ai.setSprint).toHaveBeenCalledWith(true);
   });
 
-  it('近战范围内进入 attack 并出手', () => {
+  it('近战范围内进入 attack 并进入前摇（不立即出手）', () => {
     ai.setMove = vi.fn();
     const enemy = mkEnemy(0, 2, 0);
     ai.update(0.016, terrain, combat, [enemy], NOW);
     expect(ai._state).toBe('attack');
+    expect(ai._windupTimer).toBeGreaterThan(0);
+    expect(ai._telegraph.active).toBe(true);
+    expect(ai.tryAttack).not.toHaveBeenCalled();
+  });
+
+  it('前摇结束后才出手并隐藏 telegraph', () => {
+    ai.setMove = vi.fn();
+    const enemy = mkEnemy(0, 2, 0);
+    ai.update(0.016, terrain, combat, [enemy], NOW);
+    ai.update(ai._windupDur, terrain, combat, [enemy], NOW);
     expect(ai.tryAttack).toHaveBeenCalledWith(combat, 1);
+    expect(ai._windupTimer).toBe(0);
+    expect(ai._telegraph.active).toBe(false);
+  });
+
+  it('前摇期间保持静止不重复触发', () => {
+    ai.setMove = vi.fn();
+    const enemy = mkEnemy(0, 2, 0);
+    ai.update(0.016, terrain, combat, [enemy], NOW);
+    const timerAfterStart = ai._windupTimer;
+    ai.update(0.05, terrain, combat, [enemy], NOW);
+    expect(ai.setMove).toHaveBeenCalledWith(0, 0);
+    expect(ai._windupTimer).toBeCloseTo(timerAfterStart - 0.05, 4);
+    expect(ai.tryAttack).not.toHaveBeenCalled();
   });
 
   it('血量<30% 撤退：远离最近敌人', () => {

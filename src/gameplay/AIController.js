@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Character } from './Character.js';
 import { EV } from '../core/constants/events.js';
+import { TelegraphIndicator } from '../render/TelegraphIndicator.js';
 
 export class AIController extends Character {
   constructor({ team = 1, passive = false, maxHp = 90 } = {}) {
@@ -31,6 +32,9 @@ export class AIController extends Character {
     this._squadId = null;
     this._squadRole = null;
     this._aiManager = null;
+    this._windupDur = 0.45;
+    this._windupTimer = 0;
+    this._telegraph = new TelegraphIndicator(this.root);
     this._pickPatrol();
   }
 
@@ -76,8 +80,22 @@ export class AIController extends Character {
     return lost;
   }
 
+  _startWindup() {
+    this._windupTimer = this._windupDur;
+    if (this._telegraph) this._telegraph.show(this._windupDur);
+  }
+
+  _strikeFromWindup(combat) {
+    this.tryAttack(combat, 1);
+    this._swordReactTimer = 0.5 + Math.random() * 0.4;
+    if (this._telegraph) this._telegraph.hide();
+  }
+
   update(dt, terrain, combat, enemies, now) {
-    if (!this.alive) { super.update(dt, terrain, combat, now); return; }
+    if (!this.alive) {
+      if (this._windupTimer > 0) { this._windupTimer = 0; if (this._telegraph) this._telegraph.hide(); }
+      super.update(dt, terrain, combat, now); return;
+    }
     if (this._passive) { this.setMove(0, 0); this.setSprint(false); super.update(dt, terrain, combat, now); return; }
     this._strafePhase += dt * 1.2;
     if (this._swordReactTimer > 0) this._swordReactTimer -= dt;
@@ -88,6 +106,11 @@ export class AIController extends Character {
     if (this._blockCd > 0) this._blockCd -= dt;
     if (this._callReinforceCd > 0) this._callReinforceCd -= dt;
     if (this._spotCd > 0) this._spotCd -= dt;
+    if (this._windupTimer > 0) {
+      this._windupTimer -= dt;
+      if (this._windupTimer <= 0) { this._windupTimer = 0; this._strikeFromWindup(combat); }
+    }
+    if (this._telegraph) this._telegraph.update(dt);
     if (this._counterTimer > 0) { this._counterTimer -= dt; if (this._swordReactTimer <= 0 && this.weapon && this.weapon.ready) { this.tryAttack(combat, 1); this._swordReactTimer = 0.5; } }
 
     if (this._isElite && this._eliteSkill === 'enrage' && this.health.ratio < 0.5) {
@@ -107,6 +130,7 @@ export class AIController extends Character {
 
     if (this.health.ratio < 0.3) {
       this._state = 'retreat';
+      if (this._windupTimer > 0) { this._windupTimer = 0; if (this._telegraph) this._telegraph.hide(); }
       let nearest = null, minD = Infinity;
       for (const e of enemies) {
         if (!e.alive || e.team === this.team) continue;
@@ -187,13 +211,17 @@ export class AIController extends Character {
             this._reactTimer = (diff ? diff.reactTime : 0.3) + Math.random() * 0.8;
           }
         } else {
-          const allies = enemies.filter(e => e.team === this.team);
-          const flank = this._calcFlankDir(target, allies);
-          this.setMove(flank.dot(this.forward) > 0 ? 1 : 0.3, Math.sin(this._strafePhase) * 0.4);
-          this.setSprint(false);
-          if (this._swordReactTimer <= 0 && w.ready) {
-            this.tryAttack(combat, 1);
-            this._swordReactTimer = 0.5 + Math.random() * 0.4;
+          if (this._windupTimer > 0) {
+            this.setMove(0, 0);
+            this.setSprint(false);
+          } else {
+            const allies = enemies.filter(e => e.team === this.team);
+            const flank = this._calcFlankDir(target, allies);
+            this.setMove(flank.dot(this.forward) > 0 ? 1 : 0.3, Math.sin(this._strafePhase) * 0.4);
+            this.setSprint(false);
+            if (this._swordReactTimer <= 0 && w.ready) {
+              this._startWindup();
+            }
           }
         }
       }
