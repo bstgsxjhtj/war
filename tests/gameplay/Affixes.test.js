@@ -66,3 +66,64 @@ describe('Affixes', () => {
     expect(a2.inventory[1]).toEqual({ type: '吸血', tier: 0 });
   });
 });
+
+describe('Affixes 词条协同', () => {
+  let a;
+  beforeEach(() => { a = new Affixes(); });
+
+  it('锋锐+暴怒 触发狂战协同', () => {
+    const w = { affixes: [{ type: '锋锐', tier: 1 }, { type: '暴怒', tier: 0 }] };
+    const syn = a.checkSynergy(w);
+    expect(syn).not.toBeNull();
+    expect(syn.name).toBe('狂战');
+  });
+
+  it('协同不受槽位顺序影响（暴怒+锋锐 仍触发）', () => {
+    const w = { affixes: [{ type: '暴怒', tier: 0 }, { type: '锋锐', tier: 1 }] };
+    expect(a.checkSynergy(w)).not.toBeNull();
+  });
+
+  it('吸血+坚韧 触发不灭协同', () => {
+    const w = { affixes: [{ type: '吸血', tier: 0 }, { type: '坚韧', tier: 1 }] };
+    const syn = a.checkSynergy(w);
+    expect(syn).not.toBeNull();
+    expect(syn.name).toBe('不灭');
+  });
+
+  it('迅捷+幸运 触发幸运一击协同', () => {
+    const w = { affixes: [{ type: '迅捷', tier: 0 }, { type: '幸运', tier: 2 }] };
+    const syn = a.checkSynergy(w);
+    expect(syn).not.toBeNull();
+    expect(syn.name).toBe('幸运一击');
+  });
+
+  it('仅单词条不触发协同', () => {
+    const w = { affixes: [{ type: '锋锐', tier: 1 }, null] };
+    expect(a.checkSynergy(w)).toBeNull();
+  });
+
+  it('非协同组合不触发', () => {
+    const w = { affixes: [{ type: '锋锐', tier: 1 }, { type: '吸血', tier: 0 }] };
+    expect(a.checkSynergy(w)).toBeNull();
+  });
+
+  it('无词条不触发', () => {
+    const w = { affixes: [null, null] };
+    expect(a.checkSynergy(w)).toBeNull();
+  });
+
+  it('synergyBonus 返回匹配 apply 类型的加成值', () => {
+    const w = { affixes: [{ type: '锋锐', tier: 1 }, { type: '暴怒', tier: 0 }] };
+    expect(a.synergyBonus(w, 'damage')).toBeGreaterThan(0);
+  });
+
+  it('synergyBonus 非匹配 apply 返回 0', () => {
+    const w = { affixes: [{ type: '锋锐', tier: 1 }, { type: '暴怒', tier: 0 }] };
+    expect(a.synergyBonus(w, 'lifesteal')).toBe(0);
+  });
+
+  it('synergyBonus 无协同返回 0', () => {
+    const w = { affixes: [{ type: '锋锐', tier: 1 }, null] };
+    expect(a.synergyBonus(w, 'damage')).toBe(0);
+  });
+});

@@ -7,6 +7,12 @@ export const AFFIX_TYPES = {
   幸运: { name: '幸运', tiers: [0.10, 0.20, 0.30], apply: 'luck' },
 };
 
+export const SYNERGIES = [
+  { types: ['锋锐', '暴怒'], name: '狂战', desc: '伤害 +15%', bonus: { apply: 'damage', value: 0.15 } },
+  { types: ['吸血', '坚韧'], name: '不灭', desc: '吸血 +10%', bonus: { apply: 'lifesteal', value: 0.10 } },
+  { types: ['迅捷', '幸运'], name: '幸运一击', desc: '暴击 +10%', bonus: { apply: 'crit', value: 0.10 } },
+];
+
 export class Affixes {
   constructor() { this.inventory = []; }
   drop(luck = 0) {
@@ -40,6 +46,20 @@ export class Affixes {
       if (a && a.type === type) sum += AFFIX_TYPES[type].tiers[a.tier];
     }
     return sum;
+  }
+  checkSynergy(weapon) {
+    if (!weapon || !weapon.affixes) return null;
+    const types = weapon.affixes.map(a => a && a.type).filter(Boolean);
+    if (types.length < 2) return null;
+    for (const syn of SYNERGIES) {
+      if (syn.types.every(t => types.includes(t))) return syn;
+    }
+    return null;
+  }
+  synergyBonus(weapon, applyType) {
+    const syn = this.checkSynergy(weapon);
+    if (!syn || syn.bonus.apply !== applyType) return 0;
+    return syn.bonus.value;
   }
   serialize() { return JSON.parse(JSON.stringify(this.inventory)); }
   restore(data = []) { this.inventory = Array.isArray(data) ? JSON.parse(JSON.stringify(data)) : []; }

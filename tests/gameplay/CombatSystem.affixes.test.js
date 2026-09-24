@@ -24,7 +24,7 @@ function mockChar(team, x = 0, z = 0, opts = {}) {
 }
 
 function mockAffixes(bonuses = {}) {
-  return { affixBonus: vi.fn((weapon, type) => bonuses[type] || 0) };
+  return { affixBonus: vi.fn((weapon, type) => bonuses[type] || 0), synergyBonus: vi.fn(() => 0) };
 }
 
 describe('CombatSystem 词条 helpers', () => {

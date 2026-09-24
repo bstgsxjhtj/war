@@ -125,14 +125,14 @@ export class CombatSystem {
 
   _affixApply(attacker, weapon, dmg) {
     if (!this._affixes || !weapon) return dmg;
-    let out = dmg * (1 + this._affixes.affixBonus(weapon, '锋锐'));
-    if (Math.random() < this._affixes.affixBonus(weapon, '暴怒')) out *= 2;
+    let out = dmg * (1 + this._affixes.affixBonus(weapon, '锋锐') + this._affixes.synergyBonus(weapon, 'damage'));
+    if (Math.random() < this._affixes.affixBonus(weapon, '暴怒') + this._affixes.synergyBonus(weapon, 'crit')) out *= 2;
     return out;
   }
 
   _affixLeech(attacker, lost) {
     if (!this._affixes || !attacker || !attacker.health || !attacker.weapon) return;
-    const leech = this._affixes.affixBonus(attacker.weapon, '吸血');
+    const leech = this._affixes.affixBonus(attacker.weapon, '吸血') + this._affixes.synergyBonus(attacker.weapon, 'lifesteal');
     if (leech > 0) attacker.health.hp = Math.min(attacker.health.maxHp, attacker.health.hp + lost * leech);
   }
 
