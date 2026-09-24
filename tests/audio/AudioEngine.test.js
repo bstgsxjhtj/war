@@ -139,6 +139,22 @@ describe('AudioEngine', () => {
     expect(noiseSpy).toHaveBeenCalled();
   });
 
+  it('playSound crit 调用 crit 方法', () => {
+    const a = new AudioEngine();
+    const spy = vi.spyOn(a, 'crit');
+    a.playSound('crit');
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('crit 播放高频锯齿 + 短噪声', () => {
+    const a = new AudioEngine();
+    const toneSpy = vi.spyOn(a, '_tone');
+    const noiseSpy = vi.spyOn(a, '_noise');
+    a.crit();
+    expect(toneSpy).toHaveBeenCalledWith(1200, expect.any(Number), 'sawtooth', expect.any(Number), 600);
+    expect(noiseSpy).toHaveBeenCalled();
+  });
+
   describe('BGM 系统', () => {
     it('startMusic 创建 _bgmNodes 含 2 个振荡器', () => {
       const a = new AudioEngine();

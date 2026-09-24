@@ -16,6 +16,7 @@ export class AudioEngine {
     else if (type === 'click') this.click();
     else if (type === 'achievement') this.achievement();
     else if (type === 'counter') this.counter();
+    else if (type === 'crit') this.crit();
     else if (type === 'environment') this.environment(opts.mode);
     else if (type === 'bgmStart') this.startMusic(opts.intensity || 0);
     else if (type === 'bgmStop') this.stopMusic();
@@ -30,6 +31,7 @@ export class AudioEngine {
   ultimate() { this._tone(120, 0.5, 'sawtooth', this._volOf('sfx') * 0.35, 60); this._noise(0.4, 800, this._volOf('sfx') * 0.3); }
   dodge() { this._tone(400, 0.1, 'triangle', this._volOf('sfx') * 0.15, 200); }
   counter() { this._tone(880, 0.15, 'triangle', this._volOf('sfx') * 0.25, 1320); }
+  crit() { this._tone(1200, 0.12, 'sawtooth', this._volOf('sfx') * 0.3, 600); this._noise(0.1, 2000, this._volOf('sfx') * 0.2); }
   click() { this._tone(600, 0.05, 'square', this._volOf('sfx') * 0.15, 400); }
   achievement() { const t = this.ctx ? this.ctx.currentTime : 0; [523, 659, 784].forEach((f, i) => { this._toneAt(f, 0.15, 'triangle', this._volOf('sfx') * 0.2, t + i * 0.12); }); }
   environment(mode) { if (this._envSource) { try { this._envSource.stop(); } catch (e) {} this._envSource = null; } if (!this.ctx || mode === 'clear' || mode === 'night') return; const freq = mode === 'rain' ? 800 : (mode === 'snow' ? 400 : 1200); const len = this.ctx.sampleRate * 2; const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate); const d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; const src = this.ctx.createBufferSource(); src.buffer = buf; src.loop = true; const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq; const g = this.ctx.createGain(); g.gain.value = this._volOf('env') * 0.15; src.connect(f).connect(g).connect(this.ctx.destination); src.start(); this._envSource = src; }

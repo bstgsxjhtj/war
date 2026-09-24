@@ -19,6 +19,7 @@ export class CombatSystem {
     this.characters = [];
     this.arrows = [];
     this.hitstop = 0;
+    this._lastAffixCrit = false;
     this._weatherEffects = null;
     this._tmpOrigin = new THREE.Vector3();
     this._tmpTo = new THREE.Vector3();
@@ -76,14 +77,14 @@ export class CombatSystem {
     return this._counterMatrix[a]?.[v] ?? 1;
   }
 
-  _emitHit(attacker, victim, damage, weaponName, color, combo = 0, heavy = false, now = 0, backstab = false) {
+  _emitHit(attacker, victim, damage, weaponName, color, combo = 0, heavy = false, now = 0, backstab = false, crit = false) {
     if (attacker && attacker.addRage) attacker.addRage(3);
     const counterMul = this._counterMul(attacker.weapon, victim.weapon);
     if (counterMul > 1.2) this.bus.emit(EV.COMBAT_COUNTER, { attacker, victim, mul: counterMul });
-    this.bus.emit(EV.COMBAT_HIT, { attacker, victim, damage, weapon: weaponName, combo, heavy, backstab });
+    this.bus.emit(EV.COMBAT_HIT, { attacker, victim, damage, weapon: weaponName, combo, heavy, backstab, crit });
     this._tmpOrigin.copy(victim.position).add(this._tmpTo.set(0, 1.6, 0));
     this.spawnHitFX(this._tmpOrigin.clone(), color);
-    this.createDamageNumber(this._tmpOrigin.clone(), Math.round(damage), counterMul > 1.2);
+    this.createDamageNumber(this._tmpOrigin.clone(), Math.round(damage), counterMul > 1.2, crit);
     const shakeMap = [0.16, 0.18, 0.32];
     this.bus.emit(EV.FX_SHAKE, { amount: Math.min(0.9, (shakeMap[combo] ?? 0.16) + (heavy ? 0.14 : 0)) });
     const hsMap = [0.04, 0.05, 0.11];
@@ -107,26 +108,38 @@ export class CombatSystem {
     this._partGeo.attributes.color.needsUpdate = true;
   }
 
-  createDamageNumber(pos, amount, countered = false) {
+  createDamageNumber(pos, amount, countered = false, crit = false) {
     const slot = this._numSprites.find(n => !n.spr.visible);
     if (!slot) return;
-    const c = countered ? '#66ddff' : (amount >= 35 ? '#ff5533' : '#ffe070');
+    const c = crit ? '#ffd700' : (countered ? '#66ddff' : (amount >= 35 ? '#ff5533' : '#ffe070'));
     const ctx = this._numCtx;
-    ctx.clearRect(0, 0, 128, 64);
-    ctx.font = 'bold 44px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(amount, 64, 32);
-    ctx.fillStyle = c; ctx.fillText(amount, 64, 32);
-    this._numTex.needsUpdate = true;
+    if (ctx) {
+      ctx.clearRect(0, 0, 128, 64);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (crit) {
+        ctx.font = 'bold 20px Segoe UI, sans-serif';
+        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+        ctx.strokeText('暴击', 64, 12);
+        ctx.fillStyle = c; ctx.fillText('暴击', 64, 12);
+      }
+      ctx.font = 'bold ' + (crit ? 50 : 44) + 'px Segoe UI, sans-serif';
+      ctx.lineWidth = crit ? 7 : 6; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+      ctx.strokeText(amount, 64, crit ? 38 : 32);
+      ctx.fillStyle = c; ctx.fillText(amount, 64, crit ? 38 : 32);
+      this._numTex.needsUpdate = true;
+    }
     slot.spr.position.copy(pos); slot.spr.visible = true;
-    slot.life = 0.9; slot.vy = 1.8;
+    slot.spr.scale.set(crit ? 1.8 : 1.2, crit ? 0.9 : 0.6, 1);
+    slot.life = 0.9; slot.vy = crit ? 2.4 : 1.8;
   }
 
   setAffixes(a) { this._affixes = a; }
 
   _affixApply(attacker, weapon, dmg) {
+    this._lastAffixCrit = false;
     if (!this._affixes || !weapon) return dmg;
     let out = dmg * (1 + this._affixes.affixBonus(weapon, '锋锐') + this._affixes.synergyBonus(weapon, 'damage'));
-    if (Math.random() < this._affixes.affixBonus(weapon, '暴怒') + this._affixes.synergyBonus(weapon, 'crit')) out *= 2;
+    if (Math.random() < this._affixes.affixBonus(weapon, '暴怒') + this._affixes.synergyBonus(weapon, 'crit')) { out *= 2; this._lastAffixCrit = true; }
     return out;
   }
 
@@ -148,7 +161,8 @@ export class CombatSystem {
     if (attacker._runDmgMul) baseDmg *= attacker._runDmgMul;
     if (attacker.killstreakBuffs) baseDmg *= attacker.killstreakBuffs().dmgMul;
     if (attacker._skill && attacker._skill.branchDamageMul) baseDmg *= attacker._skill.branchDamageMul;
-    if (attacker._skill && Math.random() < (attacker._skill.branchCritChance || 0)) baseDmg *= 2;
+    let branchCrit = false;
+    if (attacker._skill && Math.random() < (attacker._skill.branchCritChance || 0)) { baseDmg *= 2; branchCrit = true; }
     const knock = weapon.comboKnock ? (weapon.comboKnock[combo] ?? 1) : 1;
     const launch = weapon.comboLaunch ? weapon.comboLaunch[combo] : null;
     const heavy = combo === 2;
@@ -174,7 +188,7 @@ export class CombatSystem {
         const dmg = this._affixApply(attacker, weapon, baseDmg * counterMul * (isBackstab ? 2 : 1) * comboMul);
         const lost = c.takeDamage(dmg, heavy || isBackstab, attacker, now);
         if (lost > 0) {
-          this._emitHit(attacker, c, lost, weapon.name, 0xff3322, combo, heavy, now, isBackstab);
+          this._emitHit(attacker, c, lost, weapon.name, 0xff3322, combo, heavy, now, isBackstab, branchCrit || this._lastAffixCrit);
           this._affixLeech(attacker, lost);
           c._curVel.addScaledVector(attacker.forward, knock * 2.5);
           if (launch) { if (launch.y) c.vy += launch.y; if (launch.rot) c._launchRot = launch.rot; }
@@ -197,7 +211,7 @@ export class CombatSystem {
         const lost = c.takeDamage(dmg, false, attacker, now);
         if (lost > 0) {
           if (this._comboSys) this._comboSys.onHit(false, false, now);
-          this._emitHit(attacker, c, lost, '冲击', 0xaa8866, 0, false, now);
+          this._emitHit(attacker, c, lost, '冲击', 0xaa8866, 0, false, now, false, this._lastAffixCrit);
           this._affixLeech(attacker, lost);
         }
         if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: attacker });
@@ -249,7 +263,7 @@ export class CombatSystem {
       const total = this._affixApply(attacker, attacker.weapon, dmg);
       const lost = c.takeDamage(total, true, attacker, now);
       if (lost > 0) {
-        this._emitHit(attacker, c, lost, '大招', 0xffaa22, 2, true, now);
+        this._emitHit(attacker, c, lost, '大招', 0xffaa22, 2, true, now, false, this._lastAffixCrit);
         this._affixLeech(attacker, lost);
         if (c._curVel) {
           this._tmpTo.copy(c.position).sub(attacker.position).setY(0).normalize();
@@ -274,7 +288,7 @@ export class CombatSystem {
       const total = this._affixApply(attacker, attacker.weapon, dmg);
       const lost = c.takeDamage(total, true, attacker, now);
       if (lost > 0) {
-        this._emitHit(attacker, c, lost, '大招', 0xffaa22, 2, true, now);
+        this._emitHit(attacker, c, lost, '大招', 0xffaa22, 2, true, now, false, this._lastAffixCrit);
         this._affixLeech(attacker, lost);
       }
       if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: attacker });
@@ -299,7 +313,7 @@ export class CombatSystem {
         if (a.pos.distanceTo(cap.center) < cap.radius + cap.halfHeight * 0.5) {
           const heavy = (a.charge ?? 0) >= 0.8;
           const lost = c.takeDamage(this._affixApply(a.attacker, a.attacker.weapon, a.damage), heavy, a.attacker, now);
-          if (lost > 0) { this._emitHit(a.attacker, c, lost, '弓', 0xff5522, 0, heavy, now); this._affixLeech(a.attacker, lost); }
+          if (lost > 0) { this._emitHit(a.attacker, c, lost, '弓', 0xff5522, 0, heavy, now, false, this._lastAffixCrit); this._affixLeech(a.attacker, lost); }
           if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: a.attacker });
           hit = true; break;
         }

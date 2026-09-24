@@ -37,7 +37,7 @@ describe('CombatSystem.createDamageNumber 克制变色', () => {
   let cs;
   beforeEach(() => {
     cs = Object.create(CombatSystem.prototype);
-    cs._numSprites = [{ spr: { visible: false, position: { copy: vi.fn() } }, life: 0, vy: 0 }];
+    cs._numSprites = [{ spr: { visible: false, position: { copy: vi.fn() }, scale: { set: vi.fn() } }, life: 0, vy: 0 }];
     cs._numCtx = { clearRect: vi.fn(), fillText: vi.fn(), strokeText: vi.fn() };
     cs._numTex = { needsUpdate: false };
   });

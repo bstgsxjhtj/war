@@ -171,7 +171,7 @@ async function bootstrap() {
   bus.on(EV.FX_PERFECTDODGE, () => { if (daily.track('dodge')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_DODGE, {}); audio.playSound('dodge'); });
   const progressUI = new ProgressionUI(progression, bus);
   bus.emit(EV.MINIMAP_SUPPLY, (supply.points || []).map(p => ({ x: p.pos.x, z: p.pos.z })));
-  bus.on(EV.COMBAT_HIT, ({ attacker, victim, damage, combo, heavy, backstab }) => {
+  bus.on(EV.COMBAT_HIT, ({ attacker, victim, damage, combo, heavy, backstab, crit }) => {
     if (victim && victim.isLocal && attacker) {
       const angle = Math.atan2(attacker.position.x - victim.position.x, attacker.position.z - victim.position.z);
       hitDirection.show(angle, camera.yaw || 0);
@@ -186,6 +186,7 @@ async function bootstrap() {
     bus.emit(EV.DAILY_UPDATE, daily.challenges);
     audio.playSound('swing');
     audio.playSound('hit', { heavy, combo });
+    if (crit) audio.playSound('crit');
   });
   bus.on(EV.COMBAT_KILL, ({ victim, killer }) => {
     if (killer && killer.isLocal) {
