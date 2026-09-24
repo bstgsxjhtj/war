@@ -62,6 +62,7 @@ export class CombatSystem {
   }
 
   register(c) { this.characters.push(c); if (c.setBus) c.setBus(this.bus); }
+  _releaseArrow(a) { if (a && a.mesh) this.scene.remove(a.mesh); }
   clear() {
     for (const a of this.arrows) this.scene.remove(a.mesh);
     this.arrows.length = 0;
