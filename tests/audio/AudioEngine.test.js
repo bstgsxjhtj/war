@@ -155,6 +155,27 @@ describe('AudioEngine', () => {
     expect(noiseSpy).toHaveBeenCalled();
   });
 
+  it('playSound comboTier 调用 comboTier', () => {
+    const a = new AudioEngine();
+    const spy = vi.spyOn(a, 'comboTier');
+    a.playSound('comboTier', { tier: 2 });
+    expect(spy).toHaveBeenCalledWith(2);
+  });
+
+  it('comboTier 双音上扬且音高随 tier 上升', () => {
+    const a = new AudioEngine();
+    const spy = vi.spyOn(a, '_toneAt');
+    a.comboTier(0);
+    expect(spy).toHaveBeenCalledTimes(2);
+    const f0a = spy.mock.calls[0][0], f0b = spy.mock.calls[1][0];
+    expect(f0b).toBeGreaterThan(f0a);
+    spy.mockRestore();
+    const a2 = new AudioEngine();
+    const spy2 = vi.spyOn(a2, '_toneAt');
+    a2.comboTier(2);
+    expect(spy2.mock.calls[0][0]).toBeGreaterThan(f0a);
+  });
+
   describe('BGM 系统', () => {
     it('startMusic 创建 _bgmNodes 含 2 个振荡器', () => {
       const a = new AudioEngine();

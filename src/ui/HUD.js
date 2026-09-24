@@ -7,6 +7,7 @@ export class HUD {
     this._killTimer = 0;
     this._radarAcc = 0;
     this._hitVigTimer = 0;
+    this._comboPulseTimer = 0;
     this.el = document.createElement('div');
     Object.assign(this.el.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 10, fontFamily: 'Segoe UI, sans-serif' });
     this.el.innerHTML = `
@@ -47,6 +48,7 @@ export class HUD {
       <div id="bossbar" style="position:absolute;top:40px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:4px;"><div id="bossName" style="color:#ff8080;font-size:16px;font-weight:bold;text-shadow:0 2px 4px #000;"></div><div style="width:300px;height:10px;background:rgba(0,0,0,0.5);border:1px solid #600;border-radius:5px;overflow:hidden;"><div id="bossFill" style="height:100%;width:100%;background:linear-gradient(90deg,#c33,#f66);transition:width .15s;"></div></div></div>
       <div id="lowhp" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(180,0,0,0.25) 100%);display:none;animation:lowhp-pulse 1.2s ease-in-out infinite;"></div>
       <div id="hitvignette" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(200,0,0,0.55) 100%);opacity:0;"></div>
+      <div id="combopulse" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,235,150,0.3) 0%,transparent 60%);opacity:0;"></div>
       <style>@keyframes lowhp-pulse{0%,100%{opacity:0.5}50%{opacity:1}}</style>
     `;
     document.body.appendChild(this.el);
@@ -66,6 +68,7 @@ export class HUD {
     this._bossFill = this.el.querySelector('#bossFill');
     this._lowhp = this.el.querySelector('#lowhp');
     this._hitvignette = this.el.querySelector('#hitvignette');
+    this._combopulse = this.el.querySelector('#combopulse');
     this._charge = this.el.querySelector('#charge');
     this._chargeFill = this.el.querySelector('#chargeFill');
     this._weapon = this.el.querySelector('#weapon');
@@ -185,6 +188,7 @@ export class HUD {
       this._comboEl.style.transform = 'scale(1.2)';
       setTimeout(() => { this._comboEl.style.transform = 'scale(1)'; }, 100);
       this._comboTimer = 2;
+      this.flashComboPulse(tier);
     });
     bus.on(EV.COMBO_BREAK, () => {
       this._comboEl.style.opacity = '0';
@@ -310,6 +314,7 @@ export class HUD {
   hideBoss() { this._bossbar.style.display = 'none'; }
   setLowHP(active) { this._lowhp.style.display = active ? 'block' : 'none'; }
   flashHitVignette() { this._hitVigTimer = 0.35; this._hitvignette.style.opacity = '0.6'; }
+  flashComboPulse(tier = 0) { this._comboPulseTimer = 0.3; this._combopulse.style.opacity = String(Math.min(0.6, 0.25 + tier * 0.1)); }
   setScore(b, r) { this._score.textContent = `蓝方 ${b}  |  ${r} 红方`; }
   setRound(b, r, target) { this._round.textContent = `局比分 ${b} - ${r}（先到 ${target} 胜）`; }
   setWave(wave, best, endless, modifierInfo) {
@@ -400,6 +405,11 @@ export class HUD {
       this._hitVigTimer -= dt;
       if (this._hitVigTimer <= 0) { this._hitVigTimer = 0; this._hitvignette.style.opacity = '0'; }
       else this._hitvignette.style.opacity = (0.6 * (this._hitVigTimer / 0.35)).toString();
+    }
+    if (this._comboPulseTimer > 0) {
+      this._comboPulseTimer -= dt;
+      if (this._comboPulseTimer <= 0) { this._comboPulseTimer = 0; this._combopulse.style.opacity = '0'; }
+      else this._combopulse.style.opacity = (0.6 * (this._comboPulseTimer / 0.3)).toString();
     }
     if (this._counterTimer > 0) {
       this._counterTimer -= dt;

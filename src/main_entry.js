@@ -229,7 +229,7 @@ async function bootstrap() {
   bus.on(EV.HUD_BOSSPHASE, () => { audio.playSound('ultimate'); audio.playSound('bgmIntensity', { intensity: 2 }); });
   bus.on(EV.COMBAT_ULTIMATE, () => audio.playSound('ultimate'));
   bus.on(EV.COMBAT_COUNTER, () => audio.playSound('counter'));
-  bus.on(EV.COMBO_TIER, (p) => audio.playSound('hit', { combo: p.combo || 0 }));
+  bus.on(EV.COMBO_TIER, (p) => audio.playSound('comboTier', { tier: p.tier || 0 }));
 
   let player, ais = [], enemies = [];
   let remotes = [];

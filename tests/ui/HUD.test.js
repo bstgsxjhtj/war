@@ -192,3 +192,28 @@ describe('HUD 受击 vignette', () => {
     expect(hud._hitVigTimer).toBe(0);
   });
 });
+
+describe('HUD 连击脉冲', () => {
+  it('flashComboPulse 点亮金色脉冲并设衰减', () => {
+    const hud = mkHud();
+    hud.flashComboPulse(2);
+    expect(parseFloat(hud._combopulse.style.opacity)).toBeGreaterThan(0);
+    expect(hud._comboPulseTimer).toBeGreaterThan(0);
+  });
+
+  it('update 衰减后归零', () => {
+    const hud = mkHud();
+    hud.flashComboPulse(1);
+    hud.update(hud._comboPulseTimer);
+    expect(hud._comboPulseTimer).toBe(0);
+    expect(parseFloat(hud._combopulse.style.opacity)).toBe(0);
+  });
+
+  it('COMBO_TIER 触发脉冲', () => {
+    const hud = mkHud();
+    const handler = hud.bus.on.mock.calls.find(c => c[0] === EV.COMBO_TIER)[1];
+    handler({ tier: 2, count: 5 });
+    expect(hud._comboPulseTimer).toBeGreaterThan(0);
+    expect(parseFloat(hud._combopulse.style.opacity)).toBeGreaterThan(0);
+  });
+});
