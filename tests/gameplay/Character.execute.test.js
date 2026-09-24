@@ -82,12 +82,37 @@ describe('Character execution', () => {
     expect(result).toBe(false);
   });
 
-  it('startExecute sets executing state on both attacker and victim', () => {
+  it('startExecute 锁定被处决者(_beingExecuted)但不给其 _executing，防反杀', () => {
     const exec = mkChar(0);
     const victim = mkVictim(0.1);
     exec.startExecute(victim);
-    expect(victim._executing).toBeGreaterThan(0);
-    expect(victim._executingTarget).toBe(exec);
+    expect(victim._beingExecuted).toBe(true);
+    expect(victim._executing).toBe(0);
+    expect(victim._executingTarget).toBeNull();
+  });
+
+  it('被处决者 update 不反杀攻击者（双向9999竞态防护）', () => {
+    const exec = mkChar(0);
+    exec.takeDamage = vi.fn();
+    const victim = mkVictim(0.1);
+    victim.forward = new THREE.Vector3(0, 0, 1);
+    victim.weaponPivot = { rotation: { z: 0 } };
+    exec.startExecute(victim);
+    // 模拟被处决者自身 update 跑完整周期
+    victim.update(1.3, terrain, { characters: [exec, victim] }, NOW);
+    expect(exec.takeDamage).not.toHaveBeenCalled();
+  });
+
+  it('处决到期由攻击者造成9999，被处决者解锁', () => {
+    const exec = mkChar(0);
+    exec.forward = new THREE.Vector3(0, 0, 1);
+    exec.weaponPivot = { rotation: { z: 0 } };
+    const victim = mkVictim(0.1);
+    exec.startExecute(victim);
+    exec._executing = 0.05;
+    exec._tickExecuting(0.1, NOW);
+    expect(victim.takeDamage).toHaveBeenCalledWith(9999, true, exec, NOW);
+    expect(victim._beingExecuted).toBe(false);
   });
 
   it('startExecute 成功时发射 COMBAT_EXECUTE 事件', () => {

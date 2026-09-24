@@ -325,6 +325,7 @@ export class Character {
     for (const w of this.weapons) w.tick(dt);
     this.tickCombo(dt);
     if (this._killstreakTimer > 0) { this._killstreakTimer -= dt; if (this._killstreakTimer <= 0) this._killstreak = 0; }
+    if (this._beingExecuted) return;
     if (this._executing > 0) { this._tickExecuting(dt, now); return; }
     this._tickTimers(dt);
     this.stamina.regen(dt * ((this._weatherEffects && this._weatherEffects.staminaRegenMul) || 1), this._attacking || this._dodgeTimer > 0 || this._blocking);
@@ -373,6 +374,7 @@ export class Character {
     }
     if (this._executing <= 0) {
       if (this._executingTarget && this._executingTarget.alive) this._executingTarget.takeDamage(9999, true, this, now);
+      if (this._executingTarget) this._executingTarget._beingExecuted = false;
       this.weaponPivot.rotation.z = 0;
     }
   }
@@ -577,7 +579,7 @@ export class Character {
   startExecute(target) {
     if (!target || !target.canBeExecuted || this._executing > 0) return false;
     this._executing = 1.2; this._executingTarget = target;
-    target._executing = 1.2; target._executingTarget = this;
+    target._beingExecuted = true;
     if (this._bus) this._bus.emit(EV.COMBAT_EXECUTE, { char: this, target });
     return true;
   }
