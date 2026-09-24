@@ -16,9 +16,11 @@ import { AIManager } from './gameplay/AIManager.js';
 import { EscortTarget } from './gameplay/EscortTarget.js';
 import { DefensePoint } from './gameplay/DefensePoint.js';
 import { Affixes } from './gameplay/Affixes.js';
+import { RunBuffs } from './gameplay/RunBuffs.js';
 import { Achievements } from './gameplay/Achievements.js';
 import { AffixesUI } from './ui/AffixesUI.js';
 import { AchievementsUI } from './ui/AchievementsUI.js';
+import { UpgradePicker } from './ui/UpgradePicker.js';
 import { Player } from './gameplay/Player.js';
 import { AIController } from './gameplay/AIController.js';
 import { HUD } from './ui/HUD.js';
@@ -368,10 +370,13 @@ async function bootstrap() {
   window.__mp = { get connected() { return net.connected; }, get id() { return net.id; }, get remotes() { return remotes.length; } };
   const affixesUI = new AffixesUI(affixes, player);
   const achievementsUI = new AchievementsUI(achievements);
+  const runBuffs = new RunBuffs();
+  const upgradePicker = new UpgradePicker(runBuffs, player, bus);
   state.transit(States.PLAYING);
   audio.playSound('bgmStart', { intensity: 0 });
   let _bgmCombatSet = true;
   let _bgmLastIntensity = 0;
+  let _wavePending = false;
   hud.setRound(0, 0, match.targetWins);
   hud.setMode(mode.name + ' · ' + currentMapName);
   hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式');
@@ -395,6 +400,7 @@ async function bootstrap() {
           return;
         }
         if (state.current !== States.PLAYING) { env.update(dt, now); if (_bgmCombatSet) { audio.playSound('bgmStop'); audio.playSound('stinger', { stinger: player.alive ? 'victory' : 'defeat' }); _bgmCombatSet = false; } return; }
+        if (upgradePicker.visible) { env.update(dt, now); return; }
 
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
         const ldt = (combat.hitstop > 0 || deathFeedback.paused) ? 0 : (hitStop.active ? hitStop.timeScale * dt : dt);
@@ -497,23 +503,27 @@ async function bootstrap() {
         if (mode.name === '波次' || mode.name === '无尽') {
           hud.setWave(mode.wave, WaveMode.loadBest(), mode.endless, { current: mode.modifier, next: mode.nextModifier });
         }
-        if ((mode.name === '波次' || mode.name === '无尽') && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
-          const lay = mode.spawnLayout();
-          spawnRed(lay.red, { bossWave: lay.isBoss, modifier: lay.modifier });
-          enemies = [player, ...ais];
-          let msg = '第 ' + mode.wave + ' 波来袭！';
-          if (lay.modifier) msg = '第 ' + mode.wave + ' 波 · 【' + lay.modifier.name + '】' + lay.modifier.desc;
-          const milestone = mode.checkMilestone();
-          if (milestone) {
-            progression.addScore(milestone.total);
-            progressUI.refresh();
-            if (milestone.isRecord) msg += ' · 破纪录！+' + milestone.total + ' 分';
-            else msg += ' · 里程碑 +' + milestone.total + ' 分';
-          }
-          hud.flash(msg);
-          setTimeout(() => hud.clearHint(), 2500);
-          if (mode.endless && daily.track('endlessWave')) bus.emit(EV.DAILY_UPDATE, daily.challenges);
-          if (lay.modifier && lay.modifier.weather) weather.setMode(lay.modifier.weather);
+        if (!_wavePending && (mode.name === '波次' || mode.name === '无尽') && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
+          _wavePending = true;
+          upgradePicker.show(() => {
+            _wavePending = false;
+            const lay = mode.spawnLayout();
+            spawnRed(lay.red, { bossWave: lay.isBoss, modifier: lay.modifier });
+            enemies = [player, ...ais];
+            let msg = '第 ' + mode.wave + ' 波来袭！';
+            if (lay.modifier) msg = '第 ' + mode.wave + ' 波 · 【' + lay.modifier.name + '】' + lay.modifier.desc;
+            const milestone = mode.checkMilestone();
+            if (milestone) {
+              progression.addScore(milestone.total);
+              progressUI.refresh();
+              if (milestone.isRecord) msg += ' · 破纪录！+' + milestone.total + ' 分';
+              else msg += ' · 里程碑 +' + milestone.total + ' 分';
+            }
+            hud.flash(msg);
+            setTimeout(() => hud.clearHint(), 2500);
+            if (mode.endless && daily.track('endlessWave')) bus.emit(EV.DAILY_UPDATE, daily.challenges);
+            if (lay.modifier && lay.modifier.weather) weather.setMode(lay.modifier.weather);
+          });
         }
         deathFeedback.update(dt);
         if (deathFeedback.paused) return;

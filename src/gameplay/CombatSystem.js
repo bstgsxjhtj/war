@@ -131,8 +131,11 @@ export class CombatSystem {
   }
 
   _affixLeech(attacker, lost) {
-    if (!this._affixes || !attacker || !attacker.health || !attacker.weapon) return;
-    const leech = this._affixes.affixBonus(attacker.weapon, '吸血') + this._affixes.synergyBonus(attacker.weapon, 'lifesteal');
+    if (!attacker || !attacker.health || lost <= 0) return;
+    let leech = attacker._runLifesteal || 0;
+    if (this._affixes && attacker.weapon) {
+      leech += this._affixes.affixBonus(attacker.weapon, '吸血') + this._affixes.synergyBonus(attacker.weapon, 'lifesteal');
+    }
     if (leech > 0) attacker.health.hp = Math.min(attacker.health.maxHp, attacker.health.hp + lost * leech);
   }
 
@@ -140,6 +143,7 @@ export class CombatSystem {
     let baseDmg = weapon.comboDamage ? (weapon.comboDamage[combo] ?? weapon.damage) : weapon.damage;
     if (attacker._perfectBuff > 0) baseDmg *= 1.5;
     if (attacker._skill) baseDmg *= attacker._skill.totalMul(attacker.weaponIdx);
+    if (attacker._runDmgMul) baseDmg *= attacker._runDmgMul;
     const knock = weapon.comboKnock ? (weapon.comboKnock[combo] ?? 1) : 1;
     const launch = weapon.comboLaunch ? weapon.comboLaunch[combo] : null;
     const heavy = combo === 2;
