@@ -221,6 +221,7 @@ export class Character {
     this._pendingCharge = charge;
     this._pendingCombo = this._animCombo;
     if (!isBow) {
+      this._comboWindow = Math.max(0.6, this.weapon.cooldown + 0.3);
       this._comboCount = (this._comboCount + 1) % 3;
       this._comboTimer = this._comboWindow;
     }

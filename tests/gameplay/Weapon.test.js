@@ -14,11 +14,6 @@ describe('Weapon', () => {
     expect(w.shieldBlock).toBe(false);
   });
 
-  it('windup 默认 0', () => {
-    const w = new Weapon({ name: 'x', damage: 1, range: 1, cooldown: 1, type: 'melee' });
-    expect(w.windup).toBe(0);
-  });
-
   it('ready 在 tick 前为 true，tick 后随 cooldown 转 false 再回 true', () => {
     const w = new Weapon({ name: 'x', damage: 1, range: 1, cooldown: 0.5, type: 'melee' });
     expect(w.ready).toBe(true);

@@ -2,13 +2,12 @@
 export const AttackType = { MELEE: 'melee', PROJECTILE: 'projectile' };
 
 export class Weapon {
-  constructor({ name, damage, range, cooldown, type, windup = 0 }) {
+  constructor({ name, damage, range, cooldown, type }) {
     this.name = name;
     this.damage = damage;
     this.range = range;
     this.cooldown = cooldown;
     this.type = type;
-    this.windup = windup;
     this.weaponClass = 'SWORD';
     this.armorPierce = false;
     this.shieldBlock = false;
