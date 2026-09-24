@@ -24,7 +24,7 @@ function makeCtx() {
       return o;
     }),
     createGain: vi.fn(() => {
-      const g = { gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() } };
+      const g = { gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() } };
       g.connect = vi.fn(() => g);
       return g;
     }),
@@ -137,5 +137,84 @@ describe('AudioEngine', () => {
     a.perfectBlock();
     expect(toneSpy).toHaveBeenCalledWith(80, expect.any(Number), 'sine', expect.any(Number), 40);
     expect(noiseSpy).toHaveBeenCalled();
+  });
+
+  describe('BGM 系统', () => {
+    it('startMusic 创建 _bgmNodes 含 2 个振荡器', () => {
+      const a = new AudioEngine();
+      a.startMusic(0);
+      expect(a._bgmNodes).toBeDefined();
+      expect(a._bgmNodes.length).toBe(2);
+      expect(a._bgmNodes[0].osc.start).toHaveBeenCalled();
+      expect(a._bgmNodes[1].osc.start).toHaveBeenCalled();
+    });
+
+    it('stopMusic 清除节点并停止振荡器', () => {
+      const a = new AudioEngine();
+      a.startMusic(0);
+      const oscs = a._bgmNodes.map(n => n.osc);
+      a.stopMusic();
+      expect(a._bgmNodes).toBeNull();
+      for (const o of oscs) expect(o.stop).toHaveBeenCalled();
+    });
+
+    it('stopMusic 清除节拍定时器', () => {
+      const a = new AudioEngine();
+      a.startMusic(1);
+      expect(a._bgmBeatTimer).not.toBeNull();
+      a.stopMusic();
+      expect(a._bgmBeatTimer).toBeNull();
+    });
+
+    it('stopMusic 无 BGM 时幂等不报错', () => {
+      const a = new AudioEngine();
+      expect(() => a.stopMusic()).not.toThrow();
+    });
+
+    it('setMusicIntensity 调整 pad 增益', () => {
+      const a = new AudioEngine();
+      a.startMusic(0);
+      a.setMusicIntensity(1);
+      expect(a._bgmNodes[1].gain.gain.linearRampToValueAtTime).toHaveBeenCalled();
+    });
+
+    it('stinger victory 播放 4 个上行音符', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, '_toneAt');
+      a.stinger('victory');
+      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy.mock.calls[0][0]).toBe(523);
+      expect(spy.mock.calls[3][0]).toBe(1047);
+    });
+
+    it('stinger defeat 播放 3 个下行音符', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, '_toneAt');
+      a.stinger('defeat');
+      expect(spy).toHaveBeenCalledTimes(3);
+      expect(spy.mock.calls[0][0]).toBe(330);
+      expect(spy.mock.calls[2][0]).toBe(220);
+    });
+
+    it('playSound bgmStart 调用 startMusic', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, 'startMusic');
+      a.playSound('bgmStart', { intensity: 1 });
+      expect(spy).toHaveBeenCalledWith(1);
+    });
+
+    it('playSound bgmStop 调用 stopMusic', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, 'stopMusic');
+      a.playSound('bgmStop');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('playSound stinger 调用 stinger 方法', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, 'stinger');
+      a.playSound('stinger', { stinger: 'victory' });
+      expect(spy).toHaveBeenCalledWith('victory');
+    });
   });
 });

@@ -218,7 +218,7 @@ async function bootstrap() {
   bus.on(EV.SETTINGS_SENSITIVITY, ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
   bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
   // 启动应用延后到 player/aiManager 赋值后避免 TDZ
-  bus.on(EV.HUD_BOSSPHASE, () => audio.playSound('ultimate'));
+  bus.on(EV.HUD_BOSSPHASE, () => { audio.playSound('ultimate'); audio.playSound('bgmIntensity', { intensity: 2 }); });
   bus.on(EV.COMBAT_ULTIMATE, () => audio.playSound('ultimate'));
   bus.on(EV.COMBAT_COUNTER, () => audio.playSound('counter'));
   bus.on(EV.COMBO_TIER, (p) => audio.playSound('hit', { combo: p.combo || 0 }));
@@ -369,6 +369,9 @@ async function bootstrap() {
   const affixesUI = new AffixesUI(affixes, player);
   const achievementsUI = new AchievementsUI(achievements);
   state.transit(States.PLAYING);
+  audio.playSound('bgmStart', { intensity: 0 });
+  let _bgmCombatSet = true;
+  let _bgmLastIntensity = 0;
   hud.setRound(0, 0, match.targetWins);
   hud.setMode(mode.name + ' · ' + currentMapName);
   hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式');
@@ -391,10 +394,18 @@ async function bootstrap() {
           if (match.roundEndTimer <= 0) match.startRound();
           return;
         }
-        if (state.current !== States.PLAYING) { env.update(dt, now); return; }
+        if (state.current !== States.PLAYING) { env.update(dt, now); if (_bgmCombatSet) { audio.playSound('bgmStop'); audio.playSound('stinger', { stinger: player.alive ? 'victory' : 'defeat' }); _bgmCombatSet = false; } return; }
 
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
         const ldt = (combat.hitstop > 0 || deathFeedback.paused) ? 0 : (hitStop.active ? hitStop.timeScale * dt : dt);
+
+        let _bgmTarget = 0;
+        for (const a of ais) {
+          if (!a.alive) continue;
+          if (a._isBoss) { _bgmTarget = 2; break; }
+          if (a.position.distanceTo(player.position) < 25) _bgmTarget = 1;
+        }
+        if (_bgmTarget !== _bgmLastIntensity) { audio.playSound('bgmIntensity', { intensity: _bgmTarget }); _bgmLastIntensity = _bgmTarget; }
 
         const weatherFx = weather.getCombatEffects();
         player._weatherEffects = weatherFx;
