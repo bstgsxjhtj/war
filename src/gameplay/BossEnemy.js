@@ -83,6 +83,7 @@ export class BossEnemy extends AIController {
       }
     }
     combat.spawnAoE && combat.spawnAoE(this.root.position, 6, 15, this, now);
+    this._bus && this._bus.emit(EV.FX_BOSSROAR, { boss: this });
     this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.5 });
   }
 

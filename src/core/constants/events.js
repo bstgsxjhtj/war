@@ -33,6 +33,7 @@ export const EV = {
   FX_SHAKE: 'fx.shake',
   FX_PERFECTBLOCK: 'fx.perfectBlock',
   FX_PERFECTDODGE: 'fx.perfectDodge',
+  FX_BOSSROAR: 'fx.bossRoar',
   // UI
   UI_LOCKLOST: 'ui.locklost',
   UI_LOCKED: 'ui.locked',

@@ -8,6 +8,7 @@ export class HUD {
     this._radarAcc = 0;
     this._hitVigTimer = 0;
     this._comboPulseTimer = 0;
+    this._bossPhaseTimer = 0;
     this.el = document.createElement('div');
     Object.assign(this.el.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 10, fontFamily: 'Segoe UI, sans-serif' });
     this.el.innerHTML = `
@@ -49,6 +50,7 @@ export class HUD {
       <div id="lowhp" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(180,0,0,0.25) 100%);display:none;animation:lowhp-pulse 1.2s ease-in-out infinite;"></div>
       <div id="hitvignette" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(200,0,0,0.55) 100%);opacity:0;"></div>
       <div id="combopulse" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,235,150,0.3) 0%,transparent 60%);opacity:0;"></div>
+      <div id="bossphase" style="position:absolute;top:22%;left:50%;transform:translateX(-50%);color:#ff5533;font-size:30px;font-weight:bold;text-shadow:0 2px 6px #000,0 0 12px rgba(255,40,40,.6);opacity:0;pointer-events:none;"></div>
       <style>@keyframes lowhp-pulse{0%,100%{opacity:0.5}50%{opacity:1}}</style>
     `;
     document.body.appendChild(this.el);
@@ -69,6 +71,7 @@ export class HUD {
     this._lowhp = this.el.querySelector('#lowhp');
     this._hitvignette = this.el.querySelector('#hitvignette');
     this._combopulse = this.el.querySelector('#combopulse');
+    this._bossphase = this.el.querySelector('#bossphase');
     this._charge = this.el.querySelector('#charge');
     this._chargeFill = this.el.querySelector('#chargeFill');
     this._weapon = this.el.querySelector('#weapon');
@@ -201,6 +204,7 @@ export class HUD {
       this._comboEl.style.opacity = '1';
       this._comboTimer = 1.5;
     });
+    bus.on(EV.HUD_BOSSPHASE, ({ phase } = {}) => this.flashBossPhase(phase));
 
     this._skillEls = [];
     const skillColors = ['#dfe7ee', '#b98a4a', '#c9a44a', '#7a7a82'];
@@ -315,6 +319,7 @@ export class HUD {
   setLowHP(active) { this._lowhp.style.display = active ? 'block' : 'none'; }
   flashHitVignette() { this._hitVigTimer = 0.35; this._hitvignette.style.opacity = '0.6'; }
   flashComboPulse(tier = 0) { this._comboPulseTimer = 0.3; this._combopulse.style.opacity = String(Math.min(0.6, 0.25 + tier * 0.1)); }
+  flashBossPhase(phase = 2) { this._bossPhaseTimer = 1.5; this._bossphase.textContent = phase >= 3 ? '⚔ Boss 狂暴！' : 'Boss 激怒！'; this._bossphase.style.opacity = '1'; }
   setScore(b, r) { this._score.textContent = `蓝方 ${b}  |  ${r} 红方`; }
   setRound(b, r, target) { this._round.textContent = `局比分 ${b} - ${r}（先到 ${target} 胜）`; }
   setWave(wave, best, endless, modifierInfo) {
@@ -410,6 +415,11 @@ export class HUD {
       this._comboPulseTimer -= dt;
       if (this._comboPulseTimer <= 0) { this._comboPulseTimer = 0; this._combopulse.style.opacity = '0'; }
       else this._combopulse.style.opacity = (0.6 * (this._comboPulseTimer / 0.3)).toString();
+    }
+    if (this._bossPhaseTimer > 0) {
+      this._bossPhaseTimer -= dt;
+      if (this._bossPhaseTimer <= 0) { this._bossPhaseTimer = 0; this._bossphase.style.opacity = '0'; }
+      else this._bossphase.style.opacity = (this._bossPhaseTimer / 1.5).toString();
     }
     if (this._counterTimer > 0) {
       this._counterTimer -= dt;

@@ -217,3 +217,27 @@ describe('HUD 连击脉冲', () => {
     expect(parseFloat(hud._combopulse.style.opacity)).toBeGreaterThan(0);
   });
 });
+
+describe('HUD Boss 阶段横幅', () => {
+  it('flashBossPhase 显示横幅并设衰减', () => {
+    const hud = mkHud();
+    hud.flashBossPhase(2);
+    expect(parseFloat(hud._bossphase.style.opacity)).toBeGreaterThan(0);
+    expect(hud._bossPhaseTimer).toBeGreaterThan(0);
+  });
+
+  it('update 衰减后归零', () => {
+    const hud = mkHud();
+    hud.flashBossPhase(3);
+    hud.update(hud._bossPhaseTimer);
+    expect(hud._bossPhaseTimer).toBe(0);
+    expect(parseFloat(hud._bossphase.style.opacity)).toBe(0);
+  });
+
+  it('HUD_BOSSPHASE 触发横幅', () => {
+    const hud = mkHud();
+    const handler = hud.bus.on.mock.calls.find(c => c[0] === EV.HUD_BOSSPHASE)[1];
+    handler({ phase: 3 });
+    expect(hud._bossPhaseTimer).toBeGreaterThan(0);
+  });
+});

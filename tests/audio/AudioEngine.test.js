@@ -176,6 +176,22 @@ describe('AudioEngine', () => {
     expect(spy2.mock.calls[0][0]).toBeGreaterThan(f0a);
   });
 
+  it('playSound bossRoar 调用 bossRoar', () => {
+    const a = new AudioEngine();
+    const spy = vi.spyOn(a, 'bossRoar');
+    a.playSound('bossRoar');
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('bossRoar 播放低频锯齿 + 噪声', () => {
+    const a = new AudioEngine();
+    const toneSpy = vi.spyOn(a, '_tone');
+    const noiseSpy = vi.spyOn(a, '_noise');
+    a.bossRoar();
+    expect(toneSpy).toHaveBeenCalledWith(90, expect.any(Number), 'sawtooth', expect.any(Number), 50);
+    expect(noiseSpy).toHaveBeenCalled();
+  });
+
   describe('BGM 系统', () => {
     it('startMusic 创建 _bgmNodes 含 2 个振荡器', () => {
       const a = new AudioEngine();

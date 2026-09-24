@@ -226,7 +226,8 @@ async function bootstrap() {
   bus.on(EV.SETTINGS_SENSITIVITY, ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
   bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
   // 启动应用延后到 player/aiManager 赋值后避免 TDZ
-  bus.on(EV.HUD_BOSSPHASE, () => { audio.playSound('ultimate'); audio.playSound('bgmIntensity', { intensity: 2 }); });
+  bus.on(EV.HUD_BOSSPHASE, () => { audio.playSound('bossRoar'); audio.playSound('bgmIntensity', { intensity: 2 }); });
+  bus.on(EV.FX_BOSSROAR, () => audio.playSound('bossRoar'));
   bus.on(EV.COMBAT_ULTIMATE, () => audio.playSound('ultimate'));
   bus.on(EV.COMBAT_COUNTER, () => audio.playSound('counter'));
   bus.on(EV.COMBO_TIER, (p) => audio.playSound('comboTier', { tier: p.tier || 0 }));

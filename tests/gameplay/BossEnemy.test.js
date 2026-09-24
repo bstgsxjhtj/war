@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { BossEnemy } from '../../src/gameplay/BossEnemy.js';
+import { EV } from '../../src/core/constants/events.js';
 
 // jsdom 无 canvas 2d 实现：mock getContext 返回 Proxy 兜底（TextureFactory 构造贴图用）
 if (typeof HTMLCanvasElement !== 'undefined' && !HTMLCanvasElement.prototype.getContext.toString().includes('Not implemented')) {
@@ -104,6 +105,14 @@ describe('BossEnemy 技能方法', () => {
     const b = new BossEnemy({ type: 'behemoth' });
     expect(typeof b._skillSlam).toBe('function');
     expect(typeof b._skillRegenerate).toBe('function');
+  });
+
+  it('_skillRoar 发射 FX_BOSSROAR 音效事件', () => {
+    const b = new BossEnemy({ type: 'warlord' });
+    const bus = { emit: vi.fn() };
+    b._bus = bus;
+    b._skillRoar({ characters: [], spawnAoE: vi.fn() }, 0);
+    expect(bus.emit).toHaveBeenCalledWith(EV.FX_BOSSROAR, expect.anything());
   });
 });
 
