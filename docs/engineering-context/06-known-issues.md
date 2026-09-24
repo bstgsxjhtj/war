@@ -95,3 +95,13 @@
 | 2026-09-24 | ad3161f | P2-2：技能树分支路径——8 互斥分支（狂暴/守护·回复/吸血·疾风/闪避·狂热/暴击），前置 Lv2+ 解锁，upgradeBranch + 8 效果 getter，CombatSystem/Character/HUD/SkillTreeUI 全链路接入；+17 用例 |
 | 2026-09-24 | 4b0afae | P2-3：击杀处决强化——补 canBeExecuted getter（alive && ratio<0.2），KeyE 接 _tryExecute，Boss 击杀 0.3s@15% 慢镜、普通 0.15s@20%，处决提示 HUD hint；+11 用例 |
 | 2026-09-24 | e2f5035 | P3-1：教程扩展 5→8 步（补闪避 Q/武器切换 1-4/处决 E）；修复生产 bug——new Tutorial() 未传 bus 致 COMBAT_COUNTER/ULTIMATE 事件步成死路径（仅超时兜底）；完成语补 Tab/Q/E 探索提示；回合结束 destroy 卸载监听；+9 用例（净增 4） |
+| 2026-09-24 | 1852330 | 第四轮 P0-1：敌人攻击前摇 0.45s + TelegraphIndicator 地面红圈预警 |
+| 2026-09-24 | e44a67a | 第四轮 P0-2：暴击金色伤害数字 + 暴击音 |
+| 2026-09-24 | 17da18d | 第四轮 P0-3：玩家受击红色 vignette + 镜头 kick |
+| 2026-09-24 | 742aef4 | 第四轮 P1-1：连击里程碑音 + 金屏脉冲（combopulse） |
+| 2026-09-24 | 27fb3e9 | 第四轮 P1-2：Boss 阶段横幅 + 咆哮音（HUD_BOSSPHASE / FX_BOSSROAR） |
+| 2026-09-24 | 91a21b1 | 第四轮 P1-3：处决专属反馈（COMBAT_EXECUTE → 处决音 + 金色横幅 + hitStop + 震屏） |
+| 2026-09-24 | 69819da | 第四轮 P2-1：闪避残影——FX_DODGE 事件 + DodgeGhosts 渲染组件（半透明胶囊幻影 0.4s 消散，仅玩家） |
+| 2026-09-24 | a04180c | 第四轮 P2-2：完美格挡视觉闪屏——金色"弹反"横幅 #parryflash + 全屏金闪 #parryglow（FX_PERFECTBLOCK 玩家触发） |
+| 2026-09-24 | 28bc43a | 第四轮 P2-3：输入缓冲扩展到闪避/处决——requestDodge/requestExecute 0.25s 缓冲重试，Player.update 消费 |
+| 2026-09-24 | 台账核实 | 第四轮 P3-1 核实：COMBAT_COUNTER 音效链路完整（CombatSystem L83 emit → main_entry L236 → AudioEngine.counter），无需修复 |
