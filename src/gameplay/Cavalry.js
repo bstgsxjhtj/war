@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { AIController } from './AIController.js';
+import { Character } from './Character.js';
+import { EV } from '../core/constants/events.js';
 
 export class Horse {
   constructor(scene) {
@@ -71,13 +73,86 @@ export class CavalryEnemy extends AIController {
     this._isCavalry = true;
     this._horse = null;
     this._name = '骑兵';
+    this._chargeState = 'idle';
+    this._chargeTimer = 0;
+    this._chargeCd = 0;
+    this._chargeDir = new THREE.Vector3();
+    this._chargeHitSet = new Set();
   }
 
   mount(horse) { this._horse = horse; horse.rider = this; }
   unmount() { if (this._horse) { this._horse.rider = null; this._horse = null; } }
 
+  _startCharge() {
+    this._chargeState = 'windup';
+    this._chargeTimer = 0.5;
+    this._chargeCd = 8;
+    this._chargeHitSet.clear();
+  }
+
+  _maybeStartCharge(enemies) {
+    if (this._chargeCd > 0 || this._chargeState !== 'idle') return;
+    let target = null, minD = Infinity;
+    for (const e of enemies) {
+      if (!e.alive || e.team === this.team) continue;
+      const d = e.position.distanceTo(this.position);
+      if (d < minD) { minD = d; target = e; }
+    }
+    if (!target || minD < 8 || minD > 35) return;
+    this._chargeDir.subVectors(target.position, this.position).setY(0).normalize();
+    this._startCharge();
+  }
+
+  _tickCharge(dt, terrain, combat, enemies, now) {
+    this._chargeTimer -= dt;
+    if (this._chargeState === 'windup') {
+      this.setMove(0, 0);
+      this.setSprint(false);
+      if (this._chargeTimer <= 0) {
+        this._chargeState = 'charging';
+        this._chargeTimer = 1.0;
+        this._chargeHitSet.clear();
+        if (this._bus) this._bus.emit(EV.FX_SHAKE, { amount: 0.2 });
+      }
+    } else if (this._chargeState === 'charging') {
+      this.setMove(1, 0);
+      this.setSprint(true);
+      this.setLook(Math.atan2(this._chargeDir.x, this._chargeDir.z));
+      if (enemies) {
+        for (const e of enemies) {
+          if (!e.alive || e.team === this.team || e === this) continue;
+          if (this._chargeHitSet.has(e)) continue;
+          const d = e.position.distanceTo(this.position);
+          if (d < 2.0) {
+            e.takeDamage(40, true, this, now);
+            this._chargeHitSet.add(e);
+          }
+        }
+      }
+      if (this._chargeTimer <= 0) {
+        this._chargeState = 'recovery';
+        this._chargeTimer = 0.5;
+      }
+    } else if (this._chargeState === 'recovery') {
+      this.setMove(0.3, 0);
+      this.setSprint(false);
+      if (this._chargeTimer <= 0) {
+        this._chargeState = 'idle';
+      }
+    }
+  }
+
   update(dt, terrain, combat, enemies, now) {
-    super.update(dt, terrain, combat, enemies, now);
+    if (this._chargeCd > 0) this._chargeCd -= dt;
+
+    if (this._chargeState !== 'idle') {
+      this._tickCharge(dt, terrain, combat, enemies, now);
+      Character.prototype.update.call(this, dt, terrain, combat, now);
+    } else {
+      this._maybeStartCharge(enemies);
+      super.update(dt, terrain, combat, enemies, now);
+    }
+
     if (this._horse && this.root) {
       this.root.position.y = terrain.heightAt(this.root.position.x, this.root.position.z) + 1.5;
     }
