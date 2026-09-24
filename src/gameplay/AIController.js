@@ -178,7 +178,7 @@ export class AIController extends Character {
           this._counterTimer = 0.3;
         }
       }
-      if (this.weapon && this.weapon.type === 'shield' && this._blockCd <= 0 && Math.random() < (diff ? diff.blockChance : 0)) {
+      if (this.weapon && this.weapon.weaponClass === 'SHIELD' && this._blockCd <= 0 && Math.random() < (diff ? diff.blockChance : 0)) {
         this._blockTimer = 0.4; this._blockCd = 3;
       }
 

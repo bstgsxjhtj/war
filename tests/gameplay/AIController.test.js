@@ -233,3 +233,34 @@ describe('AIController 精英技能', () => {
     expect(ai._counterTimer).toBe(0);
   });
 });
+
+describe('AIController 格挡触发 (P0-3)', () => {
+  let ai, superUpdate, randSpy;
+  beforeEach(() => {
+    superUpdate = vi.spyOn(Character.prototype, 'update').mockImplementation(() => {});
+    ai = new AIController({ team: 1 });
+    ai.tryAttack = vi.fn();
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn(); ai.setLook = vi.fn();
+  });
+  afterEach(() => { superUpdate.mockRestore(); if (randSpy) randSpy.mockRestore(); });
+
+  it('SHIELD 武器 AI 攻击范围内举盾(_blockTimer>0)', () => {
+    ai.setWeapons([{ type: 'melee', weaponClass: 'SHIELD', range: 2.9, ready: true, createMesh: () => null }]);
+    ai._aiManager = { difficulty: () => ({ blockChance: 1, dodgeChance: 0, reactTime: 0, maxHpMul: 1, reinforceCd: 1 }) };
+    ai._focusTimer = 0; ai._blockCd = 0;
+    randSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const enemy = mkEnemy(0, 2, 0);
+    ai.update(0.016, terrain, combat, [enemy], NOW);
+    expect(ai._blockTimer).toBeGreaterThan(0);
+  });
+
+  it('非 SHIELD 武器 AI 不举盾', () => {
+    ai.setWeapons([{ type: 'melee', weaponClass: 'SWORD', range: 2.9, ready: true, createMesh: () => null }]);
+    ai._aiManager = { difficulty: () => ({ blockChance: 1, dodgeChance: 0, reactTime: 0, maxHpMul: 1, reinforceCd: 1 }) };
+    ai._focusTimer = 0; ai._blockCd = 0;
+    randSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const enemy = mkEnemy(0, 2, 0);
+    ai.update(0.016, terrain, combat, [enemy], NOW);
+    expect(ai._blockTimer).toBe(0);
+  });
+});
