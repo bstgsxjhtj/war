@@ -376,6 +376,7 @@ async function bootstrap() {
   audio.playSound('bgmStart', { intensity: 0 });
   let _bgmCombatSet = true;
   let _bgmLastIntensity = 0;
+  let _bossBarShown = false;
   let _wavePending = false;
   hud.setRound(0, 0, match.targetWins);
   hud.setMode(mode.name + ' · ' + currentMapName);
@@ -399,19 +400,24 @@ async function bootstrap() {
           if (match.roundEndTimer <= 0) match.startRound();
           return;
         }
-        if (state.current !== States.PLAYING) { env.update(dt, now); if (_bgmCombatSet) { audio.playSound('bgmStop'); audio.playSound('stinger', { stinger: player.alive ? 'victory' : 'defeat' }); _bgmCombatSet = false; } return; }
+        if (state.current !== States.PLAYING) { env.update(dt, now); if (_bgmCombatSet) { audio.playSound('bgmStop'); audio.playSound('stinger', { stinger: player.alive ? 'victory' : 'defeat' }); _bgmCombatSet = false; } if (_bossBarShown) { hud.hideBoss(); _bossBarShown = false; } hud.setLowHP(false); return; }
         if (upgradePicker.visible) { env.update(dt, now); return; }
 
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
         const ldt = (combat.hitstop > 0 || deathFeedback.paused) ? 0 : (hitStop.active ? hitStop.timeScale * dt : dt);
 
         let _bgmTarget = 0;
+        let _bossRef = null;
         for (const a of ais) {
           if (!a.alive) continue;
-          if (a._isBoss) { _bgmTarget = 2; break; }
+          if (a._isBoss) { _bgmTarget = 2; _bossRef = a; break; }
           if (a.position.distanceTo(player.position) < 25) _bgmTarget = 1;
         }
         if (_bgmTarget !== _bgmLastIntensity) { audio.playSound('bgmIntensity', { intensity: _bgmTarget }); _bgmLastIntensity = _bgmTarget; }
+        if (_bossRef) {
+          if (!_bossBarShown) { hud.showBoss(_bossRef._name || 'Boss'); _bossBarShown = true; }
+          hud.setBossHP(_bossRef.health.ratio);
+        } else if (_bossBarShown) { hud.hideBoss(); _bossBarShown = false; }
 
         const weatherFx = weather.getCombatEffects();
         player._weatherEffects = weatherFx;
@@ -466,6 +472,7 @@ async function bootstrap() {
         miniMap.update(dt);
         progressUI.update(dt);
         hud.setHealth(player);
+        hud.setLowHP(player.alive && player.health.ratio < 0.3);
         hud.updateBuffs(player);
         hud.setStamina(player.stamina);
         hud.setRage(player);

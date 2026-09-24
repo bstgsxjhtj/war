@@ -123,4 +123,38 @@ describe('HUD', () => {
     });
     expect(hud._buffbar.style.display).toBe('none');
   });
+
+  it('showBoss 显示 Boss 名和血条', () => {
+    const hud = mkHud();
+    hud.showBoss('战将');
+    expect(hud._bossbar.style.display).toBe('flex');
+    expect(hud._bossbar.textContent).toContain('战将');
+  });
+
+  it('setBossHP 按比例写宽度', () => {
+    const hud = mkHud();
+    hud.showBoss('战将');
+    hud.setBossHP(0.5);
+    expect(hud._bossFill.style.width).toBe('50%');
+  });
+
+  it('hideBoss 隐藏血条', () => {
+    const hud = mkHud();
+    hud.showBoss('战将');
+    hud.hideBoss();
+    expect(hud._bossbar.style.display).toBe('none');
+  });
+
+  it('setLowHP true 显示红色脉冲层', () => {
+    const hud = mkHud();
+    hud.setLowHP(true);
+    expect(hud._lowhp.style.display).toBe('block');
+  });
+
+  it('setLowHP false 隐藏', () => {
+    const hud = mkHud();
+    hud.setLowHP(true);
+    hud.setLowHP(false);
+    expect(hud._lowhp.style.display).toBe('none');
+  });
 });
