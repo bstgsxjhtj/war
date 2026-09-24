@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../src/gameplay/AIController.js', () => ({
   AIController: class {
-    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; }
+    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; this.speed = 6.2; }
     spawn() {} setWeapons(w) { this.weapons = w; } setCameraRef() {} setAIManager() {} setIsElite(v) { this._isElite = v; } setAudio() {} setBus() {}
   }
 }));
@@ -110,5 +110,36 @@ describe('Spawner', () => {
     for (const a of ais) {
       expect(a.weapons[0].weaponClass).toBe('SPEAR');
     }
+  });
+});
+
+describe('Spawner 修饰词应用', () => {
+  let deps, spawner, ais;
+  beforeEach(() => {
+    deps = mkDeps();
+    spawner = new Spawner(deps);
+    ais = [];
+  });
+
+  it('modifier hpMul 应用到普通兵 maxHp', () => {
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: { hpMul: 1.6 } });
+    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5 * 1.6));
+  });
+
+  it('modifier speedMul 应用到 ai.speed', () => {
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: { speedMul: 1.3 } });
+    expect(ais[0].speed).toBeCloseTo(6.2 * 1.3, 5);
+  });
+
+  it('modifier 为 null 时无效果（默认行为）', () => {
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: null });
+    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5));
+    expect(ais[0].speed).toBe(6.2);
+  });
+
+  it('modifier 同时应用 hpMul 与 speedMul', () => {
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: { hpMul: 1.5, speedMul: 1.2 } });
+    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5 * 1.5));
+    expect(ais[0].speed).toBeCloseTo(6.2 * 1.2, 5);
   });
 });

@@ -22,27 +22,30 @@ export class Spawner {
     this.progression = progression; this.campaign = campaign;
   }
 
-  _maybeElite(ai) {
-    if (!ai._isBoss && !ai._isElite && Math.random() < ELITE_CHANCE) {
+  _maybeElite(ai, eliteChanceMul = 1) {
+    if (!ai._isBoss && !ai._isElite && Math.random() < ELITE_CHANCE * eliteChanceMul) {
       ai.setIsElite(true);
       ai._eliteSkill = ELITE_SKILLS[Math.floor(Math.random() * ELITE_SKILLS.length)];
     }
   }
 
-  _finalize(ai, x, z, ais) {
+  _finalize(ai, x, z, ais, eliteChanceMul = 1) {
     ai.spawn(new THREE.Vector3(x, this.terrain.heightAt(x, z), z));
     ai.setCameraRef(this.camera);
     ai.setAIManager(this.aiManager);
-    this._maybeElite(ai);
+    this._maybeElite(ai, eliteChanceMul);
     this.scene.add(ai.root);
     this.combat.register(ai);
     if (ai._weaponMesh) this.weaponTrail.attach(ai._weaponMesh, ai.team === 1 ? 0xff8060 : 0x60a0ff);
     ais.push(ai);
   }
 
-  spawnRed(redLayout, ais, { bossWave = false, modeName = '' } = {}) {
+  spawnRed(redLayout, ais, { bossWave = false, modeName = '', modifier = null } = {}) {
     const unlocks = this.progression.unlocks;
     const isTraining = modeName === '训练场';
+    const hpMul = modifier ? (modifier.hpMul || 1) : 1;
+    const speedMul = modifier ? (modifier.speedMul || 1) : 1;
+    const eliteChanceMul = modifier ? (modifier.eliteChanceMul || 1) : 1;
     for (let i = 0; i < redLayout.length; i++) {
       let ai;
       if (i === 0 && (this.campaign.currentStage.bossType || bossWave) && !isTraining) {
@@ -53,11 +56,13 @@ export class Spawner {
         ai = new CavalryEnemy({ team: 1 });
         ai.mount(this.horses.create());
       } else {
-        ai = new AIController({ team: 1, passive: isTraining, maxHp: isTraining ? TRAINING_DUMMY_HP : Math.round(BASE_AI_HP * this.aiManager.difficulty().maxHpMul) });
+        ai = new AIController({ team: 1, passive: isTraining, maxHp: isTraining ? TRAINING_DUMMY_HP : Math.round(BASE_AI_HP * this.aiManager.difficulty().maxHpMul * hpMul) });
       }
       const p = redLayout[i];
       ai.setWeapons([AI_WEAPON_MAKERS[i % AI_WEAPON_MAKERS.length]()]);
-      this._finalize(ai, p.x, p.z, ais);
+      this._finalize(ai, p.x, p.z, ais, eliteChanceMul);
+      if (speedMul !== 1 && ai.speed) ai.speed *= speedMul;
+      if (hpMul !== 1 && (ai._isBoss || ai._isElite) && ai.health) { ai.health.maxHp = Math.round(ai.health.maxHp * hpMul); ai.health.cur = ai.health.maxHp; }
     }
     this.aiManager.assignSquad(ais);
     if (!isTraining && ais.length >= 3) {

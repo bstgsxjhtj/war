@@ -81,6 +81,80 @@ describe('WaveMode endless', () => {
   });
 });
 
+describe('WaveMode 无尽修饰词', () => {
+  it('MODIFIERS 定义至少 5 种修饰词', () => {
+    expect(WaveMode.MODIFIERS.length).toBeGreaterThanOrEqual(5);
+    for (const m of WaveMode.MODIFIERS) {
+      expect(m.key).toBeTruthy();
+      expect(m.name).toBeTruthy();
+      expect(m.desc).toBeTruthy();
+    }
+  });
+
+  it('endless 构造时预选 nextModifier（预告）', () => {
+    const w = new WaveMode({}, true);
+    expect(w.nextModifier).not.toBeNull();
+    expect(w.modifier).toBeNull();
+  });
+
+  it('非 endless 模式无修饰词', () => {
+    const w = new WaveMode({});
+    expect(w.nextModifier).toBeNull();
+    w.spawnLayout();
+    expect(w.modifier).toBeNull();
+  });
+
+  it('endless 第3波激活修饰词', () => {
+    const w = new WaveMode({}, true);
+    for (let i = 0; i < 3; i++) w.spawnLayout();
+    expect(w.wave).toBe(3);
+    expect(w.modifier).not.toBeNull();
+  });
+
+  it('endless 前2波无修饰词', () => {
+    const w = new WaveMode({}, true);
+    w.spawnLayout();
+    expect(w.modifier).toBeNull();
+    w.spawnLayout();
+    expect(w.modifier).toBeNull();
+  });
+
+  it('endless 修饰词在波次间持续（第4波仍为第3波的修饰词）', () => {
+    const w = new WaveMode({}, true);
+    for (let i = 0; i < 3; i++) w.spawnLayout();
+    const mod3 = w.modifier;
+    w.spawnLayout();
+    expect(w.modifier).toBe(mod3);
+  });
+
+  it('endless 第6波切换为新修饰词（与第3波不同）', () => {
+    const w = new WaveMode({}, true);
+    for (let i = 0; i < 3; i++) w.spawnLayout();
+    const mod3Key = w.modifier.key;
+    for (let i = 0; i < 3; i++) w.spawnLayout();
+    expect(w.modifier.key).not.toBe(mod3Key);
+  });
+
+  it('spawnLayout 返回 modifier 与 nextModifier', () => {
+    const w = new WaveMode({}, true);
+    for (let i = 0; i < 3; i++) w.spawnLayout();
+    const lay = w.spawnLayout();
+    expect(lay).toHaveProperty('modifier');
+    expect(lay).toHaveProperty('nextModifier');
+  });
+
+  it('countMul 修饰词增加敌人数量', () => {
+    const w = new WaveMode({}, true);
+    const swarm = WaveMode.MODIFIERS.find(m => m.countMul);
+    expect(swarm).toBeTruthy();
+    w.modifier = swarm;
+    w.wave = 0;
+    const lay = w.spawnLayout();
+    const baseCount = Math.min(12, 2 + Math.floor(1 * 1.5));
+    expect(lay.red.length).toBe(Math.min(12, Math.round(baseCount * swarm.countMul)));
+  });
+});
+
 describe('WaveMode best score', () => {
   beforeEach(() => { localStorage.clear(); });
 

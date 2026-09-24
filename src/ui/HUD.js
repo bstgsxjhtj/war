@@ -267,9 +267,11 @@ export class HUD {
   flashKillstreak(n) { const msg = n >= 3 ? `${n}连杀！` : '击杀！'; this._kill.textContent = msg; this._kill.style.opacity = '1'; this._killTimer = 1.4; }
   setScore(b, r) { this._score.textContent = `蓝方 ${b}  |  ${r} 红方`; }
   setRound(b, r, target) { this._round.textContent = `局比分 ${b} - ${r}（先到 ${target} 胜）`; }
-  setWave(wave, best, endless) {
+  setWave(wave, best, endless, modifierInfo) {
     let txt = '第 ' + wave + ' 波' + (endless ? '' : ' / 10');
     if (best > 0) txt += '  ·  最高 ' + best + ' 波';
+    if (modifierInfo && modifierInfo.current) txt += '  ·  当前：' + modifierInfo.current.name;
+    if (modifierInfo && modifierInfo.next) txt += '  ·  下一：' + modifierInfo.next.name;
     this._round.textContent = txt;
   }
   setMode(name, stageInfo) {

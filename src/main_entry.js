@@ -318,11 +318,11 @@ async function bootstrap() {
     combat.register(player);
     if (player._weaponMesh) weaponTrail.attach(player._weaponMesh, 0xfff0a0);
     if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx);
-    let redLayout, bossWave = false;
+    let redLayout, bossWave = false, spawnModifier = null;
     if (mode.name === '战役') redLayout = campaign.spawnLayout().red;
-    else if (mode.name === '波次' || mode.name === '无尽') { const lay = mode.spawnLayout(); redLayout = lay.red; bossWave = lay.isBoss; }
+    else if (mode.name === '波次' || mode.name === '无尽') { const lay = mode.spawnLayout(); redLayout = lay.red; bossWave = lay.isBoss; spawnModifier = lay.modifier; }
     else redLayout = spawns.red;
-    spawnRed(redLayout, { bossWave });
+    spawnRed(redLayout, { bossWave, modifier: spawnModifier });
     if (mode.name === '战役') {
       match.escortTarget = null; match.defenseTimer = 0; match.timeLimit = 0; match.surviveWavesDone = false; match.surviveTimer = 0;
       const s = campaign.currentStage;
@@ -469,14 +469,17 @@ async function bootstrap() {
           });
         }
         if (mode.name === '波次' || mode.name === '无尽') {
-          hud.setWave(mode.wave, WaveMode.loadBest(), mode.endless);
+          hud.setWave(mode.wave, WaveMode.loadBest(), mode.endless, { current: mode.modifier, next: mode.nextModifier });
         }
         if ((mode.name === '波次' || mode.name === '无尽') && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
           const lay = mode.spawnLayout();
-          spawnRed(lay.red, { bossWave: lay.isBoss });
+          spawnRed(lay.red, { bossWave: lay.isBoss, modifier: lay.modifier });
           enemies = [player, ...ais];
-          hud.flash('第 ' + mode.wave + ' 波来袭！');
-          setTimeout(() => hud.clearHint(), 1500);
+          let msg = '第 ' + mode.wave + ' 波来袭！';
+          if (lay.modifier) msg = '第 ' + mode.wave + ' 波 · 【' + lay.modifier.name + '】' + lay.modifier.desc;
+          hud.flash(msg);
+          setTimeout(() => hud.clearHint(), 2500);
+          if (lay.modifier && lay.modifier.weather) weather.setMode(lay.modifier.weather);
         }
         deathFeedback.update(dt);
         if (deathFeedback.paused) return;
