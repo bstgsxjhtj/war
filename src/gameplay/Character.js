@@ -67,6 +67,14 @@ export class Character {
   get rage() { return this._rage; }
   addRage(amount) { this._rage = Math.min(this.maxRage, this._rage + amount); }
   get killstreak() { return this._killstreak; }
+  killstreakBuffs() {
+    const k = this._killstreak;
+    let dmgMul = 1, cdMul = 1, lifesteal = 0;
+    if (k >= 3) dmgMul = 1.1;
+    if (k >= 5) { dmgMul = 1.2; cdMul = 0.8; }
+    if (k >= 7) { dmgMul = 1.3; lifesteal = 0.05; }
+    return { dmgMul, cdMul, lifesteal };
+  }
 
   _build() {
     const teamColor = this.team === 0 ? 0x2f5fa8 : 0xa83030;
@@ -484,7 +492,7 @@ export class Character {
         let dmg = this.weapon.comboDamage ? this.weapon.comboDamage[combo] ?? this.weapon.damage : this.weapon.damage;
         if (this._perfectBuff > 0) dmg *= 1.5; // 完美闪避后攻击加成
         this.weapon._perform(this, this._pendingCombat, { combo: this._pendingCombo, charge: this._pendingCharge, now, dmg });
-        this.weapon._timer = this.weapon.cooldown;
+        this.weapon._timer = this.weapon.cooldown * this.killstreakBuffs().cdMul;
         if (this.weapon.comboLunge) this._curVel.addScaledVector(this.forward, this.weapon.comboLunge[combo] ?? 3);
       }
       if (this._anim <= 0) this._attacking = false;
