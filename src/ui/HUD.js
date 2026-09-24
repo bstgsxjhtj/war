@@ -10,6 +10,7 @@ export class HUD {
     this._comboPulseTimer = 0;
     this._bossPhaseTimer = 0;
     this._execBannerTimer = 0;
+    this._parryTimer = 0;
     this.el = document.createElement('div');
     Object.assign(this.el.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 10, fontFamily: 'Segoe UI, sans-serif' });
     this.el.innerHTML = `
@@ -53,6 +54,8 @@ export class HUD {
       <div id="combopulse" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,235,150,0.3) 0%,transparent 60%);opacity:0;"></div>
       <div id="bossphase" style="position:absolute;top:22%;left:50%;transform:translateX(-50%);color:#ff5533;font-size:30px;font-weight:bold;text-shadow:0 2px 6px #000,0 0 12px rgba(255,40,40,.6);opacity:0;pointer-events:none;"></div>
       <div id="execute" style="position:absolute;top:34%;left:50%;transform:translateX(-50%);color:#ffd700;font-size:36px;font-weight:bold;text-shadow:0 2px 8px #000,0 0 16px rgba(255,215,0,.7);opacity:0;pointer-events:none;"></div>
+      <div id="parryflash" style="position:absolute;top:28%;left:50%;transform:translateX(-50%);color:#ffe98a;font-size:32px;font-weight:bold;text-shadow:0 2px 8px #000,0 0 18px rgba(255,215,0,.9);opacity:0;pointer-events:none;"></div>
+      <div id="parryglow" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,240,180,0.35) 0%,transparent 55%);opacity:0;"></div>
       <style>@keyframes lowhp-pulse{0%,100%{opacity:0.5}50%{opacity:1}}</style>
     `;
     document.body.appendChild(this.el);
@@ -75,6 +78,8 @@ export class HUD {
     this._combopulse = this.el.querySelector('#combopulse');
     this._bossphase = this.el.querySelector('#bossphase');
     this._execute = this.el.querySelector('#execute');
+    this._parryflash = this.el.querySelector('#parryflash');
+    this._parryglow = this.el.querySelector('#parryglow');
     this._charge = this.el.querySelector('#charge');
     this._chargeFill = this.el.querySelector('#chargeFill');
     this._weapon = this.el.querySelector('#weapon');
@@ -209,6 +214,7 @@ export class HUD {
     });
     bus.on(EV.HUD_BOSSPHASE, ({ phase } = {}) => this.flashBossPhase(phase));
     bus.on(EV.COMBAT_EXECUTE, ({ char } = {}) => { if (char && char.isLocal) this.flashExecute(); });
+    bus.on(EV.FX_PERFECTBLOCK, ({ char } = {}) => { if (char && char.isLocal) this.flashParry(); });
 
     this._skillEls = [];
     const skillColors = ['#dfe7ee', '#b98a4a', '#c9a44a', '#7a7a82'];
@@ -325,6 +331,7 @@ export class HUD {
   flashComboPulse(tier = 0) { this._comboPulseTimer = 0.3; this._combopulse.style.opacity = String(Math.min(0.6, 0.25 + tier * 0.1)); }
   flashBossPhase(phase = 2) { this._bossPhaseTimer = 1.5; this._bossphase.textContent = phase >= 3 ? '⚔ Boss 狂暴！' : 'Boss 激怒！'; this._bossphase.style.opacity = '1'; }
   flashExecute() { this._execBannerTimer = 1.0; this._execute.textContent = '⚔ 处决！'; this._execute.style.opacity = '1'; }
+  flashParry() { this._parryTimer = 0.8; this._parryflash.textContent = '🛡 弹反！'; this._parryflash.style.opacity = '1'; this._parryglow.style.opacity = '0.8'; }
   setScore(b, r) { this._score.textContent = `蓝方 ${b}  |  ${r} 红方`; }
   setRound(b, r, target) { this._round.textContent = `局比分 ${b} - ${r}（先到 ${target} 胜）`; }
   setWave(wave, best, endless, modifierInfo) {
@@ -430,6 +437,11 @@ export class HUD {
       this._execBannerTimer -= dt;
       if (this._execBannerTimer <= 0) { this._execBannerTimer = 0; this._execute.style.opacity = '0'; }
       else this._execute.style.opacity = this._execBannerTimer.toString();
+    }
+    if (this._parryTimer > 0) {
+      this._parryTimer -= dt;
+      if (this._parryTimer <= 0) { this._parryTimer = 0; this._parryflash.style.opacity = '0'; this._parryglow.style.opacity = '0'; }
+      else { this._parryflash.style.opacity = this._parryTimer.toString(); this._parryglow.style.opacity = (this._parryTimer / 0.8).toString(); }
     }
     if (this._counterTimer > 0) {
       this._counterTimer -= dt;

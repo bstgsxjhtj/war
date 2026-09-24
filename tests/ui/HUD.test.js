@@ -273,3 +273,37 @@ describe('HUD 处决横幅', () => {
     expect(hud._execBannerTimer).toBe(0);
   });
 });
+
+describe('HUD 完美格挡闪屏', () => {
+  it('flashParry 显示金色弹反横幅与全屏金闪并设衰减', () => {
+    const hud = mkHud();
+    hud.flashParry();
+    expect(hud._parryflash.textContent).toContain('弹反');
+    expect(parseFloat(hud._parryflash.style.opacity)).toBeGreaterThan(0);
+    expect(parseFloat(hud._parryglow.style.opacity)).toBeGreaterThan(0);
+    expect(hud._parryTimer).toBeGreaterThan(0);
+  });
+
+  it('update 衰减后横幅与金闪归零', () => {
+    const hud = mkHud();
+    hud.flashParry();
+    hud.update(hud._parryTimer);
+    expect(hud._parryTimer).toBe(0);
+    expect(parseFloat(hud._parryflash.style.opacity)).toBe(0);
+    expect(parseFloat(hud._parryglow.style.opacity)).toBe(0);
+  });
+
+  it('FX_PERFECTBLOCK 玩家触发 flashParry', () => {
+    const hud = mkHud();
+    const handler = hud.bus.on.mock.calls.find(c => c[0] === EV.FX_PERFECTBLOCK)[1];
+    handler({ char: { isLocal: true } });
+    expect(hud._parryTimer).toBeGreaterThan(0);
+  });
+
+  it('FX_PERFECTBLOCK 非玩家不触发', () => {
+    const hud = mkHud();
+    const handler = hud.bus.on.mock.calls.find(c => c[0] === EV.FX_PERFECTBLOCK)[1];
+    handler({ char: { isLocal: false } });
+    expect(hud._parryTimer).toBe(0);
+  });
+});
