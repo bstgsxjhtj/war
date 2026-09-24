@@ -175,6 +175,7 @@ async function bootstrap() {
     if (victim && victim.isLocal && attacker) {
       const angle = Math.atan2(attacker.position.x - victim.position.x, attacker.position.z - victim.position.z);
       hitDirection.show(angle, camera.yaw || 0);
+      camera.addShake(0.18);
     }
     if (attacker && attacker.isLocal) {
       hitStop.trigger(heavy ? 0.12 : 0.06, 0.05);

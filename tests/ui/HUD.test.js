@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HUD } from '../../src/ui/HUD.js';
+import { EV } from '../../src/core/constants/events.js';
 
 beforeEach(() => {
   // jsdom canvas getContext 返回 null，mock 一个最小 2D 上下文
@@ -156,5 +157,38 @@ describe('HUD', () => {
     hud.setLowHP(true);
     hud.setLowHP(false);
     expect(hud._lowhp.style.display).toBe('none');
+  });
+});
+
+describe('HUD 受击 vignette', () => {
+  it('flashHitVignette 点亮红色 vignette 并设衰减计时', () => {
+    const hud = mkHud();
+    hud.flashHitVignette();
+    expect(parseFloat(hud._hitvignette.style.opacity)).toBeGreaterThan(0);
+    expect(hud._hitVigTimer).toBeGreaterThan(0);
+  });
+
+  it('update 在衰减时长后把 opacity 归零', () => {
+    const hud = mkHud();
+    hud.flashHitVignette();
+    const dur = hud._hitVigTimer;
+    hud.update(dur);
+    expect(hud._hitVigTimer).toBe(0);
+    expect(parseFloat(hud._hitvignette.style.opacity)).toBe(0);
+  });
+
+  it('COMBAT_HIT victim.isLocal 触发 vignette', () => {
+    const hud = mkHud();
+    const handler = hud.bus.on.mock.calls.find(c => c[0] === EV.COMBAT_HIT)[1];
+    handler({ victim: { isLocal: true } });
+    expect(hud._hitVigTimer).toBeGreaterThan(0);
+    expect(parseFloat(hud._hitvignette.style.opacity)).toBeGreaterThan(0);
+  });
+
+  it('COMBAT_HIT 非 isLocal 不触发 vignette', () => {
+    const hud = mkHud();
+    const handler = hud.bus.on.mock.calls.find(c => c[0] === EV.COMBAT_HIT)[1];
+    handler({ victim: { isLocal: false } });
+    expect(hud._hitVigTimer).toBe(0);
   });
 });
