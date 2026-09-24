@@ -111,3 +111,54 @@ describe('AIController 决策', () => {
     expect(superUpdate).toHaveBeenCalled();
   });
 });
+
+describe('AIController 投石机争夺', () => {
+  let ai, superUpdate;
+  beforeEach(() => {
+    superUpdate = vi.spyOn(Character.prototype, 'update').mockImplementation(() => {});
+    ai = new AIController({ team: 1 });
+    ai.setWeapons([mkWeapon()]);
+    ai.tryAttack = vi.fn();
+  });
+  afterEach(() => superUpdate.mockRestore());
+
+  it('setSiegeTarget 设置目标克隆', () => {
+    const pos = new THREE.Vector3(20, 0, 30);
+    ai.setSiegeTarget(pos);
+    expect(ai._siegeTarget).not.toBeNull();
+    expect(ai._siegeTarget.x).toBe(20);
+    pos.x = 999;
+    expect(ai._siegeTarget.x).toBe(20);
+  });
+
+  it('setSiegeTarget(null) 清除目标', () => {
+    ai.setSiegeTarget(new THREE.Vector3(20, 0, 30));
+    ai.setSiegeTarget(null);
+    expect(ai._siegeTarget).toBeNull();
+  });
+
+  it('有投石机目标时朝目标移动（无敌人）', () => {
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn(); ai.setLook = vi.fn();
+    ai.setSiegeTarget(new THREE.Vector3(20, 0, 30));
+    ai.update(0.016, terrain, combat, [], NOW);
+    expect(ai._state).toBe('patrol');
+    expect(ai.setMove).toHaveBeenCalledWith(1, 0);
+    expect(ai.setSprint).toHaveBeenCalledWith(true);
+  });
+
+  it('到达投石机目标后清除目标', () => {
+    ai.setMove = vi.fn();
+    ai.setSiegeTarget(new THREE.Vector3(1, 0, 0));
+    ai.update(0.016, terrain, combat, [], NOW);
+    expect(ai._siegeTarget).toBeNull();
+  });
+
+  it('有投石机目标但有敌人时仍优先战斗', () => {
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn();
+    ai.setSiegeTarget(new THREE.Vector3(20, 0, 30));
+    const enemy = mkEnemy(0, 2, 0);
+    ai.update(0.016, terrain, combat, [enemy], NOW);
+    expect(ai._state).toBe('attack');
+    expect(ai._siegeTarget).not.toBeNull();
+  });
+});

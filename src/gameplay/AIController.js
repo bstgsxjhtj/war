@@ -23,6 +23,7 @@ export class AIController extends Character {
     this._dodgeCd = 0;
     this._blockCd = 0;
     this._counterTimer = 0;
+    this._siegeTarget = null;
     this._callReinforceCd = 0;
     this._spotCd = 0;
     this._isElite = false;
@@ -35,6 +36,7 @@ export class AIController extends Character {
 
   setAIManager(m) { this._aiManager = m; }
   setIsElite(v) { this._isElite = v; if (v) this.root.scale.set(1.15, 1.15, 1.15); }
+  setSiegeTarget(pos) { this._siegeTarget = pos ? pos.clone() : null; }
 
   _pickPatrol(center) {
     const base = center || this.position;
@@ -191,21 +193,29 @@ export class AIController extends Character {
       }
     } else {
       this._state = 'patrol';
-      if (this._formationTarget) {
-        this._patrolTarget.copy(this._formationTarget);
-        if (this._formationYaw !== null) this.setLook(this._formationYaw);
-      }
-      this._vDir.subVectors(this._patrolTarget, this.position);
-      this._vDir.y = 0;
-      const dist = this._vDir.length();
-      if (dist < 1.5 || this._retargetTimer <= 0) {
-        this._pickPatrol(this.position);
-        this._retargetTimer = 4 + Math.random() * 4;
+      if (this._siegeTarget) {
+        this._vDir.subVectors(this._siegeTarget, this.position);
+        this._vDir.y = 0;
+        const sd = this._vDir.length();
+        if (sd < 3) { this._siegeTarget = null; this._pickPatrol(this.position); }
+        else { this._vDir.normalize(); this.setLook(Math.atan2(this._vDir.x, this._vDir.z)); this.setMove(1, 0); this.setSprint(true); }
       } else {
-        this._vDir.normalize();
-        this.setLook(Math.atan2(this._vDir.x, this._vDir.z));
-        this.setMove(1, 0);
-        this.setSprint(false);
+        if (this._formationTarget) {
+          this._patrolTarget.copy(this._formationTarget);
+          if (this._formationYaw !== null) this.setLook(this._formationYaw);
+        }
+        this._vDir.subVectors(this._patrolTarget, this.position);
+        this._vDir.y = 0;
+        const dist = this._vDir.length();
+        if (dist < 1.5 || this._retargetTimer <= 0) {
+          this._pickPatrol(this.position);
+          this._retargetTimer = 4 + Math.random() * 4;
+        } else {
+          this._vDir.normalize();
+          this.setLook(Math.atan2(this._vDir.x, this._vDir.z));
+          this.setMove(1, 0);
+          this.setSprint(false);
+        }
       }
     }
 

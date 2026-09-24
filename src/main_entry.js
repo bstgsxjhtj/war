@@ -423,6 +423,18 @@ async function bootstrap() {
         for (const a of ais) {
           if (a.alive && a.team !== _prevT && siege.tryOccupy(a) && _prevT === 0) hud.flash('投石机被敌方占领！');
         }
+        // AI 决策占领/抢夺投石机：未控方派最近 AI 前往
+        if (siege.trebuchet.team !== 1) {
+          let _siegeAi = null, _minD = Infinity;
+          for (const a of ais) {
+            if (!a.alive || a._siegeTarget) continue;
+            const d = a.position.distanceTo(siege.trebuchet.position);
+            if (d < _minD) { _minD = d; _siegeAi = a; }
+          }
+          if (_siegeAi) _siegeAi.setSiegeTarget(siege.trebuchet.position);
+        } else {
+          for (const a of ais) if (a._siegeTarget) a.setSiegeTarget(null);
+        }
         weaponTrail.update(dt, now);
         hitDirection.update(dt);
         hitStop.update(dt);
