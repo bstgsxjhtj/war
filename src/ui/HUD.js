@@ -42,6 +42,7 @@ export class HUD {
       <div id="keys" style="position:absolute;right:24px;bottom:48px;color:#bcd;font-size:11px;text-shadow:0 1px 2px #000;opacity:.6;text-align:right;line-height:1.6;">WASD · Shift冲刺 · Space跳<br>Q/双击 闪避 · LMB攻击 · RMB格挡/蓄力 · Tab锁定 · 1-4武器 · M模式</div>
       <div id="hint" style="position:absolute;top:62%;left:50%;transform:translateX(-50%);color:#ffd;text-align:center;font-size:15px;text-shadow:0 1px 2px #000;max-width:80%;"></div>
       <div id="kill" style="position:absolute;top:30%;left:50%;transform:translateX(-50%);color:#ffd070;font-size:26px;font-weight:bold;text-shadow:0 2px 4px #000;opacity:0;transition:opacity .2s;"></div>
+      <div id="buffbar" style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);display:flex;gap:8px;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
     `;
     document.body.appendChild(this.el);
     this._locklost = this.el.querySelector('#locklost');
@@ -55,6 +56,7 @@ export class HUD {
     this._wforecast = this.el.querySelector('#wforecast');
     this._hint = this.el.querySelector('#hint');
     this._kill = this.el.querySelector('#kill');
+    this._buffbar = this.el.querySelector('#buffbar');
     this._charge = this.el.querySelector('#charge');
     this._chargeFill = this.el.querySelector('#chargeFill');
     this._weapon = this.el.querySelector('#weapon');
@@ -265,6 +267,18 @@ export class HUD {
     this._write(this._rage, 'boxShadow', c.rage >= 100 ? '0 0 8px #fa4' : 'none');
   }
   flashKillstreak(n) { const msg = n >= 3 ? `${n}连杀！` : '击杀！'; this._kill.textContent = msg; this._kill.style.opacity = '1'; this._killTimer = 1.4; }
+  updateBuffs(player) {
+    const parts = [];
+    if (player._perfectBuff > 0) parts.push('<span style="color:#7df;">完美闪避 ×1.5</span>');
+    if (player._killstreak >= 3 && player.killstreakBuffs) {
+      const ks = player.killstreakBuffs();
+      parts.push(`<span style="color:#ffd070;">连杀 ×${player._killstreak} (+${Math.round((ks.dmgMul - 1) * 100)}%)</span>`);
+    }
+    if (player._runDmgMul && player._runDmgMul > 1) parts.push(`<span style="color:#f88;">锋利 +${Math.round((player._runDmgMul - 1) * 100)}%</span>`);
+    if (player._runLifesteal && player._runLifesteal > 0) parts.push(`<span style="color:#f7a;">吸血 ${Math.round(player._runLifesteal * 100)}%</span>`);
+    if (parts.length > 0) { this._buffbar.innerHTML = parts.join(''); this._buffbar.style.display = 'flex'; }
+    else { this._buffbar.style.display = 'none'; }
+  }
   setScore(b, r) { this._score.textContent = `蓝方 ${b}  |  ${r} 红方`; }
   setRound(b, r, target) { this._round.textContent = `局比分 ${b} - ${r}（先到 ${target} 胜）`; }
   setWave(wave, best, endless, modifierInfo) {

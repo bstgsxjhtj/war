@@ -97,4 +97,30 @@ describe('HUD', () => {
     hud.setWave(3, 0, true);
     expect(hud._round.textContent).toBe('第 3 波');
   });
+
+  it('updateBuffs 显示完美闪避 + 连杀 + 运行加成', () => {
+    const hud = mkHud();
+    hud.updateBuffs({
+      _perfectBuff: 2,
+      _killstreak: 5,
+      killstreakBuffs: () => ({ dmgMul: 1.2, cdMul: 0.8, lifesteal: 0 }),
+      _runDmgMul: 1.15,
+      _runLifesteal: 0.1,
+    });
+    const txt = hud._buffbar.textContent;
+    expect(txt).toContain('完美闪避');
+    expect(txt).toContain('连杀');
+    expect(txt).toContain('锋利');
+    expect(txt).toContain('吸血');
+  });
+
+  it('updateBuffs 无 buff 时隐藏', () => {
+    const hud = mkHud();
+    hud.updateBuffs({
+      _perfectBuff: 0,
+      _killstreak: 0,
+      killstreakBuffs: () => ({ dmgMul: 1, cdMul: 1, lifesteal: 0 }),
+    });
+    expect(hud._buffbar.style.display).toBe('none');
+  });
 });

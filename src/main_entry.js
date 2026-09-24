@@ -466,6 +466,7 @@ async function bootstrap() {
         miniMap.update(dt);
         progressUI.update(dt);
         hud.setHealth(player);
+        hud.updateBuffs(player);
         hud.setStamina(player.stamina);
         hud.setRage(player);
         hud.setCharge(player.charge);
