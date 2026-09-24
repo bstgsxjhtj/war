@@ -16,6 +16,8 @@ export class Player extends Character {
     this._keys = new Set();
     this._attackQueued = false;
     this._queueTime = 0;
+    this._dodgeBuf = null; // 闪避输入缓冲 { dir, t }
+    this._execBuf = 0;     // 处决输入缓冲（秒）
     this._bowRelease = false;
     this._lastDirKey = { code: null, time: 0 };
     this._blocking = false;
@@ -58,10 +60,10 @@ export class Player extends Character {
         const idx = parseInt(e.code.slice(-1)) - 1;
         if (idx < this.weapons.length) { this.switchWeapon(idx); this.setCharging(false); this.camera.aimMode = false; }
       }
-      if (e.code === 'KeyQ') this.tryDodge(this.camera.forward());
+      if (e.code === 'KeyQ') this.requestDodge(this.camera.forward());
       if (e.code === 'KeyF') this.trySkill(this._pendingCombat);
       if (e.code === 'KeyT') this.tryUltimate(this._pendingCombat);
-      if (e.code === 'KeyE') this._tryExecute(this._pendingCombat);
+      if (e.code === 'KeyE') this.requestExecute(this._pendingCombat);
       if (e.code === 'Tab') { e.preventDefault(); this._toggleLock(); }
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) this._tryDodgeFromKey(e.code);
     };
@@ -109,7 +111,7 @@ export class Player extends Character {
     const now = performance.now();
     if (this._lastDirKey.code === code && now - this._lastDirKey.time < 400) {
       const dir = this._dirFromKey(code);
-      if (dir) { this.tryDodge(dir); this._lastDirKey.code = null; return; }
+      if (dir) { this.requestDodge(dir); this._lastDirKey.code = null; return; }
     }
     this._lastDirKey = { code, time: now };
   }
@@ -141,6 +143,18 @@ export class Player extends Character {
   _lunge(dist) {
     this.position.add(this.forward.clone().multiplyScalar(dist));
     this._iFrame = Math.max(this._iFrame, 0.25);
+  }
+
+  // 输入缓冲：动作暂时无法执行时保留 0.25s，条件满足后自动补发
+  requestDodge(dir) {
+    if (this.tryDodge(dir)) return true;
+    if (this.alive) this._dodgeBuf = { dir: dir.clone(), t: 0.25 };
+    return false;
+  }
+
+  requestExecute(combat) {
+    this._tryExecute(combat);
+    if (this._executing <= 0 && this.alive) this._execBuf = 0.25;
   }
 
   _tryExecute(combat) {
@@ -181,6 +195,16 @@ export class Player extends Character {
       this._queueTime += dt;
       if (this._queueTime > 0.25) this._attackQueued = false;
       else if (this.tryAttack(combat, 1)) this._attackQueued = false;
+    }
+
+    if (this._dodgeBuf) {
+      this._dodgeBuf.t -= dt;
+      if (this._dodgeBuf.t <= 0 || this.tryDodge(this._dodgeBuf.dir)) this._dodgeBuf = null;
+    }
+    if (this._execBuf > 0) {
+      this._execBuf -= dt;
+      this._tryExecute(combat);
+      if (this._executing > 0 || this._execBuf <= 0) this._execBuf = 0;
     }
 
     const isBow = this.weapon.type === 'projectile';
