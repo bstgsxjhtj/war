@@ -37,6 +37,13 @@ export class WeaponSkins {
     return true;
   }
 
+  forceUnlock(id) {
+    const skin = SKINS[id];
+    if (!skin || this.isUnlocked(id)) return false;
+    this._data.unlocked[id] = true;
+    return true;
+  }
+
   equip(weaponIdx, skinId) {
     if (!this.isUnlocked(skinId)) return false;
     this._data.equipped[weaponIdx] = skinId;

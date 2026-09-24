@@ -113,7 +113,8 @@ export class MatchController {
         if (result === 'campaign_complete') {
           hud.flashEnd('战役通关！按 R 重玩');
           bus.emit(EV.CAMPAIGN_CLEAR, { stages: campaign.maxStages });
-          if (this.playerTaken === 0) bus.emit(EV.CAMPAIGN_PERFECT, {});
+        if (campaign.nightmare) bus.emit(EV.CAMPAIGN_NIGHTMARE_CLEAR, { stages: campaign.maxStages });
+        if (this.playerTaken === 0) bus.emit(EV.CAMPAIGN_PERFECT, {});
           progression.recordWin('S', 0);
           if (campaign.nightmare) daily.track('nightmareWin');
           const _creward = daily.claim(); if (_creward > 0) { progression.addScore(_creward); hud.flash('每日挑战完成！+' + _creward + '分'); }

@@ -66,4 +66,21 @@ describe('AchievementWiring', () => {
     bus.emit(EV.AFFIX_DROP, { type: '暴怒', tier: 2 });
     expect(deps.hud.flash).toHaveBeenCalledWith(expect.stringContaining('暴怒'));
   });
+
+  it('CAMPAIGN_NIGHTMARE_CLEAR 接到 check', () => {
+    const bus = new EventBus();
+    const deps = mkDeps();
+    wireAchievements(bus, deps);
+    bus.emit(EV.CAMPAIGN_NIGHTMARE_CLEAR, {});
+    expect(deps.achievements.check).toHaveBeenCalledWith(EV.CAMPAIGN_NIGHTMARE_CLEAR, {});
+  });
+
+  it('forceSkin 奖励调用 forceUnlock', () => {
+    const bus = new EventBus();
+    const skins = { unlock: vi.fn(), forceUnlock: vi.fn() };
+    const deps = { ...mkDeps(), getSkins: () => skins };
+    wireAchievements(bus, deps);
+    bus.emit(EV.ACHIEVEMENT_UNLOCK, { name: '噩梦征服者', reward: { forceSkin: 'legend' } });
+    expect(skins.forceUnlock).toHaveBeenCalledWith('legend');
+  });
 });

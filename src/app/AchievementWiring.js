@@ -7,6 +7,7 @@ export function wireAchievements(bus, { achievements, getSkills, getAffixes, get
   bus.on(EV.SKILL_CAST, (p) => { achievements.check(EV.SKILL_CAST, p); audio.playSound('ultimate'); });
   bus.on(EV.CAMPAIGN_CLEAR, (p) => achievements.check(EV.CAMPAIGN_CLEAR, p));
   bus.on(EV.CAMPAIGN_PERFECT, (p) => achievements.check(EV.CAMPAIGN_PERFECT, p));
+  bus.on(EV.CAMPAIGN_NIGHTMARE_CLEAR, (p) => achievements.check(EV.CAMPAIGN_NIGHTMARE_CLEAR, p));
   bus.on(EV.COMBAT_BACKSTAB, (p) => achievements.check(EV.COMBAT_BACKSTAB, p));
   bus.on(EV.COMBAT_PERFECTBLOCK, (p) => achievements.check(EV.COMBAT_PERFECTBLOCK, p));
   bus.on(EV.COMBAT_DODGE, (p) => achievements.check(EV.COMBAT_DODGE, p));
@@ -17,6 +18,7 @@ export function wireAchievements(bus, { achievements, getSkills, getAffixes, get
     if (reward.skillPoint) skills.addPoint(reward.skillPoint);
     if (reward.affix) affixes.grant(reward.affix[0], reward.affix[1]);
     if (reward.skin && skins) skins.unlock(reward.skin);
+    if (reward.forceSkin && skins) skins.forceUnlock(reward.forceSkin);
     hud.flash('成就解锁：' + name);
     audio.playSound('achievement');
   });

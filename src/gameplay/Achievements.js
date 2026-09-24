@@ -11,6 +11,7 @@ export const ACHIEVEMENTS = [
   { id: 'combo_50', cat: '连击', name: '连击之王', target: 3, event: 'combo.tier', reward: { affix: ['迅捷', 2] } },
   { id: 'campaign_clear', cat: '战役', name: '通关战役', target: 1, event: 'campaign.clear', reward: { skin: 'obsidian', affix: ['坚韧', 2] } },
   { id: 'campaign_perfect', cat: '战役', name: '全关无伤', target: 1, event: 'campaign.perfect', reward: { skin: 'dragon', affix: ['锋锐', 2] } },
+  { id: 'nightmare_clear', cat: '特殊', name: '噩梦征服者', target: 1, event: 'campaign.nightmare_clear', reward: { forceSkin: 'legend', affix: ['幸运', 3], skillPoint: 3 } },
   { id: 'daily_10', cat: '每日', name: '每日初心', target: 10, event: 'daily.completed', reward: { skillPoint: 1 } },
   { id: 'daily_30', cat: '每日', name: '每日达人', target: 30, event: 'daily.completed', reward: { skillPoint: 2 } },
   { id: 'backstab_10', cat: '特殊', name: '背刺者', target: 10, event: 'combat.backstab', reward: { affix: ['吸血', 1] } },

@@ -73,4 +73,16 @@ describe('Achievements', () => {
     expect(a2.progress('combo_10')).toBe(1);
     expect(a2.isUnlocked('combo_10')).toBe(true);
   });
+
+  it('nightmare_clear 成就存在且由 campaign.nightmare_clear 驱动', () => {
+    const ach = ACHIEVEMENTS.find(x => x.id === 'nightmare_clear');
+    expect(ach).toBeDefined();
+    expect(ach.event).toBe('campaign.nightmare_clear');
+    expect(ach.reward.forceSkin).toBe('legend');
+  });
+
+  it('check nightmare_clear 事件解锁成就', () => {
+    a.check('campaign.nightmare_clear', {});
+    expect(a.isUnlocked('nightmare_clear')).toBe(true);
+  });
 });

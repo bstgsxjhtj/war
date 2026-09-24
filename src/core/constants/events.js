@@ -19,6 +19,7 @@ export const EV = {
   // 战役
   CAMPAIGN_CLEAR: 'campaign.clear',
   CAMPAIGN_PERFECT: 'campaign.perfect',
+  CAMPAIGN_NIGHTMARE_CLEAR: 'campaign.nightmare_clear',
   // 每日
   DAILY_UPDATE: 'daily.update',
   DAILY_COMPLETED: 'daily.completed',

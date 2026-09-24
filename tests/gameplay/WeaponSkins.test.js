@@ -53,4 +53,14 @@ describe('WeaponSkins', () => {
   it('getEquippedSkin 未知槽位 fallback default', () => {
     expect(s.getEquippedSkin(99)).toBe(SKINS.default);
   });
+
+  it('forceUnlock 无视分数直接解锁', () => {
+    expect(s.forceUnlock('legend')).toBe(true);
+    expect(s.isUnlocked('legend')).toBe(true);
+  });
+
+  it('forceUnlock 已解锁返 false（幂等）', () => {
+    s.forceUnlock('legend');
+    expect(s.forceUnlock('legend')).toBe(false);
+  });
 });
