@@ -40,7 +40,7 @@ export class Spawner {
     ais.push(ai);
   }
 
-  spawnRed(redLayout, ais, { bossWave = false, modeName = '', modifier = null } = {}) {
+  spawnRed(redLayout, ais, { bossWave = false, modeName = '', modifier = null, stageDifficulty = 1 } = {}) {
     const unlocks = this.progression.unlocks;
     const isTraining = modeName === '训练场';
     const hpMul = modifier ? (modifier.hpMul || 1) : 1;
@@ -56,13 +56,13 @@ export class Spawner {
         ai = new CavalryEnemy({ team: 1 });
         ai.mount(this.horses.create());
       } else {
-        ai = new AIController({ team: 1, passive: isTraining, maxHp: isTraining ? TRAINING_DUMMY_HP : Math.round(BASE_AI_HP * this.aiManager.difficulty().maxHpMul * hpMul) });
+        ai = new AIController({ team: 1, passive: isTraining, maxHp: isTraining ? TRAINING_DUMMY_HP : Math.round(BASE_AI_HP * this.aiManager.difficulty().maxHpMul * hpMul * stageDifficulty) });
       }
       const p = redLayout[i];
       ai.setWeapons([AI_WEAPON_MAKERS[i % AI_WEAPON_MAKERS.length]()]);
       this._finalize(ai, p.x, p.z, ais, eliteChanceMul);
       if (speedMul !== 1 && ai.speed) ai.speed *= speedMul;
-      if (hpMul !== 1 && (ai._isBoss || ai._isElite) && ai.health) { ai.health.maxHp = Math.round(ai.health.maxHp * hpMul); ai.health.cur = ai.health.maxHp; }
+      if ((hpMul !== 1 || stageDifficulty !== 1) && (ai._isBoss || ai._isElite) && ai.health) { ai.health.maxHp = Math.round(ai.health.maxHp * hpMul * stageDifficulty); ai.health.cur = ai.health.maxHp; }
     }
     this.aiManager.assignSquad(ais);
     if (!isTraining && ais.length >= 3) {

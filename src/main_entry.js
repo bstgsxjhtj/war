@@ -282,8 +282,8 @@ async function bootstrap() {
 
   const spawner = new Spawner({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign });
 
-  function spawnRed(redLayout, { bossWave = false } = {}) {
-    spawner.spawnRed(redLayout, ais, { bossWave, modeName: mode.name });
+  function spawnRed(redLayout, { bossWave = false, modifier = null, stageDifficulty = 1 } = {}) {
+    spawner.spawnRed(redLayout, ais, { bossWave, modeName: mode.name, modifier, stageDifficulty });
   }
 
   function spawnAll() {
@@ -317,11 +317,11 @@ async function bootstrap() {
     combat.register(player);
     if (player._weaponMesh) weaponTrail.attach(player._weaponMesh, 0xfff0a0);
     if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx);
-    let redLayout, bossWave = false, spawnModifier = null;
-    if (mode.name === '战役') redLayout = campaign.spawnLayout().red;
+    let redLayout, bossWave = false, spawnModifier = null, stageDifficulty = 1;
+    if (mode.name === '战役') { const lay = campaign.spawnLayout(); redLayout = lay.red; stageDifficulty = lay.difficulty || 1; }
     else if (mode.name === '波次' || mode.name === '无尽') { const lay = mode.spawnLayout(); redLayout = lay.red; bossWave = lay.isBoss; spawnModifier = lay.modifier; }
     else redLayout = spawns.red;
-    spawnRed(redLayout, { bossWave, modifier: spawnModifier });
+    spawnRed(redLayout, { bossWave, modifier: spawnModifier, stageDifficulty });
     if (mode.name === '战役') {
       match.escortTarget = null; match.defenseTimer = 0; match.timeLimit = 0; match.surviveWavesDone = false; match.surviveTimer = 0;
       const s = campaign.currentStage;

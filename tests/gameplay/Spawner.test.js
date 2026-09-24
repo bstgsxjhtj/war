@@ -9,11 +9,11 @@ vi.mock('../../src/gameplay/AIController.js', () => ({
 }));
 vi.mock('../../src/gameplay/BossEnemy.js', () => ({
   BossEnemy: class {
-    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; this._isBoss = true; }
+    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; this._isBoss = true; this.health = { maxHp: 500, cur: 500 }; }
     spawn() {} setWeapons(w) { this.weapons = w; } setCameraRef() {} setAIManager() {} setAudio() {}
   },
   EliteEnemy: class {
-    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; this._isElite = true; }
+    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; this._isElite = true; this.health = { maxHp: 300, cur: 300 }; }
     spawn() {} setWeapons(w) { this.weapons = w; } setCameraRef() {} setAIManager() {} setAudio() {}
   }
 }));
@@ -141,5 +141,48 @@ describe('Spawner 修饰词应用', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: { hpMul: 1.5, speedMul: 1.2 } });
     expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5 * 1.5));
     expect(ais[0].speed).toBeCloseTo(6.2 * 1.2, 5);
+  });
+});
+
+describe('Spawner 关卡难度系数 (P1-2)', () => {
+  let deps, spawner, ais;
+  beforeEach(() => {
+    deps = mkDeps();
+    spawner = new Spawner(deps);
+    ais = [];
+  });
+
+  it('stageDifficulty 应用到普通兵 maxHp', () => {
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', stageDifficulty: 1.3 });
+    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5 * 1.3));
+  });
+
+  it('stageDifficulty 与 modifier hpMul 叠加', () => {
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: { hpMul: 1.6 }, stageDifficulty: 1.3 });
+    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5 * 1.6 * 1.3));
+  });
+
+  it('stageDifficulty 默认 1 不改变原行为', () => {
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗' });
+    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5));
+  });
+
+  it('stageDifficulty 应用到 Boss health.maxHp', () => {
+    deps.campaign.currentStage.bossType = 'warlord';
+    spawner.spawnRed(LAYOUT, ais, { modeName: '战役', stageDifficulty: 1.6 });
+    expect(ais[0].health.maxHp).toBe(Math.round(500 * 1.6));
+    expect(ais[0].health.cur).toBe(Math.round(500 * 1.6));
+  });
+
+  it('stageDifficulty 与 hpMul 同时应用到 Boss', () => {
+    deps.campaign.currentStage.bossType = 'warlord';
+    spawner.spawnRed(LAYOUT, ais, { modeName: '战役', modifier: { hpMul: 1.2 }, stageDifficulty: 1.6 });
+    expect(ais[0].health.maxHp).toBe(Math.round(500 * 1.2 * 1.6));
+  });
+
+  it('stageDifficulty=1 时不触发 Boss health 缩放', () => {
+    deps.campaign.currentStage.bossType = 'warlord';
+    spawner.spawnRed(LAYOUT, ais, { modeName: '战役', stageDifficulty: 1 });
+    expect(ais[0].health.maxHp).toBe(500);
   });
 });
