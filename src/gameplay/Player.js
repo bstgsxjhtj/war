@@ -61,6 +61,7 @@ export class Player extends Character {
       if (e.code === 'KeyQ') this.tryDodge(this.camera.forward());
       if (e.code === 'KeyF') this.trySkill(this._pendingCombat);
       if (e.code === 'KeyT') this.tryUltimate(this._pendingCombat);
+      if (e.code === 'KeyE') this._tryExecute(this._pendingCombat);
       if (e.code === 'Tab') { e.preventDefault(); this._toggleLock(); }
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) this._tryDodgeFromKey(e.code);
     };

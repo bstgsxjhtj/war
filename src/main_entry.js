@@ -188,7 +188,11 @@ async function bootstrap() {
     audio.playSound('hit', { heavy, combo });
   });
   bus.on(EV.COMBAT_KILL, ({ victim, killer }) => {
-    if (killer && killer.isLocal) progression.recordKill();
+    if (killer && killer.isLocal) {
+      progression.recordKill();
+      if (victim && victim._isBoss) { hitStop.trigger(0.3, 0.15); bus.emit(EV.FX_SHAKE, { amount: 1.0 }); }
+      else { hitStop.trigger(0.15, 0.2); bus.emit(EV.FX_SHAKE, { amount: 0.5 }); }
+    }
     if (victim && victim.isLocal) progression.recordDeath();
     progressUI.refresh();
     audio.playSound('ultimate');
@@ -377,6 +381,7 @@ async function bootstrap() {
   let _bgmCombatSet = true;
   let _bgmLastIntensity = 0;
   let _bossBarShown = false;
+  let _execHintShown = false;
   let _wavePending = false;
   hud.setRound(0, 0, match.targetWins);
   hud.setMode(mode.name + ' · ' + currentMapName);
@@ -486,6 +491,12 @@ async function bootstrap() {
         hud.setWeapon(player.weaponIdx, player.weapons.length);
         hud.setCombo(player);
         hud.setSkillCooldowns(weaponSkills);
+        let _execNearby = false;
+        for (const a of ais) {
+          if (a.alive && a.canBeExecuted && a.position.distanceTo(player.position) < 3) { _execNearby = true; break; }
+        }
+        if (_execNearby && !_execHintShown) { hud.flash('按 E 处决！'); _execHintShown = true; }
+        else if (!_execNearby && _execHintShown) { hud.clearHint(); _execHintShown = false; }
         if (mode.name === '据点') { mode.onTick(dt, combat.characters); hud.setDomination(mode); }
         if (tutorial) tutorial.update(dt);
         hud.update(dt);

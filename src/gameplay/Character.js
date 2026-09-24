@@ -75,6 +75,7 @@ export class Character {
     if (k >= 7) { dmgMul = 1.3; lifesteal = 0.05; }
     return { dmgMul, cdMul, lifesteal };
   }
+  get canBeExecuted() { return this.alive && this.health.ratio < 0.2; }
 
   _build() {
     const teamColor = this.team === 0 ? 0x2f5fa8 : 0xa83030;

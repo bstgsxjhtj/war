@@ -39,7 +39,7 @@ export class HUD {
       <div id="dom" style="position:absolute;top:84px;left:50%;transform:translateX(-50%);display:none;color:#fff;font-size:12px;text-shadow:0 1px 2px #000;text-align:center;"></div>
       <div id="wforecast" style="position:absolute;top:106px;left:50%;transform:translateX(-50%);color:#8df;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
       <div id="weapon" style="position:absolute;right:24px;bottom:24px;color:#cde;font-size:14px;text-shadow:0 1px 2px #000;">[1] 刀  [2] 弓</div>
-      <div id="keys" style="position:absolute;right:24px;bottom:48px;color:#bcd;font-size:11px;text-shadow:0 1px 2px #000;opacity:.6;text-align:right;line-height:1.6;">WASD · Shift冲刺 · Space跳<br>Q/双击 闪避 · LMB攻击 · RMB格挡/蓄力 · Tab锁定 · 1-4武器 · M模式</div>
+      <div id="keys" style="position:absolute;right:24px;bottom:48px;color:#bcd;font-size:11px;text-shadow:0 1px 2px #000;opacity:.6;text-align:right;line-height:1.6;">WASD · Shift冲刺 · Space跳<br>Q/双击 闪避 · LMB攻击 · RMB格挡/蓄力 · E处决 · F技能 · T终极 · Tab锁定 · 1-4武器 · M模式</div>
       <div id="hint" style="position:absolute;top:62%;left:50%;transform:translateX(-50%);color:#ffd;text-align:center;font-size:15px;text-shadow:0 1px 2px #000;max-width:80%;"></div>
       <div id="kill" style="position:absolute;top:30%;left:50%;transform:translateX(-50%);color:#ffd070;font-size:26px;font-weight:bold;text-shadow:0 2px 4px #000;opacity:0;transition:opacity .2s;"></div>
       <div id="buffbar" style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);display:flex;gap:8px;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
