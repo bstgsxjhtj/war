@@ -212,6 +212,7 @@ async function bootstrap() {
   envHazards.setHazardZones(currentHazards);
   const assist = new DifficultyAssist(aiManager, (msg) => { hud.flash(msg); setTimeout(() => hud.clearHint(), 2500); }, AI_DIFFICULTY);
   bus.on(EV.COMBAT_KILL, ({ victim }) => { if (victim && victim.isLocal && !victim.alive) assist.onPlayerDeath(); });
+  bus.on(EV.COMBAT_EXECUTE, ({ char } = {}) => { if (char && char.isLocal) { audio.playSound('execute'); hitStop.trigger(0.18, 0.1); bus.emit(EV.FX_SHAKE, { amount: 0.4 }); } });
   bus.on(EV.COMBAT_KILL, ({ victim, killer }) => {
     if (!(victim && victim.isLocal) || !killer) return;
     const angle = Math.atan2(killer.position.x - victim.position.x, killer.position.z - victim.position.z);

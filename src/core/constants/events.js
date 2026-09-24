@@ -9,6 +9,7 @@ export const EV = {
   COMBAT_CAVALRYKILL: 'combat.cavalrykill',
   COMBAT_COUNTER: 'combat.counter',
   COMBAT_ULTIMATE: 'combat.ultimate',
+  COMBAT_EXECUTE: 'combat.execute',
   // 连击
   COMBO_TIER: 'combo.tier',
   COMBO_BREAK: 'combo.break',

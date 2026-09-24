@@ -241,3 +241,35 @@ describe('HUD Boss 阶段横幅', () => {
     expect(hud._bossPhaseTimer).toBeGreaterThan(0);
   });
 });
+
+describe('HUD 处决横幅', () => {
+  it('flashExecute 显示横幅并设衰减', () => {
+    const hud = mkHud();
+    hud.flashExecute();
+    expect(hud._execute.textContent).toContain('处决');
+    expect(parseFloat(hud._execute.style.opacity)).toBeGreaterThan(0);
+    expect(hud._execBannerTimer).toBeGreaterThan(0);
+  });
+
+  it('update 衰减后归零', () => {
+    const hud = mkHud();
+    hud.flashExecute();
+    hud.update(hud._execBannerTimer);
+    expect(hud._execBannerTimer).toBe(0);
+    expect(parseFloat(hud._execute.style.opacity)).toBe(0);
+  });
+
+  it('COMBAT_EXECUTE 触发处决横幅（玩家为执行者）', () => {
+    const hud = mkHud();
+    const handler = hud.bus.on.mock.calls.find(c => c[0] === EV.COMBAT_EXECUTE)[1];
+    handler({ char: { isLocal: true } });
+    expect(hud._execBannerTimer).toBeGreaterThan(0);
+  });
+
+  it('COMBAT_EXECUTE 非玩家执行者不触发', () => {
+    const hud = mkHud();
+    const handler = hud.bus.on.mock.calls.find(c => c[0] === EV.COMBAT_EXECUTE)[1];
+    handler({ char: { isLocal: false } });
+    expect(hud._execBannerTimer).toBe(0);
+  });
+});

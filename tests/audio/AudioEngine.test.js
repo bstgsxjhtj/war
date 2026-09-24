@@ -192,6 +192,23 @@ describe('AudioEngine', () => {
     expect(noiseSpy).toHaveBeenCalled();
   });
 
+  it('playSound execute 调用 execute', () => {
+    const a = new AudioEngine();
+    const spy = vi.spyOn(a, 'execute');
+    a.playSound('execute');
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('execute 播放低频重击 + 高频金属音', () => {
+    const a = new AudioEngine();
+    const toneSpy = vi.spyOn(a, '_tone');
+    const noiseSpy = vi.spyOn(a, '_noise');
+    a.execute();
+    expect(toneSpy).toHaveBeenCalledWith(60, expect.any(Number), 'sawtooth', expect.any(Number), 30);
+    expect(toneSpy).toHaveBeenCalledWith(1568, expect.any(Number), 'triangle', expect.any(Number), 0);
+    expect(noiseSpy).toHaveBeenCalled();
+  });
+
   describe('BGM 系统', () => {
     it('startMusic 创建 _bgmNodes 含 2 个振荡器', () => {
       const a = new AudioEngine();

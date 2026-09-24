@@ -11,6 +11,7 @@ vi.mock('../../src/render/TextureFactory.js', () => ({
 import * as THREE from 'three';
 import { Character } from '../../src/gameplay/Character.js';
 import { Health } from '../../src/gameplay/Health.js';
+import { EV } from '../../src/core/constants/events.js';
 
 const terrain = { heightAt: () => 0, slopeAt: () => 0, isWater: () => false };
 const NOW = 1000;
@@ -87,6 +88,15 @@ describe('Character execution', () => {
     exec.startExecute(victim);
     expect(victim._executing).toBeGreaterThan(0);
     expect(victim._executingTarget).toBe(exec);
+  });
+
+  it('startExecute 成功时发射 COMBAT_EXECUTE 事件', () => {
+    const exec = mkChar(0);
+    const bus = { emit: vi.fn() };
+    exec.setBus(bus);
+    const victim = mkVictim(0.15);
+    exec.startExecute(victim);
+    expect(bus.emit).toHaveBeenCalledWith(EV.COMBAT_EXECUTE, expect.objectContaining({ char: exec, target: victim }));
   });
 
   it('_tickExecuting decrements timer', () => {

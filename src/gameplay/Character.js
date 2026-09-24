@@ -577,6 +577,7 @@ export class Character {
     if (!target || !target.canBeExecuted || this._executing > 0) return false;
     this._executing = 1.2; this._executingTarget = target;
     target._executing = 1.2; target._executingTarget = this;
+    if (this._bus) this._bus.emit(EV.COMBAT_EXECUTE, { char: this, target });
     return true;
   }
   jump() { if (this.onGround && this.alive && this._dodgeTimer <= 0) { this.vy = 8.2; this.onGround = false; } }
