@@ -90,3 +90,8 @@
 | 2026-09-23 | 2d3395b | e2e 扩展换图/模式切换/胜负/重开 4 场景；修 ResultScreen 未 import UIStack 致 hide 崩溃；修 MatchController.restart 重入递归爆栈（_restarting 保护）；playwright timeout 120s；+2 单测 |
 | 2026-09-23 | 7d6082a | WeaponTrail localToWorld 优化：2 次 updateWorldMatrix 遍历合并为 1 次 + 2 次 applyMatrix4 原地计算；+8 单测 |
 | 2026-09-23 | fb5fb95 | main_entry 主循环瘦身：移除 ROUND_END 双渲染、trajectory 预分配 Vector3 消除每帧 3 次分配、__mp 改 getter 消除每帧对象分配、合并重复 mode.name 检查、ais.filter 改计数循环消除每帧临时数组 |
+| 2026-09-24 | 3ad393d | P1-3/P1-4：Boss 血条 HUD（showBoss/setBossHP/hideBoss）+ 低血量红色边框警告（ratio<0.3）；main_entry BGM 扫描块追踪 Boss 显隐血条；+5 用例 |
+| 2026-09-24 | f8778b3 | P2-1：骑兵冲锋机制——idle/windup/charging/recovery 状态机，冲锋踩踏 40 伤害（每敌一次），冷却 8s；CavalryEnemy.update 绕过 AIController 直驱 Character；+14 用例 |
+| 2026-09-24 | ad3161f | P2-2：技能树分支路径——8 互斥分支（狂暴/守护·回复/吸血·疾风/闪避·狂热/暴击），前置 Lv2+ 解锁，upgradeBranch + 8 效果 getter，CombatSystem/Character/HUD/SkillTreeUI 全链路接入；+17 用例 |
+| 2026-09-24 | 4b0afae | P2-3：击杀处决强化——补 canBeExecuted getter（alive && ratio<0.2），KeyE 接 _tryExecute，Boss 击杀 0.3s@15% 慢镜、普通 0.15s@20%，处决提示 HUD hint；+11 用例 |
+| 2026-09-24 | e2f5035 | P3-1：教程扩展 5→8 步（补闪避 Q/武器切换 1-4/处决 E）；修复生产 bug——new Tutorial() 未传 bus 致 COMBAT_COUNTER/ULTIMATE 事件步成死路径（仅超时兜底）；完成语补 Tab/Q/E 探索提示；回合结束 destroy 卸载监听；+9 用例（净增 4） |
