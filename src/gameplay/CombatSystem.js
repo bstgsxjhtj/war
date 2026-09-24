@@ -134,6 +134,7 @@ export class CombatSystem {
     if (!attacker || !attacker.health || lost <= 0) return;
     let leech = attacker._runLifesteal || 0;
     if (attacker.killstreakBuffs) leech += attacker.killstreakBuffs().lifesteal;
+    if (attacker._skill) leech += attacker._skill.branchLifesteal;
     if (this._affixes && attacker.weapon) {
       leech += this._affixes.affixBonus(attacker.weapon, '吸血') + this._affixes.synergyBonus(attacker.weapon, 'lifesteal');
     }
@@ -146,6 +147,8 @@ export class CombatSystem {
     if (attacker._skill) baseDmg *= attacker._skill.totalMul(attacker.weaponIdx);
     if (attacker._runDmgMul) baseDmg *= attacker._runDmgMul;
     if (attacker.killstreakBuffs) baseDmg *= attacker.killstreakBuffs().dmgMul;
+    if (attacker._skill && attacker._skill.branchDamageMul) baseDmg *= attacker._skill.branchDamageMul;
+    if (attacker._skill && Math.random() < (attacker._skill.branchCritChance || 0)) baseDmg *= 2;
     const knock = weapon.comboKnock ? (weapon.comboKnock[combo] ?? 1) : 1;
     const launch = weapon.comboLaunch ? weapon.comboLaunch[combo] : null;
     const heavy = combo === 2;

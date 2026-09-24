@@ -16,6 +16,8 @@ export class SkillTreeUI {
       transition: 'opacity .25s', opacity: '0'
     });
     this._icons = { power: '\uD83D\uDCAA', vigor: '\u2764\uFE0F', agility: '\u26A1', mastery: '\u2694\uFE0F', 0: '\uD83D\uDDE1\uFE0F', 1: '\uD83C\uDF9A', 2: '\uD83D\uDD74\uFE0F', 3: '\uD83D\uDD28' };
+    this._branchIcons = { berserk: '\uD83D\uDD25', guardian: '\uD83D\uDEE1\uFE0F', regen: '\uD83D\uDC9A', lifesteal: '\uD83E\uDE78', swift: '\uD83D\uDCA8', evade: '\uD83D\uDC7B', frenzy: '\u2694\uFE0F', critical: '\uD83C\uDFAF' };
+    this._branchMap = { power: ['berserk', 'guardian'], vigor: ['regen', 'lifesteal'], agility: ['swift', 'evade'], mastery: ['frenzy', 'critical'] };
     this.el.innerHTML = [
       '<div id="sk-panel" style="background:linear-gradient(145deg,#1a1a2e,#0f0f1a);border:1px solid #4a3a6a;border-radius:16px;padding:28px;width:620px;max-height:88vh;overflow-y:auto;color:#eee;box-shadow:0 12px 48px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset;">',
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">',
@@ -110,12 +112,43 @@ export class SkillTreeUI {
           + '<div style="font-size:11px;margin-top:6px;color:' + costClr + ';font-weight:600;">' + costTxt + '</div>'
           + '</div>';
       }
+      html += '<div style="grid-column:1/-1;margin-top:8px;border-top:1px solid #2a2a3a;padding-top:12px;">';
+      html += '<div style="font-size:13px;color:#ffd070;font-weight:600;margin-bottom:8px;">\u5206\u652f\u4e13\u7cbe\uff08\u57fa\u7840\u6280\u80fd Lv2 \u89e3\u9501\uff09</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+      for (const sk of order) {
+        const baseLevel = this.skill.skills[sk].level;
+        for (const bk of this._branchMap[sk]) {
+          const b = this.skill.branches[bk];
+          const taken = b.level > 0;
+          const exclTaken = this.skill.branches[b.excl] && this.skill.branches[b.excl].level > 0;
+          const locked = baseLevel < 2 || (exclTaken && !taken);
+          const can = !taken && !locked && pts >= b.cost;
+          const border = taken ? '#4ade80' : (can ? '#fa8' : (locked ? '#444' : '#3a3a4a'));
+          const bg = taken ? 'rgba(74,222,128,.08)' : (can ? 'rgba(250,136,.06)' : 'rgba(30,30,40,.3)');
+          const opacity = locked ? '0.4' : '1';
+          const cursor = can ? 'pointer' : 'default';
+          const glow = can ? '0 0 10px rgba(250,136,.25)' : 'none';
+          const status = taken ? '\u5df2\u9009\u62e9' : (locked ? '\u672a\u89e3\u9501' : '\u6d88\u8017 ' + b.cost + ' \u70b9');
+          const statusClr = taken ? '#4ade80' : (locked ? '#666' : '#fa8');
+          html += '<div class="sk-card" data-branch="' + bk + '" data-border="' + border + '" style="background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;padding:10px;cursor:' + cursor + ';box-shadow:' + glow + ';opacity:' + opacity + ';transition:all .15s;">'
+            + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+            + '<span style="font-size:18px;">' + (this._branchIcons[bk] || '\u2753') + '</span>'
+            + '<div style="flex:1;font-size:12px;font-weight:700;">' + b.name + '</div></div>'
+            + '<div style="font-size:10px;color:#bcd;margin-bottom:4px;">' + b.desc + '</div>'
+            + '<div style="font-size:10px;color:' + statusClr + ';font-weight:600;">' + status + '</div>'
+            + '</div>';
+        }
+      }
+      html += '</div></div>';
       this._listEl.innerHTML = html;
       this._listEl.querySelectorAll('[data-sk]').forEach(el => {
         this._bindDrag(el, parseInt(el.dataset.idx));
         el.addEventListener('mouseenter', () => { if (pts >= this.skill.skills[el.dataset.sk].cost && this.skill.skills[el.dataset.sk].level < this.skill.skills[el.dataset.sk].max) el.style.transform = 'translateY(-2px)'; });
         el.addEventListener('mouseleave', () => el.style.transform = 'none');
         el.addEventListener('click', () => { if (this.skill.upgrade(el.dataset.sk)) this._flash(el); this._render(); });
+      });
+      this._listEl.querySelectorAll('[data-branch]').forEach(el => {
+        el.addEventListener('click', () => { if (this.skill.upgradeBranch(el.dataset.branch)) this._flash(el); this._render(); });
       });
     } else {
       this._listEl.style.gridTemplateColumns = '1fr 1fr';

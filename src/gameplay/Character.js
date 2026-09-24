@@ -280,6 +280,7 @@ export class Character {
       }
     }
     if (this.damageReduction) amount *= (1 - this.damageReduction);
+    if (this._skill && this._skill.branchDefenseMul) amount *= this._skill.branchDefenseMul;
     const lost = this.health.damage(amount);
     if (attacker) this.lastAttacker = attacker;
     if (!this.health.alive && this.alive) { this.die(attacker); }
@@ -403,6 +404,7 @@ export class Character {
   // 移动限速：攻击分段 + 涉水减速 + 格挡减速
   _calcSpeed(dt) {
     let spd = this.speed * (this._sprint ? this.sprintMul : 1);
+    if (this._skill && this._skill.branchMoveSpeedMul) spd *= this._skill.branchMoveSpeedMul;
     if (this._attacking) {
       const t = 1 - Math.max(0, this._anim) / this._animDur;
       const hitT = this.weapon.hitFrame ?? 0.35;
@@ -492,7 +494,7 @@ export class Character {
         let dmg = this.weapon.comboDamage ? this.weapon.comboDamage[combo] ?? this.weapon.damage : this.weapon.damage;
         if (this._perfectBuff > 0) dmg *= 1.5; // 完美闪避后攻击加成
         this.weapon._perform(this, this._pendingCombat, { combo: this._pendingCombo, charge: this._pendingCharge, now, dmg });
-        this.weapon._timer = this.weapon.cooldown * this.killstreakBuffs().cdMul;
+        this.weapon._timer = this.weapon.cooldown * this.killstreakBuffs().cdMul * (this._skill && this._skill.branchAttackSpeedMul ? this._skill.branchAttackSpeedMul : 1);
         if (this.weapon.comboLunge) this._curVel.addScaledVector(this.forward, this.weapon.comboLunge[combo] ?? 3);
       }
       if (this._anim <= 0) this._attacking = false;

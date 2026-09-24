@@ -282,6 +282,17 @@ export class HUD {
     }
     if (player._runDmgMul && player._runDmgMul > 1) parts.push(`<span style="color:#f88;">锋利 +${Math.round((player._runDmgMul - 1) * 100)}%</span>`);
     if (player._runLifesteal && player._runLifesteal > 0) parts.push(`<span style="color:#f7a;">吸血 ${Math.round(player._runLifesteal * 100)}%</span>`);
+    if (player._skill && player._skill.branches) {
+      const b = player._skill.branches;
+      if (b.berserk.level > 0) parts.push('<span style="color:#f55;">狂暴 +25%</span>');
+      if (b.guardian.level > 0) parts.push('<span style="color:#5af;">守护 -15%</span>');
+      if (b.regen.level > 0) parts.push('<span style="color:#5f5;">回复 +2/s</span>');
+      if (b.lifesteal.level > 0) parts.push('<span style="color:#f7a;">吸血 5%</span>');
+      if (b.swift.level > 0) parts.push('<span style="color:#7df;">疾风 +10%</span>');
+      if (b.evade.level > 0) parts.push('<span style="color:#a7f;">闪避 10%</span>');
+      if (b.frenzy.level > 0) parts.push('<span style="color:#fa8;">狂热 +15%</span>');
+      if (b.critical.level > 0) parts.push('<span style="color:#ffd;">暴击 15%</span>');
+    }
     if (parts.length > 0) { this._buffbar.innerHTML = parts.join(''); this._buffbar.style.display = 'flex'; }
     else { this._buffbar.style.display = 'none'; }
   }

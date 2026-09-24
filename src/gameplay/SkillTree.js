@@ -14,6 +14,16 @@ export class SkillTree {
     this.weaponNames = ['\u5200', '\u5f13', '\u67aa', '\u9524'];
     this.skillOrder = ['power', 'vigor', 'agility', 'mastery'];
     this.weaponOrder = [0, 1, 2, 3];
+    this.branches = {
+      berserk:   { level: 0, max: 1, name: '狂暴',   desc: '伤害+25%',           cost: 2, req: 'power',   excl: 'guardian' },
+      guardian:  { level: 0, max: 1, name: '守护',   desc: '减伤+15%',           cost: 2, req: 'power',   excl: 'berserk' },
+      regen:     { level: 0, max: 1, name: '回复',   desc: '每秒回血+2',          cost: 2, req: 'vigor',   excl: 'lifesteal' },
+      lifesteal: { level: 0, max: 1, name: '吸血',   desc: '吸血+5%',            cost: 2, req: 'vigor',   excl: 'regen' },
+      swift:     { level: 0, max: 1, name: '疾风',   desc: '移速+10%',           cost: 2, req: 'agility', excl: 'evade' },
+      evade:     { level: 0, max: 1, name: '闪避',   desc: '闪避率+10%',         cost: 2, req: 'agility', excl: 'swift' },
+      frenzy:    { level: 0, max: 1, name: '狂热',   desc: '攻速+15%',           cost: 2, req: 'mastery', excl: 'critical' },
+      critical:  { level: 0, max: 1, name: '暴击',   desc: '暴击率+15%',         cost: 2, req: 'mastery', excl: 'frenzy' },
+    };
   }
 
   addPoint(n = 1) { this.points += n; }
@@ -27,6 +37,15 @@ export class SkillTree {
   upgradeWeapon(idx) {
     if (this.weaponLevel[idx] >= 3 || this.points < 2) return false;
     this.weaponLevel[idx]++; this.points -= 2; return true;
+  }
+
+  upgradeBranch(key) {
+    const b = this.branches[key];
+    if (!b || b.level >= b.max || this.points < b.cost) return false;
+    const reqSkill = this.skills[b.req];
+    if (!reqSkill || reqSkill.level < 2) return false;
+    if (this.branches[b.excl] && this.branches[b.excl].level > 0) return false;
+    b.level++; this.points -= b.cost; return true;
   }
 
   reorderSkill(from, to) {
@@ -46,6 +65,7 @@ export class SkillTree {
   reset() {
     for (const s of Object.values(this.skills)) { this.points += s.level * s.cost; s.level = 0; }
     for (let i = 0; i < 4; i++) { this.points += (this.weaponLevel[i] - 1) * 2; this.weaponLevel[i] = 1; }
+    for (const b of Object.values(this.branches)) { this.points += b.level * b.cost; b.level = 0; }
   }
 
   get damageMul() { return 1 + this.skills.power.level * 0.1; }
@@ -54,6 +74,15 @@ export class SkillTree {
   get dodgeIFrameBonus() { return this.skills.agility.level * 0.05; }
   get masteryMul() { return 1 + this.skills.mastery.level * 0.15; }
   weaponDamageMul(idx) { return 1 + (this.weaponLevel[idx] - 1) * 0.25; }
+
+  get branchDamageMul() { return 1 + 0.25 * this.branches.berserk.level; }
+  get branchDefenseMul() { return 1 - 0.15 * this.branches.guardian.level; }
+  get branchLifesteal() { return 0.05 * this.branches.lifesteal.level; }
+  get branchRegen() { return 2 * this.branches.regen.level; }
+  get branchMoveSpeedMul() { return 1 + 0.10 * this.branches.swift.level; }
+  get branchDodgeChance() { return 0.10 * this.branches.evade.level; }
+  get branchAttackSpeedMul() { return 1 - 0.15 * this.branches.frenzy.level; }
+  get branchCritChance() { return 0.15 * this.branches.critical.level; }
 
   totalMul(weaponIdx) {
     return this.damageMul * this.masteryMul * this.weaponDamageMul(weaponIdx);
@@ -65,7 +94,8 @@ export class SkillTree {
       skills: Object.fromEntries(Object.entries(this.skills).map(([k, v]) => [k, v.level])),
       weaponLevel: { ...this.weaponLevel },
       skillOrder: [...this.skillOrder],
-      weaponOrder: [...this.weaponOrder]
+      weaponOrder: [...this.weaponOrder],
+      branches: Object.fromEntries(Object.entries(this.branches).map(([k, v]) => [k, v.level])),
     };
   }
 
@@ -88,6 +118,7 @@ export class SkillTree {
     for (let i = 0; i < 4; i++) if (typeof (data.weaponLevel && data.weaponLevel[i]) === 'number') this.weaponLevel[i] = Math.max(1, Math.min(3, data.weaponLevel[i]));
     if (Array.isArray(data.skillOrder) && data.skillOrder.length === 4) this.skillOrder = data.skillOrder;
     if (Array.isArray(data.weaponOrder) && data.weaponOrder.length === 4) this.weaponOrder = data.weaponOrder;
+    for (const [k, v] of Object.entries(data.branches || {})) if (this.branches[k] && typeof v === 'number') this.branches[k].level = Math.max(0, Math.min(this.branches[k].max, v));
   }
 
   hasProfile(name) { return !!localStorage.getItem(LS.SKILLTREE_PROFILE_PREFIX + name); }
