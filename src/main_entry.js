@@ -50,6 +50,7 @@ import { SupplyPoint } from './world/SupplyPoint.js';
 import { MapGenerator } from './world/MapGenerator.js';
 import { MiniMap } from './ui/MiniMap.js';
 import { WeaponTrail, HitDirection, HitStop } from './render/WeaponTrail.js';
+import { DodgeGhosts } from './render/DodgeGhosts.js';
 import { BossEnemy, EliteEnemy } from './gameplay/BossEnemy.js';
 import { Progression } from './gameplay/Progression.js';
 import { ProgressionUI } from './ui/ProgressionUI.js';
@@ -158,6 +159,7 @@ async function bootstrap() {
   const weaponTrail = new WeaponTrail(scene.scene);
   const hitDirection = new HitDirection();
   const hitStop = new HitStop();
+  const dodgeGhosts = new DodgeGhosts(scene.scene);
   const deathFeedback = new DeathFeedback();
   const progression = new Progression();
   const campaign = new CampaignMode(bus);
@@ -229,6 +231,7 @@ async function bootstrap() {
   // 启动应用延后到 player/aiManager 赋值后避免 TDZ
   bus.on(EV.HUD_BOSSPHASE, () => { audio.playSound('bossRoar'); audio.playSound('bgmIntensity', { intensity: 2 }); });
   bus.on(EV.FX_BOSSROAR, () => audio.playSound('bossRoar'));
+  bus.on(EV.FX_DODGE, (p) => { if (p && p.char && p.char.isLocal) dodgeGhosts.begin(p.char); });
   bus.on(EV.COMBAT_ULTIMATE, () => audio.playSound('ultimate'));
   bus.on(EV.COMBAT_COUNTER, () => audio.playSound('counter'));
   bus.on(EV.COMBO_TIER, (p) => audio.playSound('comboTier', { tier: p.tier || 0 }));
@@ -472,6 +475,7 @@ async function bootstrap() {
         }
         weaponTrail.update(dt, now);
         hitDirection.update(dt);
+        dodgeGhosts.update(dt);
         hitStop.update(dt);
         weather.update(dt);
         const _fc = weather.forecast;

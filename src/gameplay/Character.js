@@ -238,6 +238,7 @@ export class Character {
     this._vTmp.copy(dir).setY(0).normalize();
     this._curVel.addScaledVector(this._vTmp, 13);
     if (this._audio && this.isLocal) this._audio.dodge();
+    if (this._bus) this._bus.emit(EV.FX_DODGE, { char: this });
     return true;
   }
 
