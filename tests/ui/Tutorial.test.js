@@ -26,10 +26,10 @@ function mousedown(button) {
 }
 
 describe('Tutorial - 构造与初始状态', () => {
-  it('5 步 toast，初始 step=0 active=true，渲染第一步', () => {
+  it('8 步 toast，初始 step=0 active=true，渲染第一步', () => {
     const bus = mkBus();
     const t = new Tutorial(bus);
-    expect(t.steps.length).toBe(5);
+    expect(t.steps.length).toBe(8);
     expect(t.step).toBe(0);
     expect(t.active).toBe(true);
     expect(t.el.parentNode).toBe(document.body);
@@ -93,39 +93,66 @@ describe('Tutorial - 动作匹配推进', () => {
     expect(t.el.textContent).toContain('格挡');
   });
 
-  it('③ 格挡：鼠标右键(button 2)推进', () => {
+  it('③ 格挡：鼠标右键(button 2)推进到闪避步', () => {
     const t = new Tutorial(mkBus());
     t.step = 2; t.phase = 'hold'; t.phaseT = 6;
     t._render();
     mousedown(2);
     expect(t.step).toBe(3);
-    expect(t.el.textContent).toContain('大招');
+    expect(t.el.textContent).toContain('闪避');
   });
 
-  it('④ 大招：KeyT 推进（修复 KeyE bug：按 KeyE 不推进）', () => {
+  it('④ 闪避：KeyQ 推进到切换武器步', () => {
     const t = new Tutorial(mkBus());
     t.step = 3; t.phase = 'hold'; t.phaseT = 6;
     t._render();
-    keydown('KeyE');
-    expect(t.step).toBe(3);
-    keydown('KeyT');
+    keydown('KeyQ');
     expect(t.step).toBe(4);
+    expect(t.el.textContent).toContain('武器');
+  });
+
+  it('⑤ 切换武器：Digit1/Digit2/Digit3/Digit4 推进到大招步', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 4; t.phase = 'hold'; t.phaseT = 6;
+    t._render();
+    keydown('Digit2');
+    expect(t.step).toBe(5);
+    expect(t.el.textContent).toContain('大招');
+  });
+
+  it('⑥ 大招：KeyT 推进（修复 KeyE bug：按 KeyE 不推进）', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 5; t.phase = 'hold'; t.phaseT = 6;
+    t._render();
+    keydown('KeyE');
+    expect(t.step).toBe(5);
+    keydown('KeyT');
+    expect(t.step).toBe(6);
+    expect(t.el.textContent).toContain('处决');
+  });
+
+  it('⑥ 大招：COMBAT_ULTIMATE 事件也推进', () => {
+    const bus = mkBus();
+    const t = new Tutorial(bus);
+    t.step = 5; t.phase = 'hold'; t.phaseT = 6;
+    t._render();
+    bus.emit(EV.COMBAT_ULTIMATE);
+    expect(t.step).toBe(6);
+  });
+
+  it('⑦ 处决：KeyE 推进到克制步', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 6; t.phase = 'hold'; t.phaseT = 6;
+    t._render();
+    keydown('KeyE');
+    expect(t.step).toBe(7);
     expect(t.el.textContent).toContain('克制');
   });
 
-  it('④ 大招：COMBAT_ULTIMATE 事件也推进', () => {
+  it('⑧ 克制：COMBAT_COUNTER 事件推进到完成', () => {
     const bus = mkBus();
     const t = new Tutorial(bus);
-    t.step = 3; t.phase = 'hold'; t.phaseT = 6;
-    t._render();
-    bus.emit(EV.COMBAT_ULTIMATE);
-    expect(t.step).toBe(4);
-  });
-
-  it('⑤ 克制：COMBAT_COUNTER 事件推进到完成', () => {
-    const bus = mkBus();
-    const t = new Tutorial(bus);
-    t.step = 4; t.phase = 'hold'; t.phaseT = 6;
+    t.step = 7; t.phase = 'hold'; t.phaseT = 6;
     t._render();
     bus.emit(EV.COMBAT_COUNTER);
     expect(t.active).toBe(false);
@@ -156,11 +183,14 @@ describe('Tutorial - 完成与收尾', () => {
   it('全部步进后写 tutorial_done 并显示完成语', () => {
     const bus = mkBus();
     const t = new Tutorial(bus);
-    keydown('KeyW');
-    mousedown(0);
-    mousedown(2);
-    keydown('KeyT');
-    bus.emit(EV.COMBAT_COUNTER);
+    keydown('KeyW');   // ① 移动
+    mousedown(0);       // ② 攻击
+    mousedown(2);       // ③ 格挡
+    keydown('KeyQ');    // ④ 闪避
+    keydown('Digit1');  // ⑤ 切换武器
+    keydown('KeyT');    // ⑥ 大招
+    keydown('KeyE');    // ⑦ 处决
+    bus.emit(EV.COMBAT_COUNTER); // ⑧ 克制
     expect(t.active).toBe(false);
     expect(localStorage.getItem(LS.TUTORIAL_DONE)).toBe('1');
     expect(t.el.textContent).toContain('引导完成');
@@ -169,11 +199,21 @@ describe('Tutorial - 完成与收尾', () => {
   it('完成语 hold FINAL_HOLD 秒后隐藏元素', () => {
     const bus = mkBus();
     const t = new Tutorial(bus);
-    keydown('KeyW'); mousedown(0); mousedown(2); keydown('KeyT');
+    keydown('KeyW'); mousedown(0); mousedown(2);
+    keydown('KeyQ'); keydown('Digit1'); keydown('KeyT'); keydown('KeyE');
     bus.emit(EV.COMBAT_COUNTER);
     expect(t.el.style.display).not.toBe('none');
     t.update(2);
     expect(t.el.style.display).toBe('none');
+  });
+
+  it('完成语提示后续可探索的按键', () => {
+    const bus = mkBus();
+    const t = new Tutorial(bus);
+    t._finish();
+    expect(t.el.textContent).toContain('Tab');
+    expect(t.el.textContent).toContain('K');
+    expect(t.el.textContent).toContain('E');
   });
 });
 

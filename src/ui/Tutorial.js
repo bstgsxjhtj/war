@@ -13,8 +13,11 @@ export class Tutorial {
       { msg: '① 移动：WASD 键', keys: ['KeyW', 'KeyA', 'KeyS', 'KeyD'] },
       { msg: '② 攻击：鼠标左键（三段连击）', mouse: [0] },
       { msg: '③ 格挡：鼠标右键（减伤，完美格挡弹刀）', mouse: [2] },
-      { msg: '④ 大招：T 键（怒气满时释放，武器专属）', keys: ['KeyT'], event: EV.COMBAT_ULTIMATE },
-      { msg: '⑤ 克制：青色伤害数字 = 你克制敌人', event: EV.COMBAT_COUNTER },
+      { msg: '④ 闪避：Q 键（无敌帧，躲技能）', keys: ['KeyQ'] },
+      { msg: '⑤ 切换武器：1-4 数字键（不同手感）', keys: ['Digit1', 'Digit2', 'Digit3', 'Digit4'] },
+      { msg: '⑥ 大招：T 键（怒气满时释放，武器专属）', keys: ['KeyT'], event: EV.COMBAT_ULTIMATE },
+      { msg: '⑦ 处决：E 键（敌人残血时按 E 处决）', keys: ['KeyE'] },
+      { msg: '⑧ 克制：青色伤害数字 = 你克制敌人', event: EV.COMBAT_COUNTER },
     ];
     this.step = 0;
     this.active = true;
@@ -80,7 +83,7 @@ export class Tutorial {
   }
 
   _renderFinal() {
-    this.el.innerHTML = '<div style="color:#4ade80;font-weight:600;">✓ 引导完成！按 M 切换模式 · N 天气 · K 技能树 · Esc 设置</div>';
+    this.el.innerHTML = '<div style="color:#4ade80;font-weight:600;">✓ 引导完成！Tab 锁定 · Q 闪避 · E 处决 · K 技能树 · M 模式 · N 天气 · Esc 设置</div>';
   }
 
   update(dt) {

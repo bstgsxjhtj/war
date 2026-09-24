@@ -388,7 +388,7 @@ async function bootstrap() {
   hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式');
   setTimeout(() => hud.clearHint(), 5000);
   let tutorial = null;
-  try { if (!localStorage.getItem(LS.TUTORIAL_DONE)) tutorial = new Tutorial(); } catch (e) {}
+  try { if (!localStorage.getItem(LS.TUTORIAL_DONE)) tutorial = new Tutorial(bus); } catch (e) {}
 
   const _trajOrigin = new THREE.Vector3();
   const _trajOffset = new THREE.Vector3(0, 1.5, 0);
@@ -405,7 +405,7 @@ async function bootstrap() {
           if (match.roundEndTimer <= 0) match.startRound();
           return;
         }
-        if (state.current !== States.PLAYING) { env.update(dt, now); if (_bgmCombatSet) { audio.playSound('bgmStop'); audio.playSound('stinger', { stinger: player.alive ? 'victory' : 'defeat' }); _bgmCombatSet = false; } if (_bossBarShown) { hud.hideBoss(); _bossBarShown = false; } hud.setLowHP(false); return; }
+        if (state.current !== States.PLAYING) { env.update(dt, now); if (_bgmCombatSet) { audio.playSound('bgmStop'); audio.playSound('stinger', { stinger: player.alive ? 'victory' : 'defeat' }); _bgmCombatSet = false; } if (_bossBarShown) { hud.hideBoss(); _bossBarShown = false; } hud.setLowHP(false); if (tutorial) { tutorial.destroy(); tutorial = null; } return; }
         if (upgradePicker.visible) { env.update(dt, now); return; }
 
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
