@@ -173,7 +173,7 @@ export class AIController extends Character {
       if (this._dodgeCd <= 0 && dist < engageRange && Math.random() < (diff ? diff.dodgeChance : 0)) {
         this._dodgeTimer = 0.3; this._dodgeCd = 2;
         const back = new THREE.Vector3().subVectors(this.position, target.position).setY(0).normalize().multiplyScalar(4);
-        this.root.position.add(back);
+        this.position.add(back);
         if (this._isElite && this._eliteSkill === 'dodgeStrike') {
           this._counterTimer = 0.3;
         }

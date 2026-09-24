@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
+import * as THREE from 'three';
 import { BossEnemy } from '../../src/gameplay/BossEnemy.js';
 import { EV } from '../../src/core/constants/events.js';
 
@@ -122,5 +123,31 @@ describe('BossEnemy displayName', () => {
   });
   it('【Boss】巨兽', () => {
     expect(new BossEnemy({ type: 'behemoth' }).displayName).toBe('【Boss】巨兽');
+  });
+});
+
+describe('BossEnemy 位移技能写入 this.position (P1-1)', () => {
+  it('_skillCharge 冲锋位移生效', () => {
+    const b = new BossEnemy({ type: 'warlord' });
+    b.position.set(0, 0, 0);
+    const target = { position: new THREE.Vector3(10, 0, 0) };
+    b._skillCharge(target, { characters: [] }, 0);
+    expect(b.position.x).toBeCloseTo(8, 1);
+  });
+
+  it('_skillDodge 闪避位移生效（远离目标）', () => {
+    const b = new BossEnemy({ type: 'ranger' });
+    b.position.set(0, 0, 0);
+    const target = { position: new THREE.Vector3(10, 0, 0) };
+    b._skillDodge(target, 0);
+    expect(b.position.x).toBeCloseTo(-4, 1);
+  });
+
+  it('_skillTeleport 传送位移生效', () => {
+    const b = new BossEnemy({ type: 'mage' });
+    b.position.set(0, 0, 0);
+    const target = { position: new THREE.Vector3(10, 0, 0) };
+    b._skillTeleport(target, 0);
+    expect(b.position.x).toBeCloseTo(5, 1);
   });
 });

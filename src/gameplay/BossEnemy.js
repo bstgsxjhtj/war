@@ -58,13 +58,13 @@ export class BossEnemy extends AIController {
 
   _skillCharge(target, combat, now) {
     if (!target) return;
-    this._chargeDir.subVectors(target.position, this.root.position).setY(0).normalize();
-    this.root.position.add(this._chargeDir.clone().multiplyScalar(8));
+    this._chargeDir.subVectors(target.position, this.position).setY(0).normalize();
+    this.position.add(this._chargeDir.clone().multiplyScalar(8));
     const enemies = combat.characters || [];
     for (const e of enemies) {
       if (!e.alive || e.team === this.team) continue;
-      if (e.root.position.distanceTo(this.root.position) < 2.5) {
-        e.root.position.add(this._chargeDir.clone().multiplyScalar(3));
+      if (e.position.distanceTo(this.position) < 2.5) {
+        e.position.add(this._chargeDir.clone().multiplyScalar(3));
         e.takeDamage(40, true, this, now);
       }
     }
@@ -75,10 +75,10 @@ export class BossEnemy extends AIController {
     const enemies = combat.characters || [];
     for (const e of enemies) {
       if (!e.alive || e.team === this.team) continue;
-      const d = e.root.position.distanceTo(this.root.position);
+      const d = e.position.distanceTo(this.position);
       if (d < 6) {
-        const back = new THREE.Vector3().subVectors(e.root.position, this.root.position).setY(0).normalize().multiplyScalar(4);
-        e.root.position.add(back);
+        const back = new THREE.Vector3().subVectors(e.position, this.position).setY(0).normalize().multiplyScalar(4);
+        e.position.add(back);
         e._slowTimer = (e._slowTimer || 0) + 1.5;
       }
     }
@@ -106,8 +106,8 @@ export class BossEnemy extends AIController {
 
   _skillDodge(target, now) {
     if (!target) return;
-    const back = new THREE.Vector3().subVectors(this.root.position, target.position).setY(0).normalize().multiplyScalar(4);
-    this.root.position.add(back);
+    const back = new THREE.Vector3().subVectors(this.position, target.position).setY(0).normalize().multiplyScalar(4);
+    this.position.add(back);
     this._dodgeCd = 6;
   }
 
@@ -126,8 +126,8 @@ export class BossEnemy extends AIController {
 
   _skillTeleport(target, now) {
     if (!target) return;
-    const fwd = new THREE.Vector3().subVectors(target.position, this.root.position).setY(0).normalize().multiplyScalar(-5);
-    this.root.position.copy(target.position).add(fwd);
+    const fwd = new THREE.Vector3().subVectors(target.position, this.position).setY(0).normalize().multiplyScalar(-5);
+    this.position.copy(target.position).add(fwd);
     this._teleportCd = 10;
   }
 
