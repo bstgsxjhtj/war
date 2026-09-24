@@ -162,3 +162,51 @@ describe('AIController 投石机争夺', () => {
     expect(ai._siegeTarget).not.toBeNull();
   });
 });
+
+describe('AIController 精英技能', () => {
+  let ai, superUpdate, superTakeDamage, randSpy;
+  beforeEach(() => {
+    superUpdate = vi.spyOn(Character.prototype, 'update').mockImplementation(() => {});
+    superTakeDamage = vi.spyOn(Character.prototype, 'takeDamage').mockImplementation(function(amount) { return amount; });
+    ai = new AIController({ team: 1 });
+    ai.setWeapons([mkWeapon()]);
+    ai.tryAttack = vi.fn();
+  });
+  afterEach(() => { superUpdate.mockRestore(); superTakeDamage.mockRestore(); if (randSpy) randSpy.mockRestore(); });
+
+  it('blockCounter 精英格挡后必定反击', () => {
+    ai._isElite = true; ai._eliteSkill = 'blockCounter';
+    ai._blockTimer = 0.4;
+    randSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    ai.takeDamage(10, false, null, 0);
+    expect(ai._counterTimer).toBe(0.3);
+  });
+
+  it('非精英格挡后 random >= 0.5 不反击', () => {
+    ai._blockTimer = 0.4;
+    randSpy = vi.spyOn(Math, 'random').mockReturnValue(0.6);
+    ai.takeDamage(10, false, null, 0);
+    expect(ai._counterTimer).toBe(0);
+  });
+
+  it('dodgeStrike 精英闪避后获得反击窗口', () => {
+    ai._isElite = true; ai._eliteSkill = 'dodgeStrike';
+    ai._aiManager = { difficulty: () => ({ dodgeChance: 1, blockChance: 0, reactTime: 0, maxHpMul: 1, reinforceCd: 1 }) };
+    ai._focusTimer = 0;
+    randSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn(); ai.setLook = vi.fn();
+    const enemy = mkEnemy(0, 2, 0);
+    ai.update(0.016, terrain, combat, [enemy], NOW);
+    expect(ai._counterTimer).toBe(0.3);
+  });
+
+  it('非精英闪避后不获得反击窗口', () => {
+    ai._aiManager = { difficulty: () => ({ dodgeChance: 1, blockChance: 0, reactTime: 0, maxHpMul: 1, reinforceCd: 1 }) };
+    ai._focusTimer = 0;
+    randSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn(); ai.setLook = vi.fn();
+    const enemy = mkEnemy(0, 2, 0);
+    ai.update(0.016, terrain, combat, [enemy], NOW);
+    expect(ai._counterTimer).toBe(0);
+  });
+});

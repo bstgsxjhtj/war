@@ -67,8 +67,11 @@ export class AIController extends Character {
   takeDamage(amount, heavy, attacker, now) {
     if (this._blockTimer > 0) amount *= 0.3;
     const lost = super.takeDamage(amount, heavy, attacker, now);
-    if (this._blockTimer > 0 && this.alive && Math.random() < 0.5) {
-      this._counterTimer = 0.3;
+    if (this._blockTimer > 0 && this.alive) {
+      const counterChance = (this._isElite && this._eliteSkill === 'blockCounter') ? 1.0 : 0.5;
+      if (Math.random() < counterChance) {
+        this._counterTimer = 0.3;
+      }
     }
     return lost;
   }
@@ -147,6 +150,9 @@ export class AIController extends Character {
         this._dodgeTimer = 0.3; this._dodgeCd = 2;
         const back = new THREE.Vector3().subVectors(this.position, target.position).setY(0).normalize().multiplyScalar(4);
         this.root.position.add(back);
+        if (this._isElite && this._eliteSkill === 'dodgeStrike') {
+          this._counterTimer = 0.3;
+        }
       }
       if (this.weapon && this.weapon.type === 'shield' && this._blockCd <= 0 && Math.random() < (diff ? diff.blockChance : 0)) {
         this._blockTimer = 0.4; this._blockCd = 3;
