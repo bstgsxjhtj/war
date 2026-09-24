@@ -56,6 +56,16 @@ export class WaveMode {
 
   get waveInfo() { return { wave: this.wave, target: this.endless ? Infinity : this.targetWave, alive: this.alive }; }
 
+  checkMilestone() {
+    if (!this.endless || this.wave === 0 || this.wave % 5 !== 0) return null;
+    const best = WaveMode.loadBest();
+    const isRecord = this.wave > best;
+    const baseReward = this.wave * 10;
+    const recordBonus = isRecord ? this.wave * 15 : 0;
+    if (isRecord) WaveMode.saveBest(this.wave);
+    return { wave: this.wave, baseReward, recordBonus, isRecord, total: baseReward + recordBonus };
+  }
+
   static loadBest() {
     try { return parseInt(localStorage.getItem(LS.WAVE_BEST)) || 0; } catch { return 0; }
   }

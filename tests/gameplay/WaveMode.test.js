@@ -155,6 +155,69 @@ describe('WaveMode 无尽修饰词', () => {
   });
 });
 
+describe('WaveMode 无尽里程碑奖励', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('非 endless 模式 checkMilestone 返回 null', () => {
+    const w = new WaveMode({});
+    w.wave = 5;
+    expect(w.checkMilestone()).toBeNull();
+  });
+
+  it('endless 非5倍数波 checkMilestone 返回 null', () => {
+    const w = new WaveMode({}, true);
+    w.wave = 3;
+    expect(w.checkMilestone()).toBeNull();
+  });
+
+  it('endless 第5波 返回里程碑奖励（基础分）', () => {
+    const w = new WaveMode({}, true);
+    w.wave = 5;
+    const m = w.checkMilestone();
+    expect(m).not.toBeNull();
+    expect(m.wave).toBe(5);
+    expect(m.baseReward).toBe(50);
+    expect(m.total).toBeGreaterThanOrEqual(50);
+  });
+
+  it('endless 破纪录时额外奖励 + isRecord=true', () => {
+    WaveMode.saveBest(3);
+    const w = new WaveMode({}, true);
+    w.wave = 5;
+    const m = w.checkMilestone();
+    expect(m.isRecord).toBe(true);
+    expect(m.recordBonus).toBeGreaterThan(0);
+    expect(m.total).toBe(m.baseReward + m.recordBonus);
+  });
+
+  it('endless 破纪录时保存新最佳波数', () => {
+    WaveMode.saveBest(3);
+    const w = new WaveMode({}, true);
+    w.wave = 5;
+    w.checkMilestone();
+    expect(WaveMode.loadBest()).toBe(5);
+  });
+
+  it('endless 未破纪录时 isRecord=false 无额外奖励', () => {
+    WaveMode.saveBest(10);
+    const w = new WaveMode({}, true);
+    w.wave = 5;
+    const m = w.checkMilestone();
+    expect(m.isRecord).toBe(false);
+    expect(m.recordBonus).toBe(0);
+    expect(m.total).toBe(m.baseReward);
+  });
+
+  it('endless 第10波 奖励高于第5波', () => {
+    const w5 = new WaveMode({}, true); w5.wave = 5;
+    const m5 = w5.checkMilestone();
+    localStorage.clear();
+    const w10 = new WaveMode({}, true); w10.wave = 10;
+    const m10 = w10.checkMilestone();
+    expect(m10.baseReward).toBeGreaterThan(m5.baseReward);
+  });
+});
+
 describe('WaveMode best score', () => {
   beforeEach(() => { localStorage.clear(); });
 

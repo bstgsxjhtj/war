@@ -477,6 +477,13 @@ async function bootstrap() {
           enemies = [player, ...ais];
           let msg = '第 ' + mode.wave + ' 波来袭！';
           if (lay.modifier) msg = '第 ' + mode.wave + ' 波 · 【' + lay.modifier.name + '】' + lay.modifier.desc;
+          const milestone = mode.checkMilestone();
+          if (milestone) {
+            progression.addScore(milestone.total);
+            progressUI.refresh();
+            if (milestone.isRecord) msg += ' · 破纪录！+' + milestone.total + ' 分';
+            else msg += ' · 里程碑 +' + milestone.total + ' 分';
+          }
           hud.flash(msg);
           setTimeout(() => hud.clearHint(), 2500);
           if (lay.modifier && lay.modifier.weather) weather.setMode(lay.modifier.weather);
