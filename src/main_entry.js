@@ -87,6 +87,7 @@ async function bootstrap() {
   let _lastMiniMapKey = null;
   let terrain, env;
   let envHazards;
+  let currentHazards;
   const _terrainTextures = {
     map: TextureFactory.noise(256, 256, '#5a6a3a', 30, 24),
     normalMap: TextureFactory.normal(256, 256, 0.4)
@@ -96,7 +97,8 @@ async function bootstrap() {
     if (env) { scene.remove(env.group); }
     const r = MapGenerator.generate(mapKey, { textures: _terrainTextures });
     terrain = r.terrain;
-    if (envHazards) envHazards.setTerrain(terrain);
+    currentHazards = r.hazards;
+    if (envHazards) { envHazards.setTerrain(terrain); envHazards.setHazardZones(currentHazards); }
     env = new Environment(terrain, r.layout);
     scene.add(terrain.mesh);
     scene.add(env.group);
@@ -199,6 +201,7 @@ async function bootstrap() {
   weather.setAudio(audio);
   envHazards = new EnvironmentHazards(bus);
   envHazards.setTerrain(terrain);
+  envHazards.setHazardZones(currentHazards);
   const assist = new DifficultyAssist(aiManager, (msg) => { hud.flash(msg); setTimeout(() => hud.clearHint(), 2500); }, AI_DIFFICULTY);
   bus.on(EV.COMBAT_KILL, ({ victim }) => { if (victim && victim.isLocal && !victim.alive) assist.onPlayerDeath(); });
   bus.on(EV.COMBAT_KILL, ({ victim, killer }) => {

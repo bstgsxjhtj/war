@@ -86,4 +86,91 @@ describe('EnvironmentHazards', () => {
     expect(char.takeDamage).toHaveBeenCalled();
     expect(char2.takeDamage).not.toHaveBeenCalled();
   });
+
+  describe('poison zones', () => {
+    it('poison zone damages character within radius (default dps)', () => {
+      env.setHazardZones([{ type: 'poison', x: 0, z: 0, radius: 10 }]);
+      char.position = { x: 5, z: 0 };
+      env.update(0.5, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(12.5, false, null, expect.any(Number));
+    });
+
+    it('poison zone respects custom dps', () => {
+      env.setHazardZones([{ type: 'poison', x: 0, z: 0, radius: 10, dps: 50 }]);
+      char.position = { x: 5, z: 0 };
+      env.update(0.5, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(25, false, null, expect.any(Number));
+    });
+
+    it('poison zone does not damage character outside radius', () => {
+      env.setHazardZones([{ type: 'poison', x: 0, z: 0, radius: 10 }]);
+      char.position = { x: 0, z: 50 };
+      env.update(0.5, [char]);
+      expect(char.takeDamage).not.toHaveBeenCalled();
+    });
+
+    it('poison stacks with water damage', () => {
+      env.setHazardZones([{ type: 'poison', x: 10, z: 0, radius: 5 }]);
+      char.position = { x: 10, z: 0 };
+      env.update(1, [char]);
+      expect(char.takeDamage).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('oil zones', () => {
+    it('oil ignites when lightning overlaps and damages chars in oil radius', () => {
+      env.setHazardZones([{ type: 'oil', x: 40, z: 0, radius: 10 }]);
+      char.position = { x: 45, z: 0 };
+      env.onLightningStrike({ x: 35, z: 0 });
+      env.update(0.1, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(80, true, null, expect.any(Number));
+    });
+
+    it('char outside oil radius takes no oil damage on ignition', () => {
+      env.setHazardZones([{ type: 'oil', x: 0, z: 0, radius: 10 }]);
+      char.position = { x: 0, z: 50 };
+      env.onLightningStrike({ x: 0, z: 0 });
+      env.update(0.1, [char]);
+      expect(char.takeDamage).not.toHaveBeenCalled();
+    });
+
+    it('oil zone consumed after ignition', () => {
+      env.setHazardZones([{ type: 'oil', x: 40, z: 0, radius: 10 }]);
+      char.position = { x: 45, z: 0 };
+      env.onLightningStrike({ x: 35, z: 0 });
+      env.update(0.1, [char]);
+      char.takeDamage.mockClear();
+      env.onLightningStrike({ x: 35, z: 0 });
+      env.update(0.1, [char]);
+      expect(char.takeDamage).not.toHaveBeenCalledWith(80, true, null, expect.any(Number));
+    });
+
+    it('distant lightning does not ignite oil', () => {
+      env.setHazardZones([{ type: 'oil', x: 0, z: 0, radius: 10 }]);
+      char.position = { x: 0, z: 50 };
+      env.onLightningStrike({ x: 50, z: 0 });
+      env.update(0.1, [char]);
+      expect(char.takeDamage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('setHazardZones', () => {
+    it('replaces existing zones on re-set', () => {
+      env.setHazardZones([{ type: 'poison', x: 0, z: 0, radius: 10 }]);
+      char.position = { x: 2, z: 0 };
+      env.update(0.5, [char]);
+      expect(char.takeDamage).toHaveBeenCalledTimes(1);
+      char.takeDamage.mockClear();
+      env.setHazardZones(null);
+      env.update(0.5, [char]);
+      expect(char.takeDamage).not.toHaveBeenCalled();
+    });
+
+    it('handles undefined gracefully', () => {
+      env.setHazardZones(undefined);
+      char.position = { x: 2, z: 0 };
+      env.update(0.5, [char]);
+      expect(char.takeDamage).not.toHaveBeenCalled();
+    });
+  });
 });

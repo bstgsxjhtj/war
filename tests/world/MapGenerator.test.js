@@ -40,4 +40,39 @@ describe('MapGenerator', () => {
     expect(r.terrain.w).toBe(320);
     expect(r.terrain.h).toBe(220);
   });
+
+  it('field 地图含毒沼 hazard', () => {
+    const h = MapGenerator.MAPS.field.hazards;
+    expect(h).toBeDefined();
+    expect(h.some(z => z.type === 'poison')).toBe(true);
+  });
+
+  it('forest 地图含毒沼 hazard', () => {
+    const h = MapGenerator.MAPS.forest.hazards;
+    expect(h).toBeDefined();
+    expect(h.some(z => z.type === 'poison')).toBe(true);
+  });
+
+  it('bridge 地图含油渍 hazard', () => {
+    const h = MapGenerator.MAPS.bridge.hazards;
+    expect(h).toBeDefined();
+    expect(h.some(z => z.type === 'oil')).toBe(true);
+  });
+
+  it('river 地图含油渍 hazard', () => {
+    const h = MapGenerator.MAPS.river.hazards;
+    expect(h).toBeDefined();
+    expect(h.some(z => z.type === 'oil')).toBe(true);
+  });
+
+  it('generate 返回 hazards 字段', () => {
+    const r = MapGenerator.generate('field');
+    expect(r.hazards).toBeDefined();
+    expect(r.hazards).toEqual(MapGenerator.MAPS.field.hazards);
+  });
+
+  it('无 hazard 的地图 generate 返回 undefined', () => {
+    const r = MapGenerator.generate('pass');
+    expect(r.hazards).toBeUndefined();
+  });
 });

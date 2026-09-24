@@ -8,11 +8,25 @@ export class EnvironmentHazards {
     this._pendingStrike = null;
     this._strikeRadius = 6;
     this._strikeDamage = 50;
+    this._poisonZones = [];
+    this._oilZones = [];
+    this._poisonDPS = 25;
+    this._oilIgniteDamage = 80;
   }
 
   setTerrain(t) { this._terrain = t; }
 
   addWallBox(box) { this._wallBoxes.push(box); }
+
+  setHazardZones(zones) {
+    this._poisonZones = [];
+    this._oilZones = [];
+    if (!zones) return;
+    for (const z of zones) {
+      if (z.type === 'poison') this._poisonZones.push(z);
+      else if (z.type === 'oil') this._oilZones.push(z);
+    }
+  }
 
   onLightningStrike(pos) {
     this._pendingStrike = { x: pos.x, z: pos.z };
@@ -35,6 +49,13 @@ export class EnvironmentHazards {
           break;
         }
       }
+
+      for (const pz of this._poisonZones) {
+        const dx = x - pz.x, dz = z - pz.z;
+        if (dx * dx + dz * dz < pz.radius * pz.radius) {
+          c.takeDamage((pz.dps || this._poisonDPS) * dt, false, null, now);
+        }
+      }
     }
 
     if (this._pendingStrike) {
@@ -46,6 +67,26 @@ export class EnvironmentHazards {
           c.takeDamage(this._strikeDamage, true, null, now);
         }
       }
+
+      const remainingOils = [];
+      for (const oil of this._oilZones) {
+        const dx = this._pendingStrike.x - oil.x;
+        const dz = this._pendingStrike.z - oil.z;
+        if (Math.hypot(dx, dz) < oil.radius + this._strikeRadius) {
+          for (const c of characters) {
+            if (!c.alive) continue;
+            const cdx = c.position.x - oil.x;
+            const cdz = c.position.z - oil.z;
+            if (Math.hypot(cdx, cdz) < oil.radius) {
+              c.takeDamage(this._oilIgniteDamage, true, null, now);
+            }
+          }
+        } else {
+          remainingOils.push(oil);
+        }
+      }
+      this._oilZones = remainingOils;
+
       this._pendingStrike = null;
     }
   }

@@ -30,6 +30,10 @@ export class MapGenerator {
         supply: [{ x: 0, z: 20 }], campfires: [{ x: -140, z: 30 }, { x: 140, z: -30 }],
         bridgeStones: 3, mode: '死斗',
       },
+      hazards: [
+        { type: 'oil', x: -20, z: 0, radius: 8 },
+        { type: 'oil', x: 20, z: 0, radius: 8 },
+      ],
       spawns: { blue: [{ x: -160, z: 40 }, { x: -160, z: -40 }], red: [{ x: 160, z: 40 }, { x: 160, z: -40 }] },
     },
     pass: {
@@ -80,6 +84,10 @@ export class MapGenerator {
         supply: [{ x: -60, z: 0 }, { x: 60, z: 0 }, { x: 0, z: 80 }], campfires: [{ x: -100, z: 20 }, { x: 100, z: -20 }],
         mode: '死斗',
       },
+      hazards: [
+        { type: 'poison', x: -60, z: 60, radius: 18, dps: 25 },
+        { type: 'poison', x: 60, z: -60, radius: 18, dps: 25 },
+      ],
       spawns: { blue: [{ x: -180, z: 0 }], red: [{ x: 180, z: 0 }] },
     },
     forest: {
@@ -92,6 +100,10 @@ export class MapGenerator {
         trees: 60, rocks: 20, tents: 3, flags: [{ x: -160, z: 0, c: 0x2f5fa8 }, { x: 160, z: 0, c: 0xa83030 }],
         supply: [{ x: 0, z: 0 }], campfires: [{ x: -140, z: 20 }, { x: 140, z: -20 }], mode: '死斗',
       },
+      hazards: [
+        { type: 'poison', x: -40, z: 40, radius: 15 },
+        { type: 'poison', x: 40, z: -40, radius: 15 },
+      ],
       spawns: { blue: [{ x: -160, z: 0 }], red: [{ x: 160, z: 0 }] },
     },
     river: {
@@ -107,6 +119,10 @@ export class MapGenerator {
         trees: 30, rocks: 15, tents: 2, flags: [{ x: -160, z: 0, c: 0x2f5fa8 }, { x: 160, z: 0, c: 0xa83030 }],
         supply: [{ x: 0, z: 20 }], campfires: [{ x: -140, z: 30 }, { x: 140, z: -30 }], bridgeStones: 2, mode: '死斗',
       },
+      hazards: [
+        { type: 'oil', x: -25, z: 0, radius: 8 },
+        { type: 'oil', x: 25, z: 0, radius: 8 },
+      ],
       spawns: { blue: [{ x: -160, z: 40 }, { x: -160, z: -40 }], red: [{ x: 160, z: 40 }, { x: 160, z: -40 }] },
     },
     snowfield: {
@@ -148,7 +164,7 @@ export class MapGenerator {
       textures: opts.textures,
     });
     terrain._extWater = def.waterFn;
-    return { terrain, layout: def.layout, name: def.name, spawns: def.spawns, size: def.size };
+    return { terrain, layout: def.layout, name: def.name, spawns: def.spawns, size: def.size, hazards: def.hazards };
   }
 
   static recommendMap(modeName) {
