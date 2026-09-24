@@ -37,6 +37,7 @@ export class MatchController {
       this.deps.hud.setScore(this.scoreB, this.scoreR);
       if (killer && killer.isLocal) {
         this.playerKills++; this.deps.skills.addPoint(1); this.deps.hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => this.deps.hud.clearHint(), 1500); this.deps.daily.track('kills');
+        if (this.deps.campaign.nightmare) this.deps.daily.track('nightmareKills');
         if (victim && victim._isBoss) {
           this.deps.daily.track('bossKill'); this.deps.saveNow();
           const tier = this.deps.affixes ? (Math.random() < 0.4 ? 2 : 1) : 0;
@@ -114,6 +115,7 @@ export class MatchController {
           bus.emit(EV.CAMPAIGN_CLEAR, { stages: campaign.maxStages });
           if (this.playerTaken === 0) bus.emit(EV.CAMPAIGN_PERFECT, {});
           progression.recordWin('S', 0);
+          if (campaign.nightmare) daily.track('nightmareWin');
           const _creward = daily.claim(); if (_creward > 0) { progression.addScore(_creward); hud.flash('每日挑战完成！+' + _creward + '分'); }
           bus.emit(EV.DAILY_UPDATE, daily.challenges);
           state.transit(States.ENDED);

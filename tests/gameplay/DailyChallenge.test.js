@@ -66,4 +66,39 @@ describe('DailyChallenge', () => {
     d.resetSession();
     expect(d.challenges[0].progress).toBe(0);
   });
+
+  it('POOL 含无尽和噩梦挑战类型', () => {
+    const types = DailyChallenge.POOL.map(c => c.type);
+    expect(types).toContain('endlessWave');
+    expect(types).toContain('nightmareWin');
+    expect(types).toContain('nightmareKills');
+  });
+
+  it('_regenerate 至少包含1个模式专属挑战', () => {
+    const modeSpecific = d.challenges.filter(c => c.modeSpecific);
+    expect(modeSpecific.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('track endlessWave 增量进度', () => {
+    d._data.challenges = [{ id: 'ew10', desc: 'test', type: 'endlessWave', target: 10, reward: 100 }];
+    d._data.progress = {};
+    d.track('endlessWave');
+    expect(d.challenges[0].progress).toBe(1);
+  });
+
+  it('track nightmareWin 完成时 done 为 true', () => {
+    d._data.challenges = [{ id: 'nw', desc: 'test', type: 'nightmareWin', target: 1, reward: 200 }];
+    d._data.progress = {};
+    d.track('nightmareWin');
+    expect(d.challenges[0].progress).toBe(1);
+    expect(d.challenges[0].done).toBe(true);
+  });
+
+  it('track nightmareKills 增量进度', () => {
+    d._data.challenges = [{ id: 'nk5', desc: 'test', type: 'nightmareKills', target: 5, reward: 150 }];
+    d._data.progress = {};
+    d.track('nightmareKills');
+    d.track('nightmareKills');
+    expect(d.challenges[0].progress).toBe(2);
+  });
 });

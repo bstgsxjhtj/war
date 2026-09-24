@@ -10,7 +10,10 @@ const CHALLENGE_POOL = [
   { id: 'backstab', desc: '背刺击杀3次', target: 3, type: 'backstab', reward: 80 },
   { id: 'no_damage', desc: '无伤获胜', target: 1, type: 'noDamageWin', reward: 150 },
   { id: 'speedrun', desc: '90秒内获胜', target: 90, type: 'speedWin', reward: 100 },
-  { id: 'boss_kill', desc: '击杀Boss', target: 1, type: 'bossKill', reward: 100 }
+  { id: 'boss_kill', desc: '击杀Boss', target: 1, type: 'bossKill', reward: 100 },
+  { id: 'endless_wave10', desc: '无尽模式通过10波', target: 10, type: 'endlessWave', reward: 100, modeSpecific: true },
+  { id: 'nightmare_win', desc: '噩梦模式获胜一场', target: 1, type: 'nightmareWin', reward: 200, modeSpecific: true },
+  { id: 'nightmare_kill5', desc: '噩梦模式击杀5人', target: 5, type: 'nightmareKills', reward: 150, modeSpecific: true },
 ];
 
 export class DailyChallenge {
@@ -37,11 +40,17 @@ export class DailyChallenge {
   _isExpired() { return this._data.date !== this._todayKey(); }
 
   _regenerate() {
-    const pool = [...CHALLENGE_POOL];
+    const modeSpecific = CHALLENGE_POOL.filter(c => c.modeSpecific);
+    const general = CHALLENGE_POOL.filter(c => !c.modeSpecific);
     const picked = [];
-    for (let i = 0; i < 3 && pool.length > 0; i++) {
-      const idx = Math.floor(Math.random() * pool.length);
-      picked.push(pool.splice(idx, 1)[0]);
+    if (modeSpecific.length > 0) {
+      const idx = Math.floor(Math.random() * modeSpecific.length);
+      picked.push(modeSpecific.splice(idx, 1)[0]);
+    }
+    const remaining = [...general, ...modeSpecific];
+    for (let i = picked.length; i < 3 && remaining.length > 0; i++) {
+      const idx = Math.floor(Math.random() * remaining.length);
+      picked.push(remaining.splice(idx, 1)[0]);
     }
     this._data = { date: this._todayKey(), challenges: picked, progress: {}, claimed: false };
   }
@@ -80,3 +89,5 @@ export class DailyChallenge {
     this._data.progress = {};
   }
 }
+
+DailyChallenge.POOL = CHALLENGE_POOL;

@@ -501,6 +501,7 @@ async function bootstrap() {
           }
           hud.flash(msg);
           setTimeout(() => hud.clearHint(), 2500);
+          if (mode.endless && daily.track('endlessWave')) bus.emit(EV.DAILY_UPDATE, daily.challenges);
           if (lay.modifier && lay.modifier.weather) weather.setMode(lay.modifier.weather);
         }
         deathFeedback.update(dt);
