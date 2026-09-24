@@ -58,6 +58,14 @@ describe('Character.takeDamage 主路径', () => {
     expect(bus.emit).toHaveBeenCalledWith(EV.FX_PERFECTBLOCK, expect.objectContaining({ char: c }));
   });
 
+  it('完美格挡设置 _perfectRebound=true 供连击系统读取 (P0-5)', () => {
+    const atk = makeAttacker(0, 2);
+    c.forward.set(0, 0, 1);
+    c._blocking = true; c._perfectWindow = 0.1;
+    c.takeDamage(100, false, atk, 1);
+    expect(c._perfectRebound).toBe(true);
+  });
+
   it('背身格挡无效', () => {
     c.forward.set(0, 0, -1);
     c._blocking = true;

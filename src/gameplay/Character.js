@@ -269,6 +269,7 @@ export class Character {
         if (fwdDot > 0.5) { // 攻击者在前方±60°
           if (this._perfectWindow > 0) {
             attacker._hurt = Math.max(attacker._hurt, 0.4); // 弹刀
+            this._perfectRebound = true; // 弹反标记：下次反击触发连击 perfect 加成
             this.stamina.consume(0);
             this.addRage(15);
             if (this._bus) this._bus.emit(EV.FX_PERFECTBLOCK, { char: this });
