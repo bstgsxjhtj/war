@@ -30,10 +30,22 @@
 - **连击护盾**：受击连击数减半而非清零（ComboSystem.onHurt）。
 - **克制可视化**：克制伤害数字青色 (#66ddff) + counter 音效（COMBAT_COUNTER）。
 - **天气预告**：非战役模式每 30-60s 随机换天气，HUD `#wforecast` 倒计时显示（WeatherSystem.scheduleNext）。
-- **环境杀**：EnvironmentHazards——深水 40 DPS、城墙碰撞 15 DPS、雷暴落雷半径 6 内 50 伤害。
+- **环境杀**：EnvironmentHazards——深水 40 DPS、城墙碰撞 15 DPS、雷暴落雷半径 6 内 50 伤害、毒沼 25 DPS（field/forest）、油渍雷击引燃 80 爆发（bridge/river，引燃后消耗）。
 - **无尽模式**：WaveMode(bus, true)，敌人增长更快（上限 12），历史最高波数存 wave_best。
 - **投石机争夺**：靠近自动占领/夺占（SiegeStructure.tryOccupy），占领后轰击最近敌方。
 - **动态难度辅助**：DifficultyAssist——连续 2 次死亡降一档（easy 为下限），获胜逐步恢复，HUD 提示。
+
+## 3.2 第二轮玩法增强（2026-09-24 P0-P3）
+
+- **完美格挡/大招表现强化**：完美格挡触发 HitStop 顿帧（timeScale 0.3，持续 0.15s）+ FOV 收紧 50 + 震屏；大招触发 FOV 收紧 45。
+- **无尽波次修饰词**：每 3 波随机激活修饰（狂暴/坚韧/蜂拥/精锐/暗夜），HUD 预告下一修饰；Spawner 应用 hpMul/speedMul/eliteChanceMul。
+- **无尽里程碑奖励**：每 5 波发放积分奖励（wave×10），破纪录额外 wave×15。
+- **AI争夺投石机**：AIController.setSiegeTarget 注入巡逻分支，敌人主动前往投石机占领。
+- **死因统计扩展**：MatchController 追踪 deathCauses/deathCount/counterDeaths，结算屏展示 top3 死因 + 被克制致死占比。
+- **词条协同一期**：Affixes.SYNERGIES（狂战=锋锐+暴怒→伤害+15%、不灭=吸血+坚韧→吸血+10%、幸运一击=迅捷+幸运→暴击+10%），CombatSystem._affixApply/_affixLeech 应用协同加成。
+- **环境杀地图扩散**：毒沼（field/forest，25 DPS）和油渍（bridge/river，雷击引燃 80 爆发，引燃后消耗）扩散到多张地图。
+- **每日挑战×新模式**：DailyChallenge 新增 endlessWave/nightmareWin/nightmareKills 模式专属挑战，_regenerate 保证每日至少 1 个模式专属挑战。
+- **噩梦专属奖励**：通关噩梦战役解锁 nightmare_clear 成就，奖励传说皮肤（forceUnlock 免分解锁）+ 三级幸运词条 + 3 技能点。
 
 ## 4. 成就事件契约
 
@@ -43,6 +55,7 @@
 |---|---|
 | combat.kill | CombatSystem/致死处（成就侧须过滤 killer.isLocal） |
 | campaign.clear / campaign.perfect | 战役通关处 |
+| campaign.nightmare_clear | 噩梦战役通关处（MatchController 在 campaign.nightmare 时额外发射） |
 | combat.backstab | 背刺命中处 |
 | combat.perfectblock / combat.dodge | 完美格挡/闪避处（现有 fx.perfectBlock/fx.perfectDodge，可桥接） |
 | combat.cavalrykill | 骑杀处 |
