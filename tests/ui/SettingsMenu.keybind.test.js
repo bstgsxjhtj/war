@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { SettingsMenu } from '../../src/ui/SettingsMenu.js';
-import { KeyBindings, BINDING_ORDER } from '../../src/app/KeyBindings.js';
+import { KeyBindings, BINDING_ORDER } from '../../src/core/input/KeyBindings.js';
 import { EV } from '../../src/core/constants/events.js';
 import { LS } from '../../src/core/constants/storage-keys.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';

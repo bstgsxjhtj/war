@@ -1,4 +1,4 @@
-import { LS } from '../core/constants/storage-keys.js';
+import { LS } from '../constants/storage-keys.js';
 
 export const DEFAULT_BINDINGS = {
   forward: 'KeyW',

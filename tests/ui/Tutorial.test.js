@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Tutorial } from '../../src/ui/Tutorial.js';
 import { EV } from '../../src/core/constants/events.js';
 import { LS } from '../../src/core/constants/storage-keys.js';
-import { DEFAULT_BINDINGS } from '../../src/app/KeyBindings.js';
+import { DEFAULT_BINDINGS } from '../../src/core/input/KeyBindings.js';
 
 function mkBus() {
   const handlers = {};

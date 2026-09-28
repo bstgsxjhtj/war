@@ -1,7 +1,7 @@
 // 新手引导：12 步 toast 教程（基础 8 步 + 进阶 4 步），动作/事件推进，仅首局出现
 import { EV } from '../core/constants/events.js';
 import { LS } from '../core/constants/storage-keys.js';
-import { DEFAULT_BINDINGS } from '../app/KeyBindings.js';
+import { DEFAULT_BINDINGS } from '../core/input/KeyBindings.js';
 
 const FADE = 0.3;
 const STEP_TIMEOUT = 10;

@@ -65,7 +65,7 @@ import { SaveUI } from './ui/SaveUI.js';
 import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
 import { QualityGovernor } from './app/QualityGovernor.js';
-import { KeyBindings } from './app/KeyBindings.js';
+import { KeyBindings } from './core/input/KeyBindings.js';
 import { LODManager } from './render/LODManager.js';
 import { Spawner } from './gameplay/Spawner.js';
 import { wireAchievements } from './app/AchievementWiring.js';

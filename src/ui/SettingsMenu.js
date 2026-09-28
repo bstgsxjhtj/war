@@ -1,6 +1,6 @@
 import { EV } from '../core/constants/events.js';
 import { LS } from '../core/constants/storage-keys.js';
-import { BINDING_ORDER, BINDING_LABELS } from '../app/KeyBindings.js';
+import { BINDING_ORDER, BINDING_LABELS } from '../core/input/KeyBindings.js';
 export class SettingsMenu {
   constructor(bus, audio, kb) {
     this.bus = bus; this.audio = audio; this.kb = kb || null; this.open = false;

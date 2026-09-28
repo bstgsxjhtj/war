@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { KeyBindings, DEFAULT_BINDINGS } from '../../src/app/KeyBindings.js';
+import { KeyBindings, DEFAULT_BINDINGS } from '../../../src/core/input/KeyBindings.js';
 
 describe('KeyBindings', () => {
   beforeEach(() => { localStorage.clear(); });

@@ -38,6 +38,7 @@ ESM 依赖图必须保持无环（DAG）。
 3. ~~**UI 类错位**~~（✅2026-09-21 偿还）：ProgressionUI 与 WeaponSkinsUI 从 gameplay/ 抽出至 `ui/ProgressionUI.js`、`ui/WeaponSkinsUI.js`，gameplay 层只留领域模型；ui/ 单向依赖 gameplay（仅引用 SKINS 等常量/数据类）的约定现对全部 UI 一致。
 4. ~~**依赖注入不统一**~~（✅2026-09-21 偿还）：约定落地到 05 §6——必选依赖（bus）走构造、可选依赖（audio/affixes）走 setter、总线属性统一 `_bus`；DailyChallenge/Achievements 改为构造注入 bus（顺带修复 DailyChallenge 未传 bus 导致 `daily.completed` 事件死掉的 bug），Player 4 处 emit 统一 `_bus`。Character 群"注册时注入"为显式例外。
 5. ~~**监听器生命周期**~~（✅2026-09-21 偿还）：bus.on 返回 off、跨回合监听集中 bootstrap 顶层、spawnAll/spawnRed 内禁注册常驻监听——三条款经查均已满足（Player.dispose #8、死事件 #12 先前已修）；本轮落地 05 §7 约定 + 回归守卫（tests/core/listener-lifecycle.test.js 大括号匹配提取 spawnAll/spawnRed 函数体断言无 bus.on）。调查中发现并修复一无关次要缺陷：combat.kill 的 ultimate 音效在 main_entry 与 MatchController 各播一次，已去重（保留 main_entry 进度处理器一处，MatchController 移除 audio 依赖）。
+6. ~~**gameplay/ui→app 反向依赖（KeyBindings 错位）**~~（✅2026-09-28 偿还，Round 6 P1-2）：KeyBindings 原放 `app/` 层，导致 `gameplay/Player.js`、`ui/SettingsMenu.js`、`ui/Tutorial.js` 被迫向上反向依赖 app 层。已下沉至 `core/input/KeyBindings.js`（与 events.js / storage-keys.js 同级，"纯数据 + localStorage" 输入基础设施归 core）；main_entry / Player / SettingsMenu / Tutorial 同步改 import；导出与行为不变。新增架构守卫 `tests/core/input/KeyBindings.architecture.test.js` 锁定 gameplay 层与 ui 层不再 import 任何 `app/` 模块（扫描 src/gameplay 与 src/ui 全树）。
 
 ## 5. 组合根规则
 

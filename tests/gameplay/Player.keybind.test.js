@@ -10,7 +10,7 @@ vi.mock('../../src/render/TextureFactory.js', () => ({
 }));
 
 import { Player } from '../../src/gameplay/Player.js';
-import { KeyBindings } from '../../src/app/KeyBindings.js';
+import { KeyBindings } from '../../src/core/input/KeyBindings.js';
 
 function makeCamera() {
   return {

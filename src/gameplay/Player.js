@@ -6,7 +6,7 @@ import { Spear } from './weapons/Spear.js';
 import { SwordShield } from './weapons/SwordShield.js';
 import { Warhammer } from './weapons/Warhammer.js';
 import { EV } from '../core/constants/events.js';
-import { KeyBindings } from '../app/KeyBindings.js';
+import { KeyBindings } from '../core/input/KeyBindings.js';
 
 // 本地玩家：Tab锁定 / 右键格挡(持刀) / 蓄力越肩(弓) / Q闪避
 export class Player extends Character {
