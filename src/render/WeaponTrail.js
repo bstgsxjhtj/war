@@ -20,7 +20,7 @@ export class WeaponTrail {
     this.scene.add(line);
     const history = [];
     for (let i = 0; i < this._maxSeg; i++) history.push({ tail: new THREE.Vector3(), tip: new THREE.Vector3() });
-    const trail = { line, positions, history, head: 0, count: 0, active: false, color };
+    const trail = { line, positions, history, head: 0, count: 0, active: false, color, weaponMesh };
     weaponMesh.userData._trail = trail;
     this._trails.push(trail);
     return trail;
@@ -52,9 +52,9 @@ export class WeaponTrail {
         trail.head = (trail.head - 1 + this._maxSeg) % this._maxSeg;
         if (trail.count < this._maxSeg) trail.count++;
         const slot = trail.history[trail.head];
-        const parent = wp.parent;
-        parent.updateWorldMatrix(true, false);
-        const mw = parent.matrixWorld;
+        const weapon = trail.weaponMesh || wp.parent;
+        weapon.updateWorldMatrix(true, false);
+        const mw = weapon.matrixWorld;
         slot.tail.copy(tmpT.set(0, 0, -0.6).applyMatrix4(mw));
         slot.tip.copy(tmpP.set(0, 0, 0.8).applyMatrix4(mw));
       }
