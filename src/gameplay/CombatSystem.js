@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ParticleFX } from '../render/ParticleFX.js';
 import { EV } from '../core/constants/events.js';
+import { COMBAT } from '../core/constants/balance.js';
 
 // 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率（导出供单测引用，构造时复用同一引用）
 export const COUNTER_MATRIX = {
@@ -100,11 +101,9 @@ export class CombatSystem {
     this.bus.emit(EV.COMBAT_HIT, { attacker, victim, damage, weapon: weaponName, combo, heavy, backstab, crit });
     this._tmpOrigin.copy(victim.position).add(this._tmpTo.set(0, 1.6, 0));
     this.spawnHitFX(this._tmpOrigin, color);
-    this.createDamageNumber(this._tmpOrigin, Math.round(damage), counterMul > 1.2, crit);
-    const shakeMap = [0.16, 0.18, 0.32];
-    this.bus.emit(EV.FX_SHAKE, { amount: Math.min(0.9, (shakeMap[combo] ?? 0.16) + (heavy ? 0.14 : 0)) });
-    const hsMap = [0.04, 0.05, 0.11];
-    this.hitstop = Math.min(0.14, this.hitstop + (hsMap[combo] ?? 0.04) + (heavy ? 0.04 : 0));
+    this.createDamageNumber(this._tmpOrigin, Math.round(damage), counterMul > COMBAT.COUNTER_THRESHOLD, crit);
+    this.bus.emit(EV.FX_SHAKE, { amount: Math.min(COMBAT.SHAKE_MAX, (COMBAT.SHAKE_MAP[combo] ?? COMBAT.SHAKE_MAP[0]) + (heavy ? COMBAT.HEAVY_SHAKE_BONUS : 0)) });
+    this.hitstop = Math.min(COMBAT.HITSTOP_MAX, this.hitstop + (COMBAT.HITSTOP_MAP[combo] ?? COMBAT.HITSTOP_MAP[0]) + (heavy ? COMBAT.HEAVY_HITSTOP_BONUS : 0));
   }
 
   spawnHitFX(pos, color) {
@@ -245,14 +244,14 @@ export class CombatSystem {
     const weatherFx = this._weatherEffects || { bowAccuracy: 1.0 };
     const accuracy = weatherFx.bowAccuracy;
     if (accuracy < 1.0) {
-      const spread = (1 - accuracy) * 0.3;
+      const spread = (1 - accuracy) * COMBAT.BOW_SPREAD_FACTOR;
       vel.x += (Math.random() - 0.5) * spread * 10;
       vel.y += (Math.random() - 0.5) * spread * 10;
       vel.z += (Math.random() - 0.5) * spread * 10;
     }
     mesh.position.copy(this._tmpOrigin);
     this.scene.add(mesh);
-    this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage: weapon.damageFor(charge), life: 3.5, attacker, charge });
+    this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage: weapon.damageFor(charge), life: COMBAT.ARROW_LIFE, attacker, charge });
   }
 
   spawnPierceArrow(attacker, weapon, charge, opts = {}) {
@@ -267,7 +266,7 @@ export class CombatSystem {
     const damage = opts.damage ?? (weapon ? weapon.damageFor(charge) * 1.5 : 30);
     mesh.position.copy(this._tmpOrigin);
     this.scene.add(mesh);
-    this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage, life: 4, attacker, charge, pierce: 3, hitSet: new Set() });
+    this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage, life: COMBAT.PIERCE_ARROW_LIFE, attacker, charge, pierce: COMBAT.PIERCE_ARROW_PIERCE, hitSet: new Set() });
   }
 
   // 全向大招：360° 范围多段伤害

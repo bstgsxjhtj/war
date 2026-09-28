@@ -71,6 +71,7 @@ import { InputRouter } from './app/InputRouter.js';
 import { installUIStackEscape } from './ui/UIStack.js';
 import { EV } from './core/constants/events.js';
 import { LS } from './core/constants/storage-keys.js';
+import { EXECUTE } from './core/constants/balance.js';
 
 async function bootstrap() {
   const app = document.querySelector('#app');
@@ -513,7 +514,7 @@ async function bootstrap() {
         hud.setSkillCooldowns(weaponSkills);
         let _execNearby = false;
         for (const a of ais) {
-          if (a.alive && a.canBeExecuted && a.position.distanceTo(player.position) < 3) { _execNearby = true; break; }
+          if (a.alive && a.canBeExecuted && a.position.distanceTo(player.position) < EXECUTE.RANGE) { _execNearby = true; break; }
         }
         if (_execNearby && !_execHintShown) { hud.flash('按 E 处决！'); _execHintShown = true; }
         else if (!_execNearby && _execHintShown) { hud.clearHint(); _execHintShown = false; }

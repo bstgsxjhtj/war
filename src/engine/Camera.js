@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { EV } from '../core/constants/events.js';
+import { CAMERA } from '../core/constants/balance.js';
 
 // 第三人称相机：跟随 + 越肩瞄准 + 命中震动
 export class Camera {
   constructor(bus) {
-    this.cam = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 600);
+    this.cam = new THREE.PerspectiveCamera(CAMERA.FOV_DEFAULT, window.innerWidth / window.innerHeight, 0.1, 600);
     this.cam.position.set(0, 6, 12);
     this.yaw = 0;
     this.pitch = 0.22;
@@ -13,7 +14,7 @@ export class Camera {
     this.aimMode = false;
     this._curDist = 6.5;
     this._curHgt = 2.4;
-    this._curFov = 60;
+    this._curFov = CAMERA.FOV_DEFAULT;
     this.target = new THREE.Vector3();
     this._shake = 0;
     this._shakeMul = 1;
@@ -27,8 +28,8 @@ export class Camera {
     });
     this._unsubs = [];
     if (bus) this._unsubs.push(bus.on(EV.FX_SHAKE, ({ amount }) => this.addShake(amount)));
-    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTDODGE, () => { this.addShake(0.5); if (!this._reducedMotion) { this._curFov = 52; this.timeScale = 0.5; } }));
-    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTBLOCK, () => { this.addShake(0.6); if (!this._reducedMotion) this._curFov = 50; }));
+    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTDODGE, () => { this.addShake(0.5); if (!this._reducedMotion) { this._curFov = CAMERA.FOV_PERFECT_DODGE; this.timeScale = CAMERA.PERFECT_DODGE_TIME_SCALE; } }));
+    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTBLOCK, () => { this.addShake(0.6); if (!this._reducedMotion) this._curFov = CAMERA.FOV_PERFECT_BLOCK; }));
     if (bus) this._unsubs.push(bus.on(EV.COMBAT_ULTIMATE, () => { if (!this._reducedMotion) this._curFov = 45; }));
   }
 
@@ -38,13 +39,13 @@ export class Camera {
     this._unsubs = [];
   }
 
-  addShake(amount) { if (this._reducedMotion) return; this._shake = Math.min(0.9, this._shake + amount * this._shakeMul); }
+  addShake(amount) { if (this._reducedMotion) return; this._shake = Math.min(CAMERA.SHAKE_MAX, this._shake + amount * this._shakeMul); }
   setShakeIntensity(v) { this._shakeMul = Math.max(0, Math.min(1, v)); }
   setReducedMotion(v) { this._reducedMotion = !!v; if (this._reducedMotion) this._shake = 0; }
 
-  look(dx, dy, sensitivity = 0.0025) {
+  look(dx, dy, sensitivity = CAMERA.SENSITIVITY_DEFAULT) {
     this.yaw -= dx * sensitivity;
-    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * sensitivity, 0.08, 0.95);
+    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * sensitivity, CAMERA.PITCH_MIN, CAMERA.PITCH_MAX);
   }
 
   setKillCam(target) { this._killCamTarget = target; this._killTimer = 1.4; }
@@ -64,10 +65,10 @@ export class Camera {
 
     const wantDist = this.aimMode ? 3.2 : this.distance;
     const wantHgt = this.aimMode ? 1.9 : this.height;
-    const wantFov = this.aimMode ? 48 : 60;
-    this._curDist += (wantDist - this._curDist) * 0.15;
-    this._curHgt += (wantHgt - this._curHgt) * 0.15;
-    this._curFov += (wantFov - this._curFov) * 0.12;
+    const wantFov = this.aimMode ? CAMERA.FOV_AIM : CAMERA.FOV_DEFAULT;
+    this._curDist += (wantDist - this._curDist) * CAMERA.LERP_DIST;
+    this._curHgt += (wantHgt - this._curHgt) * CAMERA.LERP_HGT;
+    this._curFov += (wantFov - this._curFov) * CAMERA.LERP_FOV;
     if (Math.abs(this.cam.fov - this._curFov) > 0.01) { this.cam.fov = this._curFov; this.cam.updateProjectionMatrix(); }
 
     const cosp = Math.cos(this.pitch);
@@ -77,8 +78,8 @@ export class Camera {
     const oy = Math.sin(this.pitch) * this._curDist + this._curHgt;
 
     if (this._shake > 0.001) {
-      this._shakeOffset.set((Math.random() - 0.5) * this._shake * 0.6, (Math.random() - 0.5) * this._shake * 0.6, (Math.random() - 0.5) * this._shake * 0.6);
-      this._shake *= 0.86;
+      this._shakeOffset.set((Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP, (Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP, (Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP);
+      this._shake *= CAMERA.SHAKE_DECAY;
     } else this._shakeOffset.set(0, 0, 0);
 
     this.cam.position.set(

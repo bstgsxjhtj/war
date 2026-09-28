@@ -10,6 +10,7 @@ import { TextureFactory } from '../render/TextureFactory.js';
 import { deepDispose } from '../render/disposeUtils.js';
 import { Skeleton } from './Skeleton.js';
 import { EV } from '../core/constants/events.js';
+import { COMBAT, EXECUTE } from '../core/constants/balance.js';
 
 // 角色：耐力+锁定+格挡+完美闪避+击飞+涉水(第三轮进化)
 export class Character {
@@ -76,7 +77,7 @@ export class Character {
     if (k >= 7) { dmgMul = 1.3; lifesteal = 0.05; }
     return { dmgMul, cdMul, lifesteal };
   }
-  get canBeExecuted() { return this.alive && this.health.ratio < 0.2; }
+  get canBeExecuted() { return this.alive && this.health.ratio < COMBAT.EXECUTE_HP_RATIO; }
 
   _build() {
     const teamColor = this.team === 0 ? 0x2f5fa8 : 0xa83030;
@@ -382,10 +383,10 @@ export class Character {
       this._tmpExec = this._tmpExec || new THREE.Vector3();
       this._tmpExec.copy(this.position).addScaledVector(this.forward, 1.2);
       this._executingTarget.position.lerp(this._tmpExec, 0.3);
-      this.weaponPivot.rotation.z = Math.sin((1.2 - this._executing) * Math.PI / 1.2) * 1.5;
+      this.weaponPivot.rotation.z = Math.sin((EXECUTE.DURATION - this._executing) * Math.PI / EXECUTE.DURATION) * 1.5;
     }
     if (this._executing <= 0) {
-      if (this._executingTarget && this._executingTarget.alive) this._executingTarget.takeDamage(9999, true, this, now);
+      if (this._executingTarget && this._executingTarget.alive) this._executingTarget.takeDamage(EXECUTE.DAMAGE, true, this, now);
       if (this._executingTarget) this._executingTarget._beingExecuted = false;
       this.weaponPivot.rotation.z = 0;
     }
@@ -525,7 +526,7 @@ export class Character {
     let skelState = 'idle';
     let skelT = 0;
     if (!this.alive) { skelState = 'death'; skelT = Math.min(1, this._deadTimer / 1.0); }
-    else if (this._executing > 0) { skelState = 'execute'; skelT = 1 - this._executing / 1.2; }
+    else if (this._executing > 0) { skelState = 'execute'; skelT = 1 - this._executing / EXECUTE.DURATION; }
     else if (this._hurt > 0) { skelState = 'hurt'; skelT = 1 - this._hurt / 0.3; }
     else if (this._dodgeTimer > 0) { skelState = 'dodge'; skelT = 1 - this._dodgeTimer / 0.4; }
     else if (this._blocking) { skelState = 'block'; skelT = 1; }
@@ -591,7 +592,7 @@ export class Character {
   }
   startExecute(target) {
     if (!target || !target.canBeExecuted || this._executing > 0) return false;
-    this._executing = 1.2; this._executingTarget = target;
+    this._executing = EXECUTE.DURATION; this._executingTarget = target;
     target._beingExecuted = true;
     if (this._bus) this._bus.emit(EV.COMBAT_EXECUTE, { char: this, target });
     return true;
