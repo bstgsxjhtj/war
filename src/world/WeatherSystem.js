@@ -62,6 +62,16 @@ export class WeatherSystem {
 
   setAudio(a) { this._audio = a; }
 
+  dispose() {
+    for (const o of [this._rain, this._snow, this._lightning]) {
+      if (!o) continue;
+      this.scene.remove(o);
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    }
+    this._rain = null; this._snow = null; this._lightning = null;
+  }
+
   onLightning(cb) { this._onLightning = cb; }
 
   setMode(mode) {

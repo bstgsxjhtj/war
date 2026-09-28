@@ -7,6 +7,7 @@ import { Spear } from './weapons/Spear.js';
 import { SwordShield } from './weapons/SwordShield.js';
 import { Warhammer } from './weapons/Warhammer.js';
 import { TextureFactory } from '../render/TextureFactory.js';
+import { deepDispose } from '../render/disposeUtils.js';
 import { Skeleton } from './Skeleton.js';
 import { EV } from '../core/constants/events.js';
 
@@ -159,6 +160,7 @@ export class Character {
 
   setLook(yaw) { this._targetYaw = yaw; }
   setMove(f, r) { this._moveF = f; this._moveR = r; }
+  dispose() { deepDispose(this.root); }
   setSprint(v) { this._sprint = v; }
   setCharging(v) { this._charging = v; if (!v && this.weapon.pullString) this.weapon.pullString(0); }
   get charge() { return this._charge; }

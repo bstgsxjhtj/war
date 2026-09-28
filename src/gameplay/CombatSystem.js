@@ -72,6 +72,21 @@ export class CombatSystem {
     this.characters.length = 0;
   }
 
+  dispose() {
+    this.clear();
+    if (this._arrowGeo) this._arrowGeo.dispose();
+    if (this._arrowMat) this._arrowMat.dispose();
+    if (this._partGeo) this._partGeo.dispose();
+    if (this._partMat) this._partMat.dispose();
+    if (this._partMat && this._partMat.map && typeof this._partMat.map.dispose === 'function') this._partMat.map.dispose();
+    if (this._numTex) this._numTex.dispose();
+    for (const n of this._numSprites) {
+      this.scene.remove(n.spr);
+      if (n.spr.material) n.spr.material.dispose();
+    }
+    this.scene.remove(this._partPts);
+  }
+
   _counterMul(atkW, vicW) {
     const a = atkW?.weaponClass, v = vicW?.weaponClass;
     if (!a || !v) return 1;

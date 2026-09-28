@@ -97,7 +97,7 @@ async function bootstrap() {
   };
   function loadMap(mapKey) {
     if (terrain) { scene.remove(terrain.mesh); }
-    if (env) { scene.remove(env.group); }
+    if (env) { scene.remove(env.group); if (env.dispose) env.dispose(); }
     const r = MapGenerator.generate(mapKey, { textures: _terrainTextures });
     terrain = r.terrain;
     currentHazards = r.hazards;
@@ -293,7 +293,7 @@ async function bootstrap() {
     formations.clear();
     deathFeedback.hide();
     if (player) { if (player.dispose) player.dispose(); scene.remove(player.root); }
-    for (const a of ais) scene.remove(a.root);
+    for (const a of ais) { if (a.dispose) a.dispose(); scene.remove(a.root); }
     ais = [];
     player = new Player(camera, bus);
     player.setComboSys(comboSys);

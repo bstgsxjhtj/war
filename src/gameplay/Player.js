@@ -84,6 +84,7 @@ export class Player extends Character {
   dispose() {
     for (const [el, ev, fn] of this._handlers || []) el.removeEventListener(ev, fn);
     this._handlers = [];
+    super.dispose();
   }
 
   _toggleLock() {

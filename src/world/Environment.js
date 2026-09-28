@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { deepDispose } from '../render/disposeUtils.js';
 
 // 程序化环境：树/石/旗(顶点波动)/篝火(粒子火苗+烟)/帐篷/残骸/血迹/烟柱
 // 尘埃用 ShaderMaterial uTime 位移(CPU 0 上传)
@@ -11,8 +12,10 @@ export class Environment {
     this._build();
     this._dust();
     this._leaves();
-    this._godrays();
+      this._godrays();
   }
+
+  dispose() { deepDispose(this.group); }
 
   _build() {
     if (this._layout) {

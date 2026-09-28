@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { deepDispose } from '../render/disposeUtils.js';
 
 // 水面：法线波动 + 折射色 + 透明，覆盖河流区域
 export class Water {
@@ -42,6 +43,14 @@ export class Water {
       this.mesh.add(this.reflector);
     } catch (e) { console.warn('[Reflector] unavailable:', e.message); }
   }
+  dispose() {
+    if (this.reflector) {
+      const rt = this.reflector.getRenderTarget && this.reflector.getRenderTarget();
+      if (rt && typeof rt.dispose === 'function') rt.dispose();
+    }
+    deepDispose(this.mesh);
+  }
+
   update(dt, now) {
     this.mesh.material.uniforms.uTime.value = now;
     if (this._splashGeo) {

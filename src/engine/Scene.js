@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { deepDispose } from '../render/disposeUtils.js';
 
 // 黄昏氛围：fog 60-220 覆盖远山，太阳 fog:false，远山3层色阶向雾色靠拢
 export class Scene {
@@ -88,4 +89,5 @@ export class Scene {
 
   add(obj) { this.scene.add(obj); }
   remove(obj) { this.scene.remove(obj); }
+  dispose() { deepDispose(this.scene); }
 }
