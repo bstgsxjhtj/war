@@ -51,8 +51,6 @@ export const EV = {
   SETTINGS_DIFFICULTY: 'settings.difficulty',
   // 回合
   ROUND_RESTART: 'round.restart',
-  // 状态机
-  STATE_CHANGE: 'state.change',
   // 引擎
   ENGINE_ERROR: 'engine.error',
   // 小地图

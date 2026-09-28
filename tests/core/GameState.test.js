@@ -8,15 +8,12 @@ describe('GameState', () => {
     expect(gs.current).toBe(States.READY);
   });
 
-  it('合法迁移 READY->PLAYING 返回 true 并 emit', () => {
+  it('合法迁移 READY->PLAYING 返回 true', () => {
     const bus = new EventBus();
     const gs = new GameState(bus);
-    const events = [];
-    bus.on('state.change', (p) => events.push(p));
     const ok = gs.transit(States.PLAYING);
     expect(ok).toBe(true);
     expect(gs.current).toBe(States.PLAYING);
-    expect(events[0]).toEqual({ from: States.READY, to: States.PLAYING, payload: undefined });
   });
 
   it('非法迁移 PLAYING->READY 返回 false', () => {

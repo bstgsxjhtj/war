@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { TextureFactory } from '../render/TextureFactory.js';
 
 function hash(x, y) {
   const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;

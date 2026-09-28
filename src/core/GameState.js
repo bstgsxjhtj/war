@@ -1,5 +1,4 @@
 // 状态机：准备/进行中/暂停/回合结束/结束（支持多局制）
-import { EV } from './constants/events.js';
 
 export const States = {
   READY: 'ready',
@@ -37,14 +36,12 @@ export class GameState {
 
   canTransit(to) { return this._transitions.get(this._state)?.has(to) ?? false; }
 
-  transit(to, payload) {
+  transit(to) {
     if (!this.canTransit(to)) {
       console.warn(`[GameState] illegal ${this._state}->${to}`);
       return false;
     }
-    const from = this._state;
     this._state = to;
-    this.bus.emit(EV.STATE_CHANGE, { from, to, payload });
     return true;
   }
 }
