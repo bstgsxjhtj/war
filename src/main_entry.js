@@ -372,6 +372,7 @@ async function bootstrap() {
   let _bgmCombatSet = true;
   let _bgmLastIntensity = 0;
   let _bossBarShown = false;
+  let _bossPhaseShown = 0;
   let _execHintShown = false;
   let _wavePending = false;
   hud.setRound(0, 0, match.targetWins);
@@ -396,7 +397,7 @@ async function bootstrap() {
           if (match.roundEndTimer <= 0) match.startRound();
           return;
         }
-        if (state.current !== States.PLAYING) { env.update(dt, now); if (_bgmCombatSet) { audio.playSound('bgmStop'); audio.playSound('stinger', { stinger: player.alive ? 'victory' : 'defeat' }); _bgmCombatSet = false; } if (_bossBarShown) { hud.hideBoss(); _bossBarShown = false; } hud.setLowHP(false); if (tutorial) { tutorial.destroy(); tutorial = null; } return; }
+        if (state.current !== States.PLAYING) { env.update(dt, now); if (_bgmCombatSet) { audio.playSound('bgmStop'); audio.playSound('stinger', { stinger: player.alive ? 'victory' : 'defeat' }); _bgmCombatSet = false; } if (_bossBarShown) { hud.hideBoss(); _bossBarShown = false; _bossPhaseShown = 0; } hud.setLowHP(false); if (tutorial) { tutorial.destroy(); tutorial = null; } return; }
         if (upgradePicker.visible) { env.update(dt, now); return; }
 
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
@@ -411,9 +412,11 @@ async function bootstrap() {
         }
         if (_bgmTarget !== _bgmLastIntensity) { audio.playSound('bgmIntensity', { intensity: _bgmTarget }); _bgmLastIntensity = _bgmTarget; }
         if (_bossRef) {
-          if (!_bossBarShown) { hud.showBoss(_bossRef._name || 'Boss'); _bossBarShown = true; }
+          if (!_bossBarShown) { hud.showBoss(_bossRef._name || 'Boss'); _bossBarShown = true; _bossPhaseShown = 0; }
           hud.setBossHP(_bossRef.health.ratio);
-        } else if (_bossBarShown) { hud.hideBoss(); _bossBarShown = false; }
+          const _bp = _bossRef._phase || 1;
+          if (_bossPhaseShown !== _bp) { _bossPhaseShown = _bp; hud.setBossPhase(_bp, _bossRef._isMini); }
+        } else if (_bossBarShown) { hud.hideBoss(); _bossBarShown = false; _bossPhaseShown = 0; }
 
         const weatherFx = weather.getCombatEffects();
         player._weatherEffects = weatherFx;

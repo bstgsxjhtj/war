@@ -274,6 +274,51 @@ describe('HUD 处决横幅', () => {
   });
 });
 
+describe('HUD 精简与信息补全', () => {
+  it('已移除与 MiniMap 重叠的内置雷达', () => {
+    const hud = mkHud();
+    expect(hud.el.querySelector('#radar')).toBeNull();
+    expect(hud._radar).toBeUndefined();
+  });
+
+  it('updateBuffs 为限时 buff 绘制倒计时条', () => {
+    const hud = mkHud();
+    hud.updateBuffs({
+      _perfectBuff: 1.5, // /2s = 75%
+      _killstreak: 4,
+      _killstreakTimer: 2, // /5s = 40%
+      killstreakBuffs: () => ({ dmgMul: 1.25, cdMul: 1, lifesteal: 0 }),
+    });
+    const html = hud._buffbar.innerHTML;
+    expect(html).toContain('75%');
+    expect(html).toContain('40%');
+  });
+
+  it('updateBuffs 无常驻/限时 buff 时隐藏', () => {
+    const hud = mkHud();
+    hud.updateBuffs({ _perfectBuff: 0, _killstreak: 0, killstreakBuffs: () => ({ dmgMul: 1, cdMul: 1, lifesteal: 0 }) });
+    expect(hud._buffbar.style.display).toBe('none');
+  });
+
+  it('setBossPhase 渲染阶段指示点（普通 Boss 三阶段）', () => {
+    const hud = mkHud();
+    hud.setBossPhase(2);
+    expect(hud._bossPips.textContent).toBe('●●○');
+  });
+
+  it('setBossPhase 迷你 Boss 仅两阶段', () => {
+    const hud = mkHud();
+    hud.setBossPhase(1, true);
+    expect(hud._bossPips.textContent).toBe('●○');
+  });
+
+  it('setBossPhase 阶段数夹紧到范围', () => {
+    const hud = mkHud();
+    hud.setBossPhase(9);
+    expect(hud._bossPips.textContent).toBe('●●●');
+  });
+});
+
 describe('HUD 完美格挡闪屏', () => {
   it('flashParry 显示金色弹反横幅与全屏金闪并设衰减', () => {
     const hud = mkHud();

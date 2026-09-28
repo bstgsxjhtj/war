@@ -1,5 +1,10 @@
 ﻿import { EV } from '../core/constants/events.js';
-// HUD：雷达/血条/耐力/连击/锁定/据点/模式/击杀横幅
+
+// 限时 buff 时长上限（与 gameplay 侧初始值一致）
+const PERFECT_BUFF_DUR = 2;   // 完美闪避增益
+const KILLSTREAK_DUR = 5;     // 连杀增益
+
+// HUD：血条/耐力/连击/锁定/据点/模式/击杀横幅（地图信息统一由 MiniMap 承担）
 export class HUD {
   constructor(bus) {
     this.bus = bus;
@@ -7,7 +12,6 @@ export class HUD {
     const on = (ev, fn) => this._unsubs.push(bus.on(ev, fn));
     this._endLocked = false;
     this._killTimer = 0;
-    this._radarAcc = 0;
     this._hitVigTimer = 0;
     this._comboPulseTimer = 0;
     this._bossPhaseTimer = 0;
@@ -25,7 +29,6 @@ export class HUD {
       <div id="charge" style="position:absolute;top:56%;left:50%;transform:translateX(-50%);width:180px;height:8px;background:rgba(0,0,0,.5);border-radius:4px;overflow:hidden;display:none;border:1px solid #456;">
         <div id="chargeFill" style="width:0;height:100%;background:linear-gradient(90deg,#ffd070,#ff5533);"></div>
       </div>
-      <canvas id="radar" width="120" height="120" style="position:absolute;top:18px;left:18px;border:1px solid rgba(255,255,255,.3);border-radius:50%;background:rgba(0,0,0,.35);"></canvas>
       <div style="position:absolute;left:150px;bottom:24px;width:280px;">
         <div style="font-size:12px;color:#cfe;text-shadow:0 1px 2px #000;margin-bottom:4px;">生命</div>
         <div style="background:rgba(0,0,0,.5);border:1px solid #456;border-radius:6px;overflow:hidden;height:20px;box-shadow:inset 0 0 6px #000;">
@@ -50,7 +53,7 @@ export class HUD {
       <div id="hint" style="position:absolute;top:62%;left:50%;transform:translateX(-50%);color:#ffd;text-align:center;font-size:15px;text-shadow:0 1px 2px #000;max-width:80%;"></div>
       <div id="kill" style="position:absolute;top:30%;left:50%;transform:translateX(-50%);color:#ffd070;font-size:26px;font-weight:bold;text-shadow:0 2px 4px #000;opacity:0;transition:opacity .2s;"></div>
       <div id="buffbar" style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);display:flex;gap:8px;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
-      <div id="bossbar" style="position:absolute;top:40px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:4px;"><div id="bossName" style="color:#ff8080;font-size:16px;font-weight:bold;text-shadow:0 2px 4px #000;"></div><div style="width:300px;height:10px;background:rgba(0,0,0,0.5);border:1px solid #600;border-radius:5px;overflow:hidden;"><div id="bossFill" style="height:100%;width:100%;background:linear-gradient(90deg,#c33,#f66);transition:width .15s;"></div></div></div>
+      <div id="bossbar" style="position:absolute;top:40px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:4px;"><div id="bossName" style="color:#ff8080;font-size:16px;font-weight:bold;text-shadow:0 2px 4px #000;"></div><div style="position:relative;width:300px;height:10px;background:rgba(0,0,0,0.5);border:1px solid #600;border-radius:5px;overflow:hidden;"><div id="bossFill" style="height:100%;width:100%;background:linear-gradient(90deg,#c33,#f66);transition:width .15s;"></div><div style="position:absolute;top:0;bottom:0;left:60%;width:2px;background:rgba(255,255,255,.45);"></div><div style="position:absolute;top:0;bottom:0;left:30%;width:2px;background:rgba(255,255,255,.45);"></div></div><div id="bossPips" style="color:#ffb0b0;font-size:11px;letter-spacing:3px;text-shadow:0 1px 2px #000;"></div></div>
       <div id="lowhp" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(180,0,0,0.25) 100%);display:none;animation:lowhp-pulse 1.2s ease-in-out infinite;"></div>
       <div id="hitvignette" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(200,0,0,0.55) 100%);opacity:0;"></div>
       <div id="combopulse" style="position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,235,150,0.3) 0%,transparent 60%);opacity:0;"></div>
@@ -75,6 +78,7 @@ export class HUD {
     this._buffbar = this.el.querySelector('#buffbar');
     this._bossbar = this.el.querySelector('#bossbar');
     this._bossFill = this.el.querySelector('#bossFill');
+    this._bossPips = this.el.querySelector('#bossPips');
     this._lowhp = this.el.querySelector('#lowhp');
     this._hitvignette = this.el.querySelector('#hitvignette');
     this._combopulse = this.el.querySelector('#combopulse');
@@ -86,8 +90,6 @@ export class HUD {
     this._chargeFill = this.el.querySelector('#chargeFill');
     this._weapon = this.el.querySelector('#weapon');
     this._comboRing = this.el.querySelector('#comboRing');
-    this._radar = this.el.querySelector('#radar');
-    this._radarCtx = this._radar.getContext('2d');
 
     this._errEl = document.createElement('div');
     Object.assign(this._errEl.style, {
@@ -299,28 +301,37 @@ export class HUD {
     this._write(this._rage, 'boxShadow', c.rage >= 100 ? '0 0 8px #fa4' : 'none');
   }
   flashKillstreak(n) { const msg = n >= 3 ? `${n}连杀！` : '击杀！'; this._kill.textContent = msg; this._kill.style.opacity = '1'; this._killTimer = 1.4; }
+  // 单个 buff 标签：限时 buff 传 remain/max 时额外渲染倒计时条
+  _buffChip(label, color, remain, max) {
+    let bar = '';
+    if (remain !== undefined && max > 0) {
+      const p = Math.max(0, Math.min(1, remain / max)) * 100;
+      bar = `<div style="width:100%;height:3px;margin-top:2px;background:rgba(0,0,0,.55);border-radius:2px;overflow:hidden;min-width:56px;"><div style="width:${p}%;height:100%;background:${color};"></div></div>`;
+    }
+    return `<div style="display:flex;flex-direction:column;align-items:center;"><span style="color:${color};">${label}</span>${bar}</div>`;
+  }
   updateBuffs(player) {
     const parts = [];
-    if (player._perfectBuff > 0) parts.push('<span style="color:#7df;">完美闪避 ×1.5</span>');
+    if (player._perfectBuff > 0) parts.push(this._buffChip('完美闪避 ×1.5', '#7df', player._perfectBuff, PERFECT_BUFF_DUR));
     if (player._killstreak >= 3 && player.killstreakBuffs) {
       const ks = player.killstreakBuffs();
-      parts.push(`<span style="color:#ffd070;">连杀 ×${player._killstreak} (+${Math.round((ks.dmgMul - 1) * 100)}%)</span>`);
+      parts.push(this._buffChip(`连杀 ×${player._killstreak} (+${Math.round((ks.dmgMul - 1) * 100)}%)`, '#ffd070', player._killstreakTimer, KILLSTREAK_DUR));
     }
-    if (player._runDmgMul && player._runDmgMul > 1) parts.push(`<span style="color:#f88;">锋利 +${Math.round((player._runDmgMul - 1) * 100)}%</span>`);
-    if (player._runLifesteal && player._runLifesteal > 0) parts.push(`<span style="color:#f7a;">吸血 ${Math.round(player._runLifesteal * 100)}%</span>`);
+    if (player._runDmgMul && player._runDmgMul > 1) parts.push(this._buffChip(`锋利 +${Math.round((player._runDmgMul - 1) * 100)}%`, '#f88'));
+    if (player._runLifesteal && player._runLifesteal > 0) parts.push(this._buffChip(`吸血 ${Math.round(player._runLifesteal * 100)}%`, '#f7a'));
     if (player._skill && player._skill.branches) {
       const b = player._skill.branches;
-      if (b.berserk.level > 0) parts.push('<span style="color:#f55;">狂暴 +25%</span>');
-      if (b.guardian.level > 0) parts.push('<span style="color:#5af;">守护 -15%</span>');
-      if (b.regen.level > 0) parts.push('<span style="color:#5f5;">回复 +2/s</span>');
-      if (b.lifesteal.level > 0) parts.push('<span style="color:#f7a;">吸血 5%</span>');
-      if (b.swift.level > 0) parts.push('<span style="color:#7df;">疾风 +10%</span>');
-      if (b.evade.level > 0) parts.push('<span style="color:#a7f;">闪避 10%</span>');
-      if (b.frenzy.level > 0) parts.push('<span style="color:#fa8;">狂热 +15%</span>');
-      if (b.critical.level > 0) parts.push('<span style="color:#ffd;">暴击 15%</span>');
+      if (b.berserk.level > 0) parts.push(this._buffChip('狂暴 +25%', '#f55'));
+      if (b.guardian.level > 0) parts.push(this._buffChip('守护 -15%', '#5af'));
+      if (b.regen.level > 0) parts.push(this._buffChip('回复 +2/s', '#5f5'));
+      if (b.lifesteal.level > 0) parts.push(this._buffChip('吸血 5%', '#f7a'));
+      if (b.swift.level > 0) parts.push(this._buffChip('疾风 +10%', '#7df'));
+      if (b.evade.level > 0) parts.push(this._buffChip('闪避 10%', '#a7f'));
+      if (b.frenzy.level > 0) parts.push(this._buffChip('狂热 +15%', '#fa8'));
+      if (b.critical.level > 0) parts.push(this._buffChip('暴击 15%', '#ffd'));
     }
-    if (parts.length > 0) { this._buffbar.innerHTML = parts.join(''); this._buffbar.style.display = 'flex'; }
-    else { this._buffbar.style.display = 'none'; }
+    if (parts.length > 0) { this._write(this._buffbar, 'innerHTML', parts.join('')); this._write(this._buffbar, 'display', 'flex'); }
+    else this._write(this._buffbar, 'display', 'none');
   }
   showBoss(name) {
     this._bossbar.querySelector('#bossName').textContent = name;
@@ -328,6 +339,13 @@ export class HUD {
   }
   setBossHP(ratio) {
     this._bossFill.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
+  }
+  setBossPhase(phase = 1, isMini = false) {
+    const total = isMini ? 2 : 3;
+    const p = Math.max(1, Math.min(total, phase));
+    let s = '';
+    for (let i = 0; i < total; i++) s += i < p ? '●' : '○';
+    this._bossPips.textContent = s;
   }
   hideBoss() { this._bossbar.style.display = 'none'; }
   setLowHP(active) { this._lowhp.style.display = active ? 'block' : 'none'; }
@@ -456,30 +474,6 @@ export class HUD {
       this._comboTimer -= dt;
       if (this._comboTimer < 0.5) this._comboEl.style.opacity = (this._comboTimer / 0.5).toString();
       if (this._comboTimer <= 0) this._comboEl.style.display = 'none';
-    }
-    this._radarAcc += dt;
-    if (this._player && this._ais && this._radarAcc >= 0.033) {
-      this._radarAcc = 0;
-      this._drawRadar();
-    }
-  }
-  _drawRadar() {
-    const ctx = this._radarCtx;
-    const W = 120, R = 58, cx = 60, cy = 60, scale = 1.8;
-    ctx.clearRect(0, 0, W, W);
-    ctx.fillStyle = 'rgba(20,30,20,.5)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#5af'; ctx.beginPath(); ctx.moveTo(cx, cy - 5); ctx.lineTo(cx - 4, cy + 4); ctx.lineTo(cx + 4, cy + 4); ctx.closePath(); ctx.fill();
-    const yaw = this._camera.yaw;
-    for (const a of this._ais) {
-      if (!a.alive) continue;
-      const dx = a.position.x - this._player.position.x;
-      const dz = a.position.z - this._player.position.z;
-      const rx = dx * Math.cos(yaw) - dz * Math.sin(yaw);
-      const rz = dx * Math.sin(yaw) + dz * Math.cos(yaw);
-      let px = cx + rx * scale, py = cy - rz * scale;
-      const d = Math.hypot(px - cx, py - cy);
-      if (d > R - 4) { const k = (R - 4) / d; px = cx + (px - cx) * k; py = cy + (py - cy) * k; }
-      ctx.fillStyle = '#f55'; ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
     }
   }
 

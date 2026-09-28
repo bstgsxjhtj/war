@@ -55,6 +55,14 @@ export class MiniMap {
         ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(dx, dz, r + 2, 0, Math.PI * 2); ctx.stroke();
       }
+      // 濒死敌人：金色菱形标记提示可处决
+      if (ai.canBeExecuted) {
+        const s = r + 3;
+        ctx.strokeStyle = '#ffea00'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(dx, dz - s); ctx.lineTo(dx + s, dz); ctx.lineTo(dx, dz + s); ctx.lineTo(dx - s, dz);
+        ctx.closePath(); ctx.stroke();
+      }
     }
     ctx.restore();
     ctx.save();
