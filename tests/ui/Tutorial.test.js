@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Tutorial } from '../../src/ui/Tutorial.js';
 import { EV } from '../../src/core/constants/events.js';
 import { LS } from '../../src/core/constants/storage-keys.js';
+import { DEFAULT_BINDINGS } from '../../src/app/KeyBindings.js';
 
 function mkBus() {
   const handlers = {};
@@ -266,5 +267,91 @@ describe('Tutorial - destroy', () => {
     expect(t.el.parentNode).toBe(null);
     keydown('KeyW');
     expect(t.step).toBe(0);
+  });
+});
+
+describe('Tutorial - KeyBindings 接入 (P0-3)', () => {
+  function mkKb(overrides = {}) {
+    const bindings = { ...DEFAULT_BINDINGS, ...overrides };
+    return { get: (action) => bindings[action] };
+  }
+
+  it('闪避重绑到 KeyR：按 KeyR 推进，按 KeyQ 不再推进（防卡死）', () => {
+    const t = new Tutorial(mkBus(), mkKb({ dodge: 'KeyR' }));
+    t.step = 3; t.phase = 'hold'; t.phaseT = 6; t._render();
+    keydown('KeyQ');
+    expect(t.step).toBe(3);
+    keydown('KeyR');
+    expect(t.step).toBe(4);
+  });
+
+  it('闪避步文案显示当前键 R 而非 Q', () => {
+    const t = new Tutorial(mkBus(), mkKb({ dodge: 'KeyR' }));
+    t.step = 3; t._render();
+    expect(t.el.textContent).toContain('R 键');
+    expect(t.el.textContent).not.toContain('Q 键');
+  });
+
+  it('处决重绑到 KeyF：按 KeyF 推进', () => {
+    const t = new Tutorial(mkBus(), mkKb({ execute: 'KeyF' }));
+    t.step = 6; t.phase = 'hold'; t.phaseT = 6; t._render();
+    keydown('KeyE');
+    expect(t.step).toBe(6);
+    keydown('KeyF');
+    expect(t.step).toBe(7);
+  });
+
+  it('大招重绑到 KeyG：按 KeyG 推进', () => {
+    const t = new Tutorial(mkBus(), mkKb({ ultimate: 'KeyG' }));
+    t.step = 5; t.phase = 'hold'; t.phaseT = 6; t._render();
+    keydown('KeyT');
+    expect(t.step).toBe(5);
+    keydown('KeyG');
+    expect(t.step).toBe(6);
+  });
+
+  it('锁定重绑到 KeyL：按 KeyL 推进', () => {
+    const t = new Tutorial(mkBus(), mkKb({ lock: 'KeyL' }));
+    t.step = 8; t.phase = 'hold'; t.phaseT = 10; t._render();
+    keydown('Tab');
+    expect(t.step).toBe(8);
+    keydown('KeyL');
+    expect(t.step).toBe(9);
+  });
+
+  it('武器1 重绑到 Digit5：按 Digit5 推进', () => {
+    const t = new Tutorial(mkBus(), mkKb({ weapon1: 'Digit5' }));
+    t.step = 4; t.phase = 'hold'; t.phaseT = 6; t._render();
+    keydown('Digit1');
+    expect(t.step).toBe(4);
+    keydown('Digit5');
+    expect(t.step).toBe(5);
+  });
+
+  it('kb=null 时回退默认绑定（不卡死）', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 3; t.phase = 'hold'; t.phaseT = 6; t._render();
+    keydown('KeyQ');
+    expect(t.step).toBe(4);
+  });
+
+  it('keyLabel 转换：KeyR→R / Digit5→5 / ShiftLeft→Shift / Space→Space', () => {
+    const t = new Tutorial(mkBus());
+    expect(t.keyLabel('KeyR')).toBe('R');
+    expect(t.keyLabel('Digit5')).toBe('5');
+    expect(t.keyLabel('ShiftLeft')).toBe('Shift');
+    expect(t.keyLabel('Space')).toBe('Space');
+  });
+
+  it('移动步文案随重绑变化（forward=KeyP → 文案含 P）', () => {
+    const t = new Tutorial(mkBus(), mkKb({ forward: 'KeyP' }));
+    t._render();
+    expect(t.el.textContent).toContain('P');
+  });
+
+  it('默认绑定下移动步文案仍为 WASD', () => {
+    const t = new Tutorial(mkBus());
+    t._render();
+    expect(t.el.textContent).toContain('WASD');
   });
 });

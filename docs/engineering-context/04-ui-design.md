@@ -17,6 +17,7 @@
 
 已占用：Q F R M , K C D N I J V H Escape。
 面板开关键（I/J/V/H/K）由**面板组件在 document 自监听**，main_entry 不重复绑定。
+**新手引导（Tutorial）读 KeyBindings**（P0-3，2026-09-28）：步骤匹配与文案由 `kb.get(action)` 反查当前键码（dodge/ultimate/execute/lock/weapon1-4/移动），重绑后不再卡死；`kb=null` 回退 DEFAULT_BINDINGS。K/I 尚未纳入可重绑动作（P2-2）。
 
 ## 3. UI 约定
 

@@ -411,7 +411,7 @@ async function bootstrap() {
   hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式');
   setTimeout(() => hud.clearHint(), 5000);
   let tutorial = null;
-  try { if (!localStorage.getItem(LS.TUTORIAL_DONE)) tutorial = new Tutorial(bus); } catch (e) {}
+  try { if (!localStorage.getItem(LS.TUTORIAL_DONE)) tutorial = new Tutorial(bus, keyBindings); } catch (e) {}
 
   const _trajOrigin = new THREE.Vector3();
   const _trajOffset = new THREE.Vector3(0, 1.5, 0);
