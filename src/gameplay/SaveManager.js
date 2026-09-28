@@ -3,6 +3,28 @@ import { LS } from '../core/constants/storage-keys.js';
 
 const LEGACY_GAME_KEYS = [LS.OLD_CAMPAIGN_CLEARED, LS.OLD_PROGRESSION, LS.OLD_SKILLTREE, LS.OLD_ACHIEVEMENTS, LS.OLD_AFFIXES, LS.OLD_DAILY, LS.OLD_SKINS];
 
+export const CURRENT_VERSION = 2;
+
+const MIGRATIONS = {
+  1: (data) => ({
+    ...data,
+    version: 2,
+    campaignCleared: data.campaignCleared ?? (data.campaignCompleted ? 10 : 0)
+  })
+};
+
+export function migrate(data) {
+  if (!data || typeof data !== 'object') return null;
+  let result = { ...data };
+  let v = result.version || 0;
+  while (v < CURRENT_VERSION && MIGRATIONS[v]) {
+    result = MIGRATIONS[v](result);
+    v = result.version;
+  }
+  result.version = CURRENT_VERSION;
+  return result;
+}
+
 export class SaveManager {
   constructor() {
     this._key = LS.SAVEGAME;
@@ -11,11 +33,12 @@ export class SaveManager {
 
   serialize(capture = {}) {
     return {
-      version: 1,
+      version: CURRENT_VERSION,
       savedAt: Date.now(),
       mode: capture.mode ?? null,
       stage: capture.stage ?? 0,
       campaignCompleted: !!capture.campaignCompleted,
+      campaignCleared: capture.campaignCleared ?? (capture.campaignCompleted ? 10 : 0),
       progressionFull: capture.progressionFull ?? null,
       score: capture.score ?? 0,
       kills: capture.kills ?? 0,
@@ -41,12 +64,14 @@ export class SaveManager {
 
   reset() {
     try { localStorage.removeItem(this._key); } catch (e) { /* ignore */ }
+    try { localStorage.removeItem(LS.SAVEGAME_BACKUP); } catch (e) { /* ignore */ }
     this._data = null;
   }
 
   _defaults() {
     return {
-      version: 1, savedAt: null, mode: null, stage: 0, campaignCompleted: false,
+      version: CURRENT_VERSION, savedAt: null, mode: null, stage: 0,
+      campaignCompleted: false, campaignCleared: 0,
       progressionFull: null, score: 0, kills: 0, bestGrade: null,
       skillTree: null, affixSlots: {}, affixInventory: [], skillPoints: 0,
       achievements: {}, daily: null, skins: null, playTime: 0
@@ -57,20 +82,41 @@ export class SaveManager {
     try {
       const raw = localStorage.getItem(this._key);
       if (raw) {
-        const d = JSON.parse(raw);
-        if (d && typeof d === 'object') {
-          if (d.version === 1) {
-            const merged = { ...this._defaults(), ...d, version: 1 };
-            this._mergeOldKeys(merged);
-            return merged;
+        try {
+          const d = JSON.parse(raw);
+          if (d && typeof d === 'object') {
+            const migrated = migrate(d);
+            if (migrated) {
+              const merged = { ...this._defaults(), ...migrated };
+              this._mergeOldKeys(merged);
+              return merged;
+            }
           }
-          const merged = { ...this._defaults(), ...d, version: 1 };
-          this._mergeOldKeys(merged);
-          return merged;
+          return this._migrateOld();
+        } catch (parseErr) {
+          return this._recoverFromBackup();
         }
       }
       return this._migrateOld();
     } catch (e) { return null; }
+  }
+
+  _recoverFromBackup() {
+    try {
+      const backupRaw = localStorage.getItem(LS.SAVEGAME_BACKUP);
+      if (backupRaw) {
+        const d = JSON.parse(backupRaw);
+        if (d && typeof d === 'object') {
+          const migrated = migrate(d);
+          if (migrated) {
+            const merged = { ...this._defaults(), ...migrated };
+            try { localStorage.setItem(this._key, JSON.stringify(merged)); } catch (e) { /* ignore */ }
+            return merged;
+          }
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return null;
   }
 
   // 旧键一次性迁移：campaign_cleared/progression_v1/skilltree_v1/achievements/affixes/daily_challenge/weapon_skins → savegame_v1
@@ -79,7 +125,7 @@ export class SaveManager {
     let any = false;
     try {
       const cleared = JSON.parse(localStorage.getItem(LS.OLD_CAMPAIGN_CLEARED) || '0');
-      if (Number.isFinite(cleared) && cleared > 0) { out.stage = Math.min(cleared, 9); out.campaignCompleted = cleared >= 10; any = true; }
+      if (Number.isFinite(cleared) && cleared > 0) { out.stage = Math.min(cleared, 9); out.campaignCompleted = cleared >= 10; out.campaignCleared = cleared; any = true; }
     } catch (e) { /* ignore */ }
     try {
       const p = JSON.parse(localStorage.getItem(LS.OLD_PROGRESSION));
@@ -139,6 +185,12 @@ export class SaveManager {
   }
 
   _persist() {
+    try {
+      const prev = localStorage.getItem(this._key);
+      if (prev) {
+        try { JSON.parse(prev); localStorage.setItem(LS.SAVEGAME_BACKUP, prev); } catch (e) { /* skip invalid prev */ }
+      }
+    } catch (e) { /* ignore */ }
     try { localStorage.setItem(this._key, JSON.stringify(this._data)); } catch (e) { /* ignore */ }
   }
 }

@@ -1,6 +1,7 @@
 // localStorage 键常量：登记表见 docs/engineering-context/05-conventions.md §2
 export const LS = {
   SAVEGAME: 'savegame_v1',
+  SAVEGAME_BACKUP: 'savegame_v1_bak',
   // 旧键（仅 SaveManager 启动迁移时读取后删除）
   OLD_CAMPAIGN_CLEARED: 'campaign_cleared',
   OLD_PROGRESSION: 'progression_v1',
