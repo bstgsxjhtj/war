@@ -57,6 +57,13 @@ describe('SettingsMenu', () => {
     expect(saved.sensitivity).toBe(1.5);
   });
 
+  it('重置教程按钮清除 tutorial_done 并提示', () => {
+    localStorage.setItem('tutorial_done', '1');
+    menu.el.querySelector('#set-reset-tut').click();
+    expect(localStorage.getItem('tutorial_done')).toBeNull();
+    expect(bus.emit).toHaveBeenCalledWith('hud.flash', expect.anything());
+  });
+
   it('_load 启动加载 settings（quality/difficulty/sensitivity），音量从 audio 读取', () => {
     localStorage.setItem('settings', JSON.stringify({ quality: 'mid', sensitivity: 1.5, difficulty: 'hard' }));
     document.body.innerHTML = '';

@@ -31,6 +31,7 @@ export class SettingsMenu {
         <div style="margin-bottom:8px;"><div style="font-size:13px;margin-bottom:4px;">BGM <span id="set-bgm-v">50%</span></div><input id="set-bgm" type="range" min="0" max="100" value="50" style="width:100%;"></div>
         <div style="margin-bottom:12px;"><div style="font-size:13px;margin-bottom:4px;">环境 <span id="set-env-v">40%</span></div><input id="set-env" type="range" min="0" max="100" value="40" style="width:100%;"></div>
         <div style="margin-bottom:14px;"><div style="font-size:13px;margin-bottom:6px;">鼠标灵敏度 <span id="set-sens-v">1.0</span></div><input id="set-sens" type="range" min="30" max="300" value="100" style="width:100%;"></div>
+        <button id="set-reset-tut" style="width:100%;padding:6px;background:#3a3a4a;font-family:inherit;border:1px solid #567;border-radius:6px;color:#cdd;font-size:13px;cursor:pointer;margin-bottom:8px;">重置新手引导（下次进入生效）</button>
         <button id="set-close" style="width:100%;padding:8px;background:#6b5;font-family:inherit;border:none;border-radius:6px;color:#fff;font-size:14px;cursor:pointer;margin-top:8px;">关闭</button>
       </div>`;
     document.body.appendChild(this.el);
@@ -49,6 +50,10 @@ export class SettingsMenu {
     this._bgmEl.addEventListener('input', () => { const v = this._bgmEl.value/100; this._vol.bgm = v; this._bgmV.textContent = this._bgmEl.value+'%'; if(this.audio) this.audio.setVolume('bgm', v); this._save(); });
     this._envEl.addEventListener('input', () => { const v = this._envEl.value/100; this._vol.env = v; this._envV.textContent = this._envEl.value+'%'; if(this.audio) this.audio.setVolume('env', v); this._save(); });
     this._sens.addEventListener('input', () => { this.sensitivity = this._sens.value/100; this._sensV.textContent = this.sensitivity.toFixed(1); this.bus.emit(EV.SETTINGS_SENSITIVITY, { sensitivity: this.sensitivity }); this._save(); });
+    this.el.querySelector('#set-reset-tut').addEventListener('click', () => {
+      try { localStorage.removeItem(LS.TUTORIAL_DONE); } catch (e) {}
+      this.bus.emit(EV.HUD_FLASH, { text: '新手引导已重置，下次进入游戏生效' });
+    });
     this.el.querySelector('#set-close').addEventListener('click', () => this.hide());
     this.el.addEventListener('click', (e) => { if (e.target === this.el) this.hide(); });
     this._load();

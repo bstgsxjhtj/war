@@ -1,9 +1,9 @@
-// 新手引导：5 步 toast 教程，动作/事件推进，仅首局出现
+// 新手引导：12 步 toast 教程（基础 8 步 + 进阶 4 步），动作/事件推进，仅首局出现
 import { EV } from '../core/constants/events.js';
 import { LS } from '../core/constants/storage-keys.js';
 
 const FADE = 0.3;
-const STEP_TIMEOUT = 6;
+const STEP_TIMEOUT = 10;
 const FINAL_HOLD = 2;
 
 export class Tutorial {
@@ -18,6 +18,10 @@ export class Tutorial {
       { msg: '⑥ 大招：T 键（怒气满时释放，武器专属）', keys: ['KeyT'], event: EV.COMBAT_ULTIMATE },
       { msg: '⑦ 处决：E 键（敌人残血时按 E 处决）', keys: ['KeyE'] },
       { msg: '⑧ 克制：青色伤害数字 = 你克制敌人', event: EV.COMBAT_COUNTER },
+      { msg: '⑨ 锁定：Tab 键锁定敌人（镜头跟随，专注单挑）', keys: ['Tab'] },
+      { msg: '⑩ 连击终结：三段连击第三击触发终结技（大范围伤害）', event: EV.COMBO_FINISHER },
+      { msg: '⑪ 技能树：K 键加点升级（8 分支 build）', keys: ['KeyK'] },
+      { msg: '⑫ 词条：I 键管理装备词条（Boss 掉落）', keys: ['KeyI'] },
     ];
     this.step = 0;
     this.active = true;
@@ -45,6 +49,7 @@ export class Tutorial {
     if (this.bus) {
       this._offUlt = this.bus.on(EV.COMBAT_ULTIMATE, () => this._match({ k: 'event', name: EV.COMBAT_ULTIMATE }));
       this._offCnt = this.bus.on(EV.COMBAT_COUNTER, () => this._match({ k: 'event', name: EV.COMBAT_COUNTER }));
+      this._offFin = this.bus.on(EV.COMBO_FINISHER, () => this._match({ k: 'event', name: EV.COMBO_FINISHER }));
     }
   }
 
@@ -107,6 +112,7 @@ export class Tutorial {
     window.removeEventListener('mousedown', this._onMouse);
     if (this._offUlt) this._offUlt();
     if (this._offCnt) this._offCnt();
+    if (this._offFin) this._offFin();
     if (this.el.parentNode) this.el.parentNode.removeChild(this.el);
   }
 }

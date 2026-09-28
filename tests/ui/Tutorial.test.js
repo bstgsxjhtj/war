@@ -26,10 +26,10 @@ function mousedown(button) {
 }
 
 describe('Tutorial - 构造与初始状态', () => {
-  it('8 步 toast，初始 step=0 active=true，渲染第一步', () => {
+  it('12 步 toast，初始 step=0 active=true，渲染第一步', () => {
     const bus = mkBus();
     const t = new Tutorial(bus);
-    expect(t.steps.length).toBe(8);
+    expect(t.steps.length).toBe(12);
     expect(t.step).toBe(0);
     expect(t.active).toBe(true);
     expect(t.el.parentNode).toBe(document.body);
@@ -37,11 +37,12 @@ describe('Tutorial - 构造与初始状态', () => {
     expect(t.el.textContent).toContain('WASD');
   });
 
-  it('订阅 COMBAT_COUNTER 与 COMBAT_ULTIMATE 事件', () => {
+  it('订阅 COMBAT_COUNTER / COMBAT_ULTIMATE / COMBO_FINISHER 事件', () => {
     const bus = mkBus();
     const t = new Tutorial(bus);
     expect(bus.on).toHaveBeenCalledWith(EV.COMBAT_COUNTER, expect.any(Function));
     expect(bus.on).toHaveBeenCalledWith(EV.COMBAT_ULTIMATE, expect.any(Function));
+    expect(bus.on).toHaveBeenCalledWith(EV.COMBO_FINISHER, expect.any(Function));
   });
 
   it('bus 可选：不传时不抛错', () => {
@@ -60,11 +61,13 @@ describe('Tutorial - update 透明度与超时推进', () => {
     expect(t.phase).toBe('hold');
   });
 
-  it('hold 超时后自动推进到下一步', () => {
+  it('hold 超时后自动推进到下一步（STEP_TIMEOUT 10s）', () => {
     const t = new Tutorial(mkBus());
     t.update(0.3);
     expect(t.step).toBe(0);
-    t.update(6);
+    t.update(9.9);
+    expect(t.step).toBe(0);
+    t.update(0.2);
     expect(t.step).toBe(1);
     expect(t.el.textContent).toContain('攻击');
   });
@@ -149,15 +152,14 @@ describe('Tutorial - 动作匹配推进', () => {
     expect(t.el.textContent).toContain('克制');
   });
 
-  it('⑧ 克制：COMBAT_COUNTER 事件推进到完成', () => {
+  it('⑧ 克制：COMBAT_COUNTER 事件推进到锁定步', () => {
     const bus = mkBus();
     const t = new Tutorial(bus);
     t.step = 7; t.phase = 'hold'; t.phaseT = 6;
     t._render();
     bus.emit(EV.COMBAT_COUNTER);
-    expect(t.active).toBe(false);
-    expect(t.el.textContent).toContain('引导完成');
-    expect(localStorage.getItem(LS.TUTORIAL_DONE)).toBe('1');
+    expect(t.step).toBe(8);
+    expect(t.el.textContent).toContain('锁定');
   });
 
   it('非当前步对应的动作不推进', () => {
@@ -179,6 +181,41 @@ describe('Tutorial - 动作匹配推进', () => {
   });
 });
 
+describe('Tutorial - 进阶步骤（可选引导）', () => {
+  it('⑨ 锁定：Tab 推进到连击终结步', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 8; t.phase = 'hold'; t.phaseT = 10; t._render();
+    keydown('Tab');
+    expect(t.step).toBe(9);
+    expect(t.el.textContent).toContain('连击');
+  });
+
+  it('⑩ 连击终结：COMBO_FINISHER 事件推进到技能树步', () => {
+    const bus = mkBus();
+    const t = new Tutorial(bus);
+    t.step = 9; t.phase = 'hold'; t.phaseT = 10; t._render();
+    bus.emit(EV.COMBO_FINISHER);
+    expect(t.step).toBe(10);
+    expect(t.el.textContent).toContain('技能树');
+  });
+
+  it('⑪ 技能树：KeyK 推进到词条步', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 10; t.phase = 'hold'; t.phaseT = 10; t._render();
+    keydown('KeyK');
+    expect(t.step).toBe(11);
+    expect(t.el.textContent).toContain('词条');
+  });
+
+  it('⑫ 词条：KeyI 推进到完成', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 11; t.phase = 'hold'; t.phaseT = 10; t._render();
+    keydown('KeyI');
+    expect(t.active).toBe(false);
+    expect(localStorage.getItem(LS.TUTORIAL_DONE)).toBe('1');
+  });
+});
+
 describe('Tutorial - 完成与收尾', () => {
   it('全部步进后写 tutorial_done 并显示完成语', () => {
     const bus = mkBus();
@@ -191,6 +228,10 @@ describe('Tutorial - 完成与收尾', () => {
     keydown('KeyT');    // ⑥ 大招
     keydown('KeyE');    // ⑦ 处决
     bus.emit(EV.COMBAT_COUNTER); // ⑧ 克制
+    keydown('Tab');     // ⑨ 锁定
+    bus.emit(EV.COMBO_FINISHER); // ⑩ 连击终结
+    keydown('KeyK');    // ⑪ 技能树
+    keydown('KeyI');    // ⑫ 词条
     expect(t.active).toBe(false);
     expect(localStorage.getItem(LS.TUTORIAL_DONE)).toBe('1');
     expect(t.el.textContent).toContain('引导完成');
@@ -202,6 +243,7 @@ describe('Tutorial - 完成与收尾', () => {
     keydown('KeyW'); mousedown(0); mousedown(2);
     keydown('KeyQ'); keydown('Digit1'); keydown('KeyT'); keydown('KeyE');
     bus.emit(EV.COMBAT_COUNTER);
+    keydown('Tab'); bus.emit(EV.COMBO_FINISHER); keydown('KeyK'); keydown('KeyI');
     expect(t.el.style.display).not.toBe('none');
     t.update(2);
     expect(t.el.style.display).toBe('none');
