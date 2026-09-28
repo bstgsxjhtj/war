@@ -285,6 +285,8 @@ async function bootstrap() {
   });
   const match = new MatchController({
     bus, state, hud, resultScreen, camera, progression, progressUI, daily, skills, campaign, siege, weather, affixes, assist,
+    get runBuffs() { return runBuffs; },
+    get upgradePicker() { return upgradePicker; },
     spawnAll: () => spawnAll(),
     saveNow: () => saveOrch.saveNow(),
     loadMap: (k) => loadMap(k),

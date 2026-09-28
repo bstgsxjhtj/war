@@ -154,12 +154,16 @@ export class MatchController {
           state.transit(States.ENDED);
           resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: 0, win: true, deathCause: this.playerDeathCause, deathStats, stats: this._stats() });
         } else {
-          const layout = campaign.spawnLayout();
-          this.deps.loadMap(layout.mapKey);
-          if (layout.weather) this.deps.weather.setMode(layout.weather);
-          hud.flash('关卡通过！按 R 进入下一关');
-          state.transit(States.ROUND_END);
-          this.roundEndTimer = 3;
+          // P3-3 战役过关 3 选 1 升级（提前到下一关 spawnAll 前）
+          this.deps.runBuffs.resetRerolls();
+          this.deps.upgradePicker.show(() => {
+            const layout = campaign.spawnLayout();
+            this.deps.loadMap(layout.mapKey);
+            if (layout.weather) this.deps.weather.setMode(layout.weather);
+            hud.flash('关卡通过！按 R 进入下一关');
+            state.transit(States.ROUND_END);
+            this.roundEndTimer = 3;
+          });
         }
         return;
       } else if (winner === 'red') {

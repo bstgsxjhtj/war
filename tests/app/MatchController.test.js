@@ -21,6 +21,8 @@ function makeDeps(overrides = {}) {
     campaign: { stage: 0, cleared: 0, maxStages: 10, currentStage: {} },
     siege: { gate: { broken: false } },
     weather: { setMode: vi.fn() },
+    runBuffs: { resetRerolls: vi.fn() },
+    upgradePicker: { show: vi.fn((cb) => cb && cb()) },
     audio: { playSound: vi.fn() },
     saveManager: { save: vi.fn() },
     spawnAll: vi.fn(),
