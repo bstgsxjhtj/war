@@ -14,6 +14,7 @@ export class WeatherSystem {
     this._snow = null;
     this._lightning = null;
     this._lightningTimer = 0;
+    this._quality = 'high';
     this._forecast = null;
     this._autoSchedule = false;
     this._onLightning = null;
@@ -32,6 +33,7 @@ export class WeatherSystem {
       pos[i * 3 + 2] = (Math.random() - 0.5) * 120;
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setDrawRange(0, N);
     this._rainGeo = geo;
     this._rain = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xaaccee, size: 0.12, transparent: true, opacity: 0.6 }));
     this._rain.visible = false;
@@ -48,6 +50,7 @@ export class WeatherSystem {
       pos[i * 3 + 2] = (Math.random() - 0.5) * 120;
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setDrawRange(0, N);
     this._snowGeo = geo;
     this._snow = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.8 }));
     this._snow.visible = false;
@@ -61,6 +64,14 @@ export class WeatherSystem {
   }
 
   setAudio(a) { this._audio = a; }
+
+  // 画质降级：按比例缩减雨/雪粒子的绘制数量（不重建几何体）
+  setQuality(q) {
+    this._quality = q;
+    const f = q === 'low' ? 0.3 : q === 'mid' ? 0.65 : 1;
+    if (this._rainGeo) this._rainGeo.setDrawRange(0, Math.max(1, Math.floor(2000 * f)));
+    if (this._snowGeo) this._snowGeo.setDrawRange(0, Math.max(1, Math.floor(1500 * f)));
+  }
 
   dispose() {
     for (const o of [this._rain, this._snow, this._lightning]) {

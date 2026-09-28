@@ -64,6 +64,7 @@ import { SaveManager } from './gameplay/SaveManager.js';
 import { SaveUI } from './ui/SaveUI.js';
 import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
+import { QualityGovernor } from './app/QualityGovernor.js';
 import { Spawner } from './gameplay/Spawner.js';
 import { wireAchievements } from './app/AchievementWiring.js';
 import { InputRouter } from './app/InputRouter.js';
@@ -88,6 +89,7 @@ async function bootstrap() {
   let currentMapKey = MapGenerator.recommendMap('死斗');
   let currentMapName = MapGenerator.MAPS[currentMapKey].name;
   let _lastMiniMapKey = null;
+  let _quality = 'high';
   let terrain, env;
   let envHazards;
   let currentHazards;
@@ -103,6 +105,7 @@ async function bootstrap() {
     currentHazards = r.hazards;
     if (envHazards) { envHazards.setTerrain(terrain); envHazards.setHazardZones(currentHazards); }
     env = new Environment(terrain, r.layout);
+    if (env.setQuality) env.setQuality(_quality);
     scene.add(terrain.mesh);
     scene.add(env.group);
     currentMapKey = mapKey;
@@ -209,7 +212,18 @@ async function bootstrap() {
   weather.onLightning((pos) => envHazards.onLightningStrike(pos));
   for (const box of siege.collisionBoxes) envHazards.addWallBox(box);
   const settings = new SettingsMenu(bus, audio);
-  bus.on(EV.SETTINGS_QUALITY, ({ quality }) => { if (renderer) renderer.setQuality(quality); });
+  // P2-5 画质档位：统一应用到渲染器/环境粒子/天气粒子；低端机自适应降帧
+  const qualityGovernor = new QualityGovernor({ quality: 'high' });
+  function applyQuality(q) {
+    if (!q) return;
+    _quality = q;
+    renderer.setQuality(q);
+    if (env && env.setQuality) env.setQuality(q);
+    if (weather && weather.setQuality) weather.setQuality(q);
+  }
+  bus.on(EV.SETTINGS_QUALITY, ({ quality }) => { qualityGovernor.setQuality(quality); applyQuality(quality); });
+  applyQuality(settings.quality || 'high');
+  qualityGovernor.setQuality(_quality);
   bus.on(EV.SETTINGS_SENSITIVITY, ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
   bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
   // 无障碍：色弱形状区分 / 减少动效（关脉冲+震动+顿帧）/ 屏幕震动强度
@@ -397,6 +411,9 @@ async function bootstrap() {
     time.tick(
       (dt) => {
         const now = time.now * 0.001;
+        // P2-5 自适应降帧：持续低帧率时自动下调画质
+        const _qs = qualityGovernor.tick(dt);
+        if (_qs) { applyQuality(_qs); hud.flash('性能优化：画质自动降至' + (_qs === 'low' ? '低' : '中')); setTimeout(() => hud.clearHint(), 2000); }
         if (state.current === States.ROUND_END) {
           match.roundEndTimer -= dt;
           env.update(dt, now);

@@ -38,6 +38,7 @@ export class Renderer {
     this.webgl.shadowMap.type = THREE.PCFSoftShadowMap;
     this.webgl.toneMapping = THREE.ACESFilmicToneMapping;
     this.webgl.toneMappingExposure = 1.05;
+    this._quality = 'high';
 
     this.composer = new EffectComposer(this.webgl);
     this._bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.32, 0.3, 1.05);
@@ -67,7 +68,12 @@ export class Renderer {
 
   setQuality(q) {
     if (!this.webgl) return;
-    if (q === 'low') { this.webgl.shadowMap.enabled = false; this.webgl.setPixelRatio(0.7); }
+    this._quality = q;
+    const low = q === 'low';
+    // 低画质关闭后处理开销大户：SSAO + Bloom
+    if (this._ssao) this._ssao.enabled = !low;
+    if (this._bloom) this._bloom.enabled = !low;
+    if (low) { this.webgl.shadowMap.enabled = false; this.webgl.setPixelRatio(0.7); }
     else if (q === 'mid') { this.webgl.shadowMap.enabled = true; this.webgl.setPixelRatio(1); }
     else { this.webgl.shadowMap.enabled = true; this.webgl.setPixelRatio(Math.min(window.devicePixelRatio, 2)); }
   }

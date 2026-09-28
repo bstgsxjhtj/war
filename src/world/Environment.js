@@ -17,6 +17,14 @@ export class Environment {
 
   dispose() { deepDispose(this.group); }
 
+  // 画质降级：缩减草实例与尘埃/落叶粒子绘制数量（不重建资源）
+  setQuality(q) {
+    const f = q === 'low' ? 0.35 : q === 'mid' ? 0.7 : 1;
+    if (this._grassMeshes) for (const m of this._grassMeshes) m.count = Math.max(1, Math.floor((m.userData.baseCount || m.count) * f));
+    if (this._dustPts) this._dustPts.geometry.setDrawRange(0, Math.max(1, Math.floor((this._dustPts.userData.baseCount || 600) * f)));
+    if (this._leavesPts) this._leavesPts.geometry.setDrawRange(0, Math.max(1, Math.floor((this._leavesPts.userData.baseCount || 60) * f)));
+  }
+
   _build() {
     if (this._layout) {
       this._buildFromLayout(this._layout);
@@ -102,6 +110,8 @@ export class Environment {
           mesh.setMatrixAt(i, mtx);
         }
         mesh.castShadow = false; mesh.receiveShadow = true;
+        mesh.userData.baseCount = cnt;
+        this._grassMeshes = this._grassMeshes || []; this._grassMeshes.push(mesh);
         this.group.add(mesh);
       }
     }
@@ -287,6 +297,7 @@ export class Environment {
       fragmentShader: `varying float vY; void main(){ float a=0.5*(1.0-vY/16.0)+0.2; gl_FragColor=vec4(1.0,0.88,0.7,a);} `
     });
     this._dustPts = new THREE.Points(geo, mat);
+    this._dustPts.userData.baseCount = N;
     this.group.add(this._dustPts);
   }
 
@@ -313,6 +324,7 @@ export class Environment {
       fragmentShader: `void main(){ gl_FragColor=vec4(0.55,0.35,0.16,0.9);} `
     });
     this._leavesPts = new THREE.Points(geo, mat);
+    this._leavesPts.userData.baseCount = N;
     this.group.add(this._leavesPts);
   }
 
