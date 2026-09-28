@@ -151,3 +151,48 @@ describe('BossEnemy 位移技能写入 this.position (P1-1)', () => {
     expect(b.position.x).toBeCloseTo(5, 1);
   });
 });
+
+describe('BossEnemy 阶段技能门槛 (P1-7)', () => {
+  it('slam/dodge 在阶段 1 即可用，其余技能默认阶段 2', () => {
+    const b = new BossEnemy({ type: 'behemoth' });
+    expect(b._phaseGate('slam')).toBe(1);
+    expect(b._phaseGate('dodge')).toBe(1);
+    expect(b._phaseGate('charge')).toBe(2);
+    expect(b._phaseGate('roar')).toBe(2);
+    expect(b._phaseGate('summon')).toBe(3);
+  });
+
+  it('阶段 1 巨兽可释放 slam（旧逻辑需阶段 2）', () => {
+    const b = new BossEnemy({ type: 'behemoth' });
+    const spawnAoE = vi.fn();
+    const combat = { spawnAoE, characters: [] };
+    const tgt = { alive: true, team: 0, position: new THREE.Vector3(3, 0, 0), health: { alive: true }, takeDamage: vi.fn(), _curVel: { addScaledVector() {} }, vy: 0, forward: { x: 0, z: 1 } };
+    b.update(0.1, { heightAt: () => 0 }, combat, [tgt], 0);
+    expect(spawnAoE).toHaveBeenCalled();
+    expect(b._slamCd).toBeGreaterThan(0);
+  });
+
+  it('阶段 1 战将 charge 仍锁定', () => {
+    const b = new BossEnemy({ type: 'warlord' });
+    const combat = { spawnAoE: vi.fn(), characters: [] };
+    const tgt = { alive: true, team: 0, position: new THREE.Vector3(3, 0, 0), health: { alive: true }, takeDamage: vi.fn(), _curVel: { addScaledVector() {} }, vy: 0, forward: { x: 0, z: 1 } };
+    b.update(0.1, { heightAt: () => 0 }, combat, [tgt], 0);
+    expect(b._chargeCd).toBeLessThanOrEqual(0);
+  });
+
+  it('阶段 3 冷却恢复加速 40%', () => {
+    const b = new BossEnemy({ type: 'warlord' });
+    b._phase = 3;
+    b._chargeCd = 2;
+    b.update(1, { heightAt: () => 0 }, { spawnAoE: vi.fn(), characters: [] }, [], 0);
+    expect(b._chargeCd).toBeCloseTo(2 - 1.4, 5);
+  });
+
+  it('阶段 2 冷却常速', () => {
+    const b = new BossEnemy({ type: 'warlord' });
+    b._phase = 2;
+    b._chargeCd = 2;
+    b.update(1, { heightAt: () => 0 }, { spawnAoE: vi.fn(), characters: [] }, [], 0);
+    expect(b._chargeCd).toBeCloseTo(1, 5);
+  });
+});

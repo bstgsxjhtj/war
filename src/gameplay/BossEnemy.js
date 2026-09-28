@@ -8,6 +8,9 @@ const BOSS_TYPES = {
   mage:    { hp: 180, speed: 5.0, name: '法师', skills: ['fireball', 'teleport', 'aoe'] },
   behemoth:{ hp: 400, speed: 4.5, name: '巨兽', skills: ['slam', 'charge', 'regenerate'] },
 };
+// 技能阶段门槛：基础技阶段 1 开放，未列出的默认阶段 2，summon 阶段 3
+const PHASE_GATE = { slam: 1, dodge: 1, summon: 3 };
+const PHASE3_CD_RATE = 1.4;
 
 export class BossEnemy extends AIController {
   constructor({ team = 1, type = 'warlord', mini = false } = {}) {
@@ -50,6 +53,8 @@ export class BossEnemy extends AIController {
   }
 
   get displayName() { return '【Boss】' + this._name; }
+
+  _phaseGate(skill) { return PHASE_GATE[skill] ?? 2; }
 
   enterPhase(p) {
     if (this._isMini) p = Math.min(p, 2);
@@ -168,15 +173,16 @@ export class BossEnemy extends AIController {
       this._enrageTimer -= dt;
       this.damageReduction = 0.4;
     } else this.damageReduction = 0;
-    this._chargeCd -= dt;
-    this._roarCd -= dt;
-    this._rapidCd -= dt;
-    this._dodgeCd -= dt;
-    this._trapCd -= dt;
-    this._fireballCd -= dt;
-    this._teleportCd -= dt;
-    this._aoeSkillCd -= dt;
-    this._slamCd -= dt;
+    const cdRate = this._phase >= 3 ? PHASE3_CD_RATE : 1;
+    this._chargeCd -= dt * cdRate;
+    this._roarCd -= dt * cdRate;
+    this._rapidCd -= dt * cdRate;
+    this._dodgeCd -= dt * cdRate;
+    this._trapCd -= dt * cdRate;
+    this._fireballCd -= dt * cdRate;
+    this._teleportCd -= dt * cdRate;
+    this._aoeSkillCd -= dt * cdRate;
+    this._slamCd -= dt * cdRate;
     if (this._trapTimer > 0) {
       this._trapTimer -= dt;
       if (this._trapTimer <= 0 && this._trapPos) {
@@ -185,22 +191,22 @@ export class BossEnemy extends AIController {
       }
     }
     const tgt = enemies ? enemies.find(e => e.alive && e.team !== this.team) : null;
-    if (this._phase >= 2 && this._skillSet.includes('charge') && this._chargeCd <= 0 && tgt) {
+    if (this._phase >= this._phaseGate('charge') && this._skillSet.includes('charge') && this._chargeCd <= 0 && tgt) {
       this._skillCharge(tgt, combat, now); this._chargeCd = 8;
     }
-    if (this._phase >= 2 && this._skillSet.includes('roar') && this._roarCd <= 0) {
+    if (this._phase >= this._phaseGate('roar') && this._skillSet.includes('roar') && this._roarCd <= 0) {
       this._skillRoar(combat, now); this._roarCd = 12;
     }
     if (this._phase >= 3 && this._skillSet.includes('summon') && !this._summoned) {
       this._skillSummon();
     }
-    if (this._phase >= 2 && this._skillSet.includes('rapidshot') && this._rapidCd <= 0 && tgt) this._skillRapidshot(tgt, combat, now);
-    if (this._phase >= 2 && this._skillSet.includes('dodge') && this._dodgeCd <= 0 && tgt) this._skillDodge(tgt, now);
-    if (this._phase >= 2 && this._skillSet.includes('trap') && this._trapCd <= 0) this._skillTrap(combat, now);
-    if (this._phase >= 2 && this._skillSet.includes('fireball') && this._fireballCd <= 0 && tgt) this._skillFireball(tgt, combat, now);
-    if (this._phase >= 2 && this._skillSet.includes('teleport') && this._teleportCd <= 0 && tgt) this._skillTeleport(tgt, now);
-    if (this._phase >= 2 && this._skillSet.includes('aoe') && this._aoeSkillCd <= 0) this._skillAoe(combat, now);
-    if (this._phase >= 2 && this._skillSet.includes('slam') && this._slamCd <= 0 && tgt) this._skillSlam(combat, now);
+    if (this._phase >= this._phaseGate('rapidshot') && this._skillSet.includes('rapidshot') && this._rapidCd <= 0 && tgt) this._skillRapidshot(tgt, combat, now);
+    if (this._phase >= this._phaseGate('dodge') && this._skillSet.includes('dodge') && this._dodgeCd <= 0 && tgt) this._skillDodge(tgt, now);
+    if (this._phase >= this._phaseGate('trap') && this._skillSet.includes('trap') && this._trapCd <= 0) this._skillTrap(combat, now);
+    if (this._phase >= this._phaseGate('fireball') && this._skillSet.includes('fireball') && this._fireballCd <= 0 && tgt) this._skillFireball(tgt, combat, now);
+    if (this._phase >= this._phaseGate('teleport') && this._skillSet.includes('teleport') && this._teleportCd <= 0 && tgt) this._skillTeleport(tgt, now);
+    if (this._phase >= this._phaseGate('aoe') && this._skillSet.includes('aoe') && this._aoeSkillCd <= 0) this._skillAoe(combat, now);
+    if (this._phase >= this._phaseGate('slam') && this._skillSet.includes('slam') && this._slamCd <= 0 && tgt) this._skillSlam(combat, now);
     if (this._skillSet.includes('regenerate')) this._skillRegenerate(dt);
     super.update(dt, terrain, combat, enemies, now);
   }
