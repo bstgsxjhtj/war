@@ -16,13 +16,18 @@
 
 词条效果必须在**所有伤害路径**（近战/箭矢/AOE）一致生效。
 
+**噩梦敌人词条**（P0-1，2026-09-28）：`currentStage.enemyMods`（reflect/vampire/lucky/swift/ironhide）由 Spawner._applyEnemyMods 注入非 Boss 敌人（AIController.setEnemyMods），行为分挂战斗管线两侧：
+- 受击侧（AIController.takeDamage）：ironhide 受伤 ×0.75；reflect 反弹 10% 给攻击者（_reflecting 守卫防双方递归）。
+- 攻击侧（CombatSystem._affixApply/_affixLeech）：lucky 暴击 +15%（×2）；vampire 吸血 15%；swift 由 Spawner 直接 speed ×1.2。
+- Boss 不注入（阶段机制独立）；数值收敛 balance.js ENEMY_MODS。
+
 ## 3. 战役模式规则
 
 - STAGES 数组定义每关 objective、敌人配置、Boss 关须有 `bossType`。
 - objective 类型与 checkWin 的对应：歼灭→全灭敌人；Boss→ctx.boss 死亡；生存→surviveWavesDone；护送→目标存活到达。
 - `onStageClear()` 推进 stage；通关后 stage 回 0（配合 cleared 记录历史最高）。
 - main_entry 的 checkWin 直接调用 `campaign.onStageClear()`（CampaignMode 不发事件）。
-- **噩梦战役**：`CampaignMode(bus, nightmare=true)`，难度 ×1.35、敌数 +2，name 保持 '战役'（复用全部战役分支逻辑），displayName 为 '噩梦战役'；战役通关后 M 键循环解锁。
+- **噩梦战役**：`CampaignMode(bus, nightmare=true)`，难度 ×1.35、敌数 +2，name 保持 '战役'（复用全部战役分支逻辑），displayName 为 '噩梦战役'；战役通关后 M 键循环解锁。每关生成 `enemyMods`（2 条词条注入非 Boss 敌人，见 §2）与 `hazardBoost`（>1，由 EnvironmentHazards.setHazardBoost 放大水/墙/毒/闪电/油料伤害；main_entry spawnRed 包装器按 currentStage.hazardBoost 注入，非噩梦回退 1）。
 
 ## 3.1 本轮玩法增强（2026-09-23 P0-P3）
 

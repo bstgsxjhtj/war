@@ -3,8 +3,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../src/gameplay/AIController.js', () => ({
   AIController: class {
-    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; this.speed = 6.2; }
+    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; this.speed = 6.2; this._enemyMods = null; }
     spawn() {} setWeapons(w) { this.weapons = w; } setCameraRef() {} setAIManager() {} setIsElite(v) { this._isElite = v; } setAudio() {} setBus() {}
+    setEnemyMods(m) { this._enemyMods = m ? [...m] : null; }
+    hasMod(n) { return !!this._enemyMods && this._enemyMods.includes(n); }
   }
 }));
 vi.mock('../../src/gameplay/BossEnemy.js', () => ({
@@ -184,5 +186,53 @@ describe('Spawner 关卡难度系数 (P1-2)', () => {
     deps.campaign.currentStage.bossType = 'warlord';
     spawner.spawnRed(LAYOUT, ais, { modeName: '战役', stageDifficulty: 1 });
     expect(ais[0].health.maxHp).toBe(500);
+  });
+});
+
+describe('Spawner 噩梦词条 (P0-1)', () => {
+  let deps, spawner, ais;
+  beforeEach(() => {
+    deps = mkDeps();
+    spawner = new Spawner(deps);
+    ais = [];
+  });
+
+  it('currentStage.enemyMods 注入到普通兵', () => {
+    deps.campaign.currentStage.enemyMods = ['swift', 'ironhide'];
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '战役' });
+    expect(ais[0]._enemyMods).toEqual(['swift', 'ironhide']);
+  });
+
+  it('swift 词条速度 ×1.2', () => {
+    deps.campaign.currentStage.enemyMods = ['swift'];
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '战役' });
+    expect(ais[0].speed).toBeCloseTo(6.2 * 1.2, 5);
+  });
+
+  it('Boss 不注入 enemyMods（阶段机制独立）', () => {
+    deps.campaign.currentStage.bossType = 'warlord';
+    deps.campaign.currentStage.enemyMods = ['swift'];
+    spawner.spawnRed(LAYOUT, ais, { modeName: '战役' });
+    expect(ais[0]._isBoss).toBe(true);
+    expect(ais[0]._enemyMods).toBeFalsy();
+  });
+
+  it('无 enemyMods 时不影响 speed 与词条', () => {
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗' });
+    expect(ais[0]._enemyMods).toBeNull();
+    expect(ais[0].speed).toBe(6.2);
+  });
+
+  it('spawnReinforce 也注入 enemyMods', () => {
+    deps.campaign.currentStage.enemyMods = ['vampire'];
+    spawner.spawnReinforce(2, ais);
+    expect(ais[0]._enemyMods).toEqual(['vampire']);
+    expect(ais[1]._enemyMods).toEqual(['vampire']);
+  });
+
+  it('普通兵 + 速度修饰词与 swift 叠加', () => {
+    deps.campaign.currentStage.enemyMods = ['swift'];
+    spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '战役', modifier: { speedMul: 1.3 } });
+    expect(ais[0].speed).toBeCloseTo(6.2 * 1.2 * 1.3, 5);
   });
 });

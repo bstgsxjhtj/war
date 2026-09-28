@@ -173,4 +173,64 @@ describe('EnvironmentHazards', () => {
       expect(char.takeDamage).not.toHaveBeenCalled();
     });
   });
+
+  describe('setHazardBoost (P0-1)', () => {
+    let env, terrain, char;
+    beforeEach(() => {
+      terrain = { isWater: vi.fn(() => true) };
+      env = new EnvironmentHazards(null);
+      env.setTerrain(terrain);
+      char = { alive: true, position: { x: 10, z: 0 }, takeDamage: vi.fn() };
+    });
+
+    it('默认 boost=1 水伤害不变', () => {
+      env.update(0.5, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(20, false, null, expect.any(Number));
+    });
+
+    it('boost=1.5 水伤害 ×1.5', () => {
+      env.setHazardBoost(1.5);
+      env.update(0.5, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(30, false, null, expect.any(Number));
+    });
+
+    it('boost 放大闪电伤害', () => {
+      env.setHazardBoost(2);
+      char.position = { x: 20, z: 30 };
+      env.onLightningStrike({ x: 20, z: 30 });
+      env.update(0.1, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(100, true, null, expect.any(Number));
+    });
+
+    it('boost 放大毒区伤害', () => {
+      env.setHazardBoost(1.6);
+      env.setHazardZones([{ type: 'poison', x: 0, z: 0, radius: 10 }]);
+      char.position = { x: 5, z: 0 };
+      env.update(0.5, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(20, false, null, expect.any(Number));
+    });
+
+    it('boost 放大墙壁伤害', () => {
+      env.setHazardBoost(2);
+      env.addWallBox({ minX: -7, maxX: -3, minZ: 39, maxZ: 41 });
+      char.position = { x: -5, z: 40 };
+      env.update(1, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(30, false, null, expect.any(Number));
+    });
+
+    it('boost=0 回退为 1（安全）', () => {
+      env.setHazardBoost(0);
+      env.update(0.5, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(20, false, null, expect.any(Number));
+    });
+
+    it('boost 放大油料点燃伤害', () => {
+      env.setHazardBoost(2);
+      env.setHazardZones([{ type: 'oil', x: 40, z: 0, radius: 10 }]);
+      char.position = { x: 45, z: 0 };
+      env.onLightningStrike({ x: 35, z: 0 });
+      env.update(0.1, [char]);
+      expect(char.takeDamage).toHaveBeenCalledWith(160, true, null, expect.any(Number));
+    });
+  });
 });

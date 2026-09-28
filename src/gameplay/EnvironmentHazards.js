@@ -12,9 +12,11 @@ export class EnvironmentHazards {
     this._oilZones = [];
     this._poisonDPS = 25;
     this._oilIgniteDamage = 80;
+    this._boost = 1;
   }
 
   setTerrain(t) { this._terrain = t; }
+  setHazardBoost(boost) { this._boost = boost > 0 ? boost : 1; }
 
   addWallBox(box) { this._wallBoxes.push(box); }
 
@@ -34,18 +36,19 @@ export class EnvironmentHazards {
 
   update(dt, characters) {
     const now = Date.now() / 1000;
+    const boost = this._boost;
 
     for (const c of characters) {
       if (!c.alive) continue;
       const x = c.position.x, z = c.position.z;
 
       if (this._terrain && this._terrain.isWater(x, z)) {
-        c.takeDamage(this._waterDPS * dt, false, null, now);
+        c.takeDamage(this._waterDPS * boost * dt, false, null, now);
       }
 
       for (const box of this._wallBoxes) {
         if (x > box.minX && x < box.maxX && z > box.minZ && z < box.maxZ) {
-          c.takeDamage(this._wallDPS * dt, false, null, now);
+          c.takeDamage(this._wallDPS * boost * dt, false, null, now);
           break;
         }
       }
@@ -53,7 +56,7 @@ export class EnvironmentHazards {
       for (const pz of this._poisonZones) {
         const dx = x - pz.x, dz = z - pz.z;
         if (dx * dx + dz * dz < pz.radius * pz.radius) {
-          c.takeDamage((pz.dps || this._poisonDPS) * dt, false, null, now);
+          c.takeDamage((pz.dps || this._poisonDPS) * boost * dt, false, null, now);
         }
       }
     }
@@ -64,7 +67,7 @@ export class EnvironmentHazards {
         const dx = c.position.x - this._pendingStrike.x;
         const dz = c.position.z - this._pendingStrike.z;
         if (Math.hypot(dx, dz) < this._strikeRadius) {
-          c.takeDamage(this._strikeDamage, true, null, now);
+          c.takeDamage(this._strikeDamage * boost, true, null, now);
         }
       }
 
@@ -78,7 +81,7 @@ export class EnvironmentHazards {
             const cdx = c.position.x - oil.x;
             const cdz = c.position.z - oil.z;
             if (Math.hypot(cdx, cdz) < oil.radius) {
-              c.takeDamage(this._oilIgniteDamage, true, null, now);
+              c.takeDamage(this._oilIgniteDamage * boost, true, null, now);
             }
           }
         } else {

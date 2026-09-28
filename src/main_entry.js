@@ -312,6 +312,7 @@ async function bootstrap() {
   const spawner = new Spawner({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign, lod });
 
   function spawnRed(redLayout, { bossWave = false, modifier = null, stageDifficulty = 1 } = {}) {
+    if (envHazards) envHazards.setHazardBoost((campaign.currentStage && campaign.currentStage.hazardBoost) || 1);
     spawner.spawnRed(redLayout, ais, { bossWave, modeName: mode.name, modifier, stageDifficulty });
   }
 

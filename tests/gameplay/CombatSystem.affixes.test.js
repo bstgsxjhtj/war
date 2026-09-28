@@ -94,3 +94,68 @@ describe('CombatSystem 词条 helpers', () => {
     expect(attacker.health.hp).toBeCloseTo(45);
   });
 });
+
+describe('CombatSystem 噩梦词条 (P0-1)', () => {
+  let cs, bus;
+  beforeEach(() => {
+    bus = { emit: vi.fn() };
+    cs = new CombatSystem({ add() {}, remove() {} }, bus);
+    cs._emitHit = vi.fn();
+    cs.spawnHitFX = vi.fn();
+    cs.createDamageNumber = vi.fn();
+  });
+
+  it('lucky 命中 15% 暴击翻倍', () => {
+    const a = mockChar(0);
+    a._enemyMods = ['lucky'];
+    cs.setAffixes(mockAffixes());
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    expect(cs._affixApply(a, a.weapon, 10)).toBe(20);
+    expect(cs._lastAffixCrit).toBe(true);
+    spy.mockRestore();
+  });
+
+  it('lucky 未触发时不变', () => {
+    const a = mockChar(0);
+    a._enemyMods = ['lucky'];
+    cs.setAffixes(mockAffixes());
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    expect(cs._affixApply(a, a.weapon, 10)).toBe(10);
+    expect(cs._lastAffixCrit).toBe(false);
+    spy.mockRestore();
+  });
+
+  it('lucky 不影响玩家暴怒已暴击结果', () => {
+    const a = mockChar(0);
+    a._enemyMods = ['lucky'];
+    cs.setAffixes(mockAffixes({ 暴怒: 1.0 }));
+    expect(cs._affixApply(a, a.weapon, 10)).toBe(20);
+    expect(cs._lastAffixCrit).toBe(true);
+  });
+
+  it('vampire 15% 吸血回血', () => {
+    const a = mockChar(0);
+    a._enemyMods = ['vampire'];
+    a.health.hp = 50;
+    cs.setAffixes(mockAffixes());
+    cs._affixLeech(a, 100);
+    expect(a.health.hp).toBeCloseTo(65);
+  });
+
+  it('vampire 与玩家吸血叠加', () => {
+    const a = mockChar(0);
+    a._enemyMods = ['vampire'];
+    a.health.hp = 50;
+    cs.setAffixes(mockAffixes({ 吸血: 0.1 }));
+    cs._affixLeech(a, 100);
+    expect(a.health.hp).toBeCloseTo(75);
+  });
+
+  it('无 _enemyMods 时 _affixLeech 行为不变', () => {
+    const a = mockChar(0);
+    a.health.hp = 50;
+    cs.setAffixes(mockAffixes({ 吸血: 0.1 }));
+    cs._affixLeech(a, 100);
+    expect(a.health.hp).toBeCloseTo(60);
+  });
+});

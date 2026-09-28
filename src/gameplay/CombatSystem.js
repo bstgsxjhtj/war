@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ParticleFX } from '../render/ParticleFX.js';
 import { EV } from '../core/constants/events.js';
-import { COMBAT } from '../core/constants/balance.js';
+import { COMBAT, ENEMY_MODS } from '../core/constants/balance.js';
 
 // 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率（导出供单测引用，构造时复用同一引用）
 export const COUNTER_MATRIX = {
@@ -152,9 +152,12 @@ export class CombatSystem {
 
   _affixApply(attacker, weapon, dmg) {
     this._lastAffixCrit = false;
-    if (!this._affixes || !weapon) return dmg;
-    let out = dmg * (1 + this._affixes.affixBonus(weapon, '锋锐') + this._affixes.synergyBonus(weapon, 'damage'));
-    if (Math.random() < this._affixes.affixBonus(weapon, '暴怒') + this._affixes.synergyBonus(weapon, 'crit')) { out *= 2; this._lastAffixCrit = true; }
+    let out = dmg;
+    if (this._affixes && weapon) {
+      out = dmg * (1 + this._affixes.affixBonus(weapon, '锋锐') + this._affixes.synergyBonus(weapon, 'damage'));
+      if (Math.random() < this._affixes.affixBonus(weapon, '暴怒') + this._affixes.synergyBonus(weapon, 'crit')) { out *= 2; this._lastAffixCrit = true; }
+    }
+    if (attacker && attacker._enemyMods && attacker._enemyMods.includes('lucky') && !this._lastAffixCrit && Math.random() < ENEMY_MODS.LUCKY_CRIT_CHANCE) { out *= ENEMY_MODS.LUCKY_CRIT_MUL; this._lastAffixCrit = true; }
     return out;
   }
 
@@ -166,6 +169,7 @@ export class CombatSystem {
     if (this._affixes && attacker.weapon) {
       leech += this._affixes.affixBonus(attacker.weapon, '吸血') + this._affixes.synergyBonus(attacker.weapon, 'lifesteal');
     }
+    if (attacker._enemyMods && attacker._enemyMods.includes('vampire')) leech += ENEMY_MODS.VAMPIRE_LIFESTEAL;
     if (leech > 0) attacker.health.hp = Math.min(attacker.health.maxHp, attacker.health.hp + lost * leech);
   }
 

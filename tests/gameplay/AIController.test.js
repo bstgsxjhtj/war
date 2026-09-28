@@ -264,3 +264,82 @@ describe('AIController 格挡触发 (P0-3)', () => {
     expect(ai._blockTimer).toBe(0);
   });
 });
+
+describe('AIController 噩梦词条 (P0-1)', () => {
+  let ai, superUpdate, superTakeDamage;
+  beforeEach(() => {
+    superUpdate = vi.spyOn(Character.prototype, 'update').mockImplementation(() => {});
+    superTakeDamage = vi.spyOn(Character.prototype, 'takeDamage').mockImplementation(function (amount) { return amount; });
+    ai = new AIController({ team: 1 });
+  });
+  afterEach(() => { superUpdate.mockRestore(); superTakeDamage.mockRestore(); });
+
+  it('setEnemyMods 存储并 hasMod 查询', () => {
+    ai.setEnemyMods(['swift', 'ironhide']);
+    expect(ai.hasMod('swift')).toBe(true);
+    expect(ai.hasMod('ironhide')).toBe(true);
+    expect(ai.hasMod('reflect')).toBe(false);
+  });
+
+  it('setEnemyMods(null) 清除词条', () => {
+    ai.setEnemyMods(['swift']);
+    ai.setEnemyMods(null);
+    expect(ai.hasMod('swift')).toBe(false);
+    expect(ai._enemyMods).toBeNull();
+  });
+
+  it('ironhide 受伤 ×0.75', () => {
+    ai.setEnemyMods(['ironhide']);
+    const attacker = mkEnemy(0, 1, 0);
+    ai.takeDamage(100, false, attacker, 0);
+    expect(superTakeDamage).toHaveBeenCalledWith(75, false, attacker, 0);
+  });
+
+  it('reflect 反弹 10% 给攻击者', () => {
+    ai.setEnemyMods(['reflect']);
+    const attacker = { alive: true, team: 0, position: new THREE.Vector3(1, 0, 0), takeDamage: vi.fn(() => 0) };
+    ai.takeDamage(100, false, attacker, 0);
+    expect(attacker.takeDamage).toHaveBeenCalledWith(10, false, ai, 0);
+  });
+
+  it('reflect lost=0 时不反弹', () => {
+    ai.setEnemyMods(['reflect']);
+    superTakeDamage.mockReturnValue(0);
+    const attacker = { alive: true, team: 0, position: new THREE.Vector3(1, 0, 0), takeDamage: vi.fn(() => 0) };
+    ai.takeDamage(100, false, attacker, 0);
+    expect(attacker.takeDamage).not.toHaveBeenCalled();
+  });
+
+  it('reflect 攻击者死亡不反弹', () => {
+    ai.setEnemyMods(['reflect']);
+    const attacker = { alive: false, team: 0, position: new THREE.Vector3(1, 0, 0), takeDamage: vi.fn(() => 0) };
+    ai.takeDamage(100, false, attacker, 0);
+    expect(attacker.takeDamage).not.toHaveBeenCalled();
+  });
+
+  it('ironhide + reflect 叠加：先减伤再按减伤后量反弹', () => {
+    ai.setEnemyMods(['ironhide', 'reflect']);
+    const attacker = { alive: true, team: 0, position: new THREE.Vector3(1, 0, 0), takeDamage: vi.fn(() => 0) };
+    ai.takeDamage(100, false, attacker, 0);
+    expect(superTakeDamage).toHaveBeenCalledWith(75, false, attacker, 0);
+    expect(attacker.takeDamage).toHaveBeenCalledWith(7.5, false, ai, 0);
+  });
+
+  it('无词条时行为不变', () => {
+    const attacker = { alive: true, team: 0, position: new THREE.Vector3(1, 0, 0), takeDamage: vi.fn(() => 0) };
+    ai.takeDamage(100, false, attacker, 0);
+    expect(superTakeDamage).toHaveBeenCalledWith(100, false, attacker, 0);
+    expect(attacker.takeDamage).not.toHaveBeenCalled();
+  });
+
+  it('reflect 双方均持有时不递归', () => {
+    ai.setEnemyMods(['reflect']);
+    const attacker = new AIController({ team: 0 });
+    attacker.setEnemyMods(['reflect']);
+    const attackerSpy = vi.spyOn(attacker, 'takeDamage');
+    ai.takeDamage(100, false, attacker, 0);
+    expect(attackerSpy).toHaveBeenCalledTimes(1);
+    expect(attackerSpy.mock.calls[0][0]).toBe(10);
+    attackerSpy.mockRestore();
+  });
+});

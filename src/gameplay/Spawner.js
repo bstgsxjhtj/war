@@ -6,6 +6,7 @@ import { Spear } from './weapons/Spear.js';
 import { SwordShield } from './weapons/SwordShield.js';
 import { Warhammer } from './weapons/Warhammer.js';
 import { Bow } from './weapons/Bow.js';
+import { ENEMY_MODS } from '../core/constants/balance.js';
 
 const AI_WEAPON_MAKERS = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];
 const ELITE_SKILLS = ['blockCounter', 'dodgeStrike', 'enrage'];
@@ -29,6 +30,14 @@ export class Spawner {
     }
   }
 
+  _applyEnemyMods(ai) {
+    const mods = this.campaign && this.campaign.currentStage ? this.campaign.currentStage.enemyMods : null;
+    if (!mods || !mods.length) return;
+    if (ai._isBoss) return;
+    if (ai.setEnemyMods) ai.setEnemyMods(mods);
+    if (mods.includes('swift') && ai.speed) ai.speed *= ENEMY_MODS.SWIFT_SPEED_MUL;
+  }
+
   _finalize(ai, x, z, ais, eliteChanceMul = 1) {
     ai.spawn(new THREE.Vector3(x, this.terrain.heightAt(x, z), z));
     ai.setCameraRef(this.camera);
@@ -38,6 +47,7 @@ export class Spawner {
     this.combat.register(ai);
     if (ai._weaponMesh) this.weaponTrail.attach(ai._weaponMesh, ai.team === 1 ? 0xff8060 : 0x60a0ff);
     if (this.lod) this.lod.register(ai);
+    this._applyEnemyMods(ai);
     ais.push(ai);
   }
 
