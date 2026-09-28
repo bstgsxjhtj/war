@@ -51,7 +51,7 @@
 - ~~每帧 Vector3 分配池化；miniMap.setWorldSize 每帧调用~~ ✅2026-09-22 部分偿还：miniMap.setWorldSize 改地图键变化才调用 + MiniMap 内部早退；Vector3 维持既有实例字段模式（_tmpOrigin/_vDir 等）
 - ~~测试缺口：Character/CombatSystem 主路径/GameMode/MapGenerator~~ ✅2026-09-22 完成：Character.takeDamage 7 用例 + GameMode 4 + MapGenerator 4 + CombatSystem.resolveMelee 4
 - ~~Escape 多面板同时响应（需统一 UI 栈）~~ ✅2026-09-22 完成：新增 `src/ui/UIStack.js`，面板 show/hide 入出栈，捕获阶段只关栈顶；UIPanel/SkillTreeUI/SettingsMenu/ResultScreen 移除各自 Escape 监听，InputRouter 栈空才开设置；04 §3 约定
-- **WeaponTrail trail.line.parent 指向 scene 根（恒等变换）**：update 中 `wp.parent.localToWorld(...)` 的 `wp = trail.line`，其 parent 是 scene 而非武器 mesh 的父节点，导致 trail 位置始终为固定偏移（0,0,-0.6)/(0,0,0.8）不随武器移动。系既有设计偏差（非本轮回归），暂记观察项，不影响游戏运行；后续如需 trail 跟随武器，需在 attach 时缓存 weaponMesh 引用并改用其 parent 的 matrixWorld
+- ~~**WeaponTrail trail.line.parent 指向 scene 根（恒等变换）**：update 中 `wp.parent.localToWorld(...)` 的 `wp = trail.line`，其 parent 是 scene 而非武器 mesh 的父节点，导致 trail 位置始终为固定偏移（0,0,-0.6)/(0,0,0.8）不随武器移动。系既有设计偏差（非本轮回归），暂记观察项，不影响游戏运行；后续如需 trail 跟随武器，需在 attach 时缓存 weaponMesh 引用并改用其 parent 的 matrixWorld~~ ✅2026-09-28 修复（P2-9, caaec5a）：attach 时缓存 weaponMesh 引用，update 改用 `trail.weaponMesh.matrixWorld` 替代场景根 matrixWorld，轨迹现在正确跟随武器
 
 ## 修复记录
 
@@ -105,3 +105,38 @@
 | 2026-09-24 | a04180c | 第四轮 P2-2：完美格挡视觉闪屏——金色"弹反"横幅 #parryflash + 全屏金闪 #parryglow（FX_PERFECTBLOCK 玩家触发） |
 | 2026-09-24 | 28bc43a | 第四轮 P2-3：输入缓冲扩展到闪避/处决——requestDodge/requestExecute 0.25s 缓冲重试，Player.update 消费 |
 | 2026-09-24 | 台账核实 | 第四轮 P3-1 核实：COMBAT_COUNTER 音效链路完整（CombatSystem L83 emit → main_entry L236 → AudioEngine.counter），无需修复 |
+
+## 第五轮（2026-09-28）质量审计修复记录
+
+> 来源：`docs/superpowers/plans/2026-09-24-round5-quality-audit.md`。P0 阻断级 bug → P1 一致性 → P2 中等优化 → P3 长线新增。TDD 全程，最终 823 测试全绿。
+
+| 日期 | commit | 内容 |
+|---|---|---|
+| 2026-09-28 | f75cb8f | P0-1：处决双向 9999 互杀竞态——Character._takeDamage 加 `_executing` 守卫防止处决者被反杀 |
+| 2026-09-28 | 3ffc589 | P0-2：_releaseArrow 未定义方法——CombatSystem 箭矢命中调用 `this._releaseArrow(a)` 但无定义，补实现（回收箭矢 mesh + emit FX） |
+| 2026-09-28 | fb3a242 | P0-3：AI 永不格挡——AIController 格挡检查用 `_blocking` 但 Character 设 `_isBlocking`，字段名不匹配，修正 |
+| 2026-09-28 | 8b111bc | P0-4：AchievementWiring 死代码——从未调用，改为 main_entry 启动时 wireAchievements()；恢复 nightmare clear/forceSkin 事件 |
+| 2026-09-28 | 0b4aab7 | P0-5：完美格挡链路断裂——CombatSystem 完美格挡未设 `_perfectRebound`，combo 系统判定为未反弹导致连击中断 |
+| 2026-09-28 | b643952 | P1-1：Boss/AI 位移技能失效——技能位移写入 `root.position` 而非 `this.position`，Character.update 用 position 不读 root |
+| 2026-09-28 | d09871e | P1-2：关卡 difficulty 对主敌人未生效——Spawner 用 `stageDifficulty` 参数但 spawnRed 未传 |
+| 2026-09-28 | 3f6e4f7 | P1-3：Warhammer 连击不可达+windup——连击窗口固定 0.4s，改为动态 `0.4+combo*0.05`；移除死 windup 属性 |
+| 2026-09-28 | e6da924 | P1-4：普通格挡无音效——新增 FX_BLOCK 事件，AudioEngine 播 block 音 |
+| 2026-09-28 | acd46b8 | P1-5：六大模块 dispose 缺失——HUD/MiniMap/WeatherSystem/SupplyPoint/EnvHazards/DeathFeedback 补 dispose() |
+| 2026-09-28 | 8b47e6d | P1-6：事件监听+setInterval 泄漏——SaveOrchestrator/HUD/ProgressionUI/AudioEngine 补 dispose 移除监听和 clearInterval |
+| 2026-09-28 | 1ba4e47 | P1-7：Boss 阶段切换断崖——阶段切换直接跳 HP 70%/40%，改为线性插值平滑过渡 |
+| 2026-09-28 | cdba941 | P1-8：死代码/死事件清理——移除 STATE_CHANGE 死事件、未引用函数、孤立变量 |
+| 2026-09-28 | 1e31c58 | P2-1：教程扩展至 12 步——补闪避/武器切换/处决/大招/锁定/冲刺等高级教学 |
+| 2026-09-28 | 3046867 | P2-2：HUD 信息完善——buff 剩余时长、Boss 阶段指示、radar/MiniMap 去重 |
+| 2026-09-28 | d4de5de | P2-3：结算屏复盘维度——补连击/格挡/闪避/处决次数，评级算法加入承伤维度 |
+| 2026-09-28 | eaa6dbd | P2-4：无障碍——色弱形状区分、减少动效（关脉冲/震动/顿帧）、屏幕震动强度调节 |
+| 2026-09-28 | 0472d61 | P2-5：低端机降级——QualityGovernor 自适应降帧 + Renderer/Weather/Environment 画质缩放 |
+| 2026-09-28 | 892445d | P2-6：每帧分配热点——Skeleton 缓存骨骼名并集、CombatSystem 去 clone()、AIController 预分配 flank 向量 |
+| 2026-09-28 | 2a525cc | P2-7：Build 多样性——RunBuffs 池 6→13，reroll 机制每局 2 次 |
+| 2026-09-28 | bbfd131 | P2-8：魔法数字收敛——balance.js 新增 COMBAT/CAMERA/EXECUTE 常量组 |
+| 2026-09-28 | caaec5a | P2-9：WeaponTrail 跟随武器——attach 缓存 weaponMesh，update 用 weaponMesh.matrixWorld 替代场景根 |
+| 2026-09-28 | a8af555 | P2-10：测试基建——createThreeMock() 轻量 Three.js 桩 + CombatSystem.emitHit 主路径测试 |
+| 2026-09-28 | 20bf65c | P3-1/P3-2：Boss 阶段 3 专属机制（quake/meteor/clone）+ 噩梦新周目（enemyMods/hazardBoost/bossPhase3） |
+| 2026-09-28 | b4d4644 | P3-3：战役接入 RunBuffs——过关 3 选 1 升级，MatchController 接 upgradePicker |
+| 2026-09-28 | 698efc1 | P3-4：键位重绑系统——KeyBindings 模块（15 动作可重绑+冲突检测+持久化）+ SettingsMenu 重绑 UI |
+| 2026-09-28 | 3e775d8 | P3-5：LOD 系统+角色批渲染——LODManager 4 级距离降级 + InstancedMesh 代理远距角色 |
+| 2026-09-28 | 0ad7ec7 | P3-6：存档版本迁移框架——CURRENT_VERSION=2 + MIGRATIONS 注册表 + 损坏备份恢复（savegame_v1_bak） |
