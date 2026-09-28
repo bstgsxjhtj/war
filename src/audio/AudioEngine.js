@@ -25,6 +25,10 @@ export class AudioEngine {
     else if (type === 'bgmStop') this.stopMusic();
     else if (type === 'bgmIntensity') this.setMusicIntensity(opts.intensity || 0);
     else if (type === 'stinger') this.stinger(opts.stinger);
+    else if (type === 'pickup') this.pickup();
+    else if (type === 'levelup') this.levelup();
+    else if (type === 'buffSelect') this.buffSelect();
+    else if (type === 'stageStart') this.stageStart();
   }
   swing() { this._tone(200, 0.09, 'sine', this._volOf('sfx') * 0.18, 80); }
   hit(heavy = false, combo = 0) { const f = Math.min(800, 250 + combo * 50); this._noise(heavy ? 0.28 : 0.14, heavy ? 500 : f, this._volOf('sfx') * (heavy ? 0.4 : 0.3)); }
@@ -110,6 +114,10 @@ export class AudioEngine {
       [330, 277, 220].forEach((f, i) => this._toneAt(f, 0.4, 'sine', vol * 0.2, t + i * 0.2));
     }
   }
+  pickup() { const t = this.ctx ? this.ctx.currentTime : 0; this._toneAt(880, 0.08, 'triangle', this._volOf('sfx') * 0.2, t); this._toneAt(1320, 0.1, 'triangle', this._volOf('sfx') * 0.2, t + 0.06); }
+  levelup() { const t = this.ctx ? this.ctx.currentTime : 0; [523, 659, 784, 1047].forEach((f, i) => { this._toneAt(f, 0.12, 'triangle', this._volOf('sfx') * 0.2, t + i * 0.1); }); }
+  buffSelect() { this._tone(660, 0.15, 'sine', this._volOf('sfx') * 0.2, 880); }
+  stageStart() { const t = this.ctx ? this.ctx.currentTime : 0; [330, 440, 660].forEach((f, i) => { this._toneAt(f, 0.2, 'sawtooth', this._volOf('sfx') * 0.25, t + i * 0.15); }); }
   _tone(freq, dur, type, vol, endFreq) { this._toneAt(freq, dur, type, vol, this.ctx ? this.ctx.currentTime : 0, endFreq); }
   _toneAt(freq, dur, type, vol, t, endFreq) { if (!this.ctx) return; const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t); if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t + dur); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g).connect(this.ctx.destination); o.start(t); o.stop(t + dur); }
   _noise(dur, filterFreq, vol) { if (!this.ctx) return; const len = this.ctx.sampleRate * dur; const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate); const d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; const src = this.ctx.createBufferSource(); src.buffer = buf; const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filterFreq; const g = this.ctx.createGain(); const t = this.ctx.currentTime; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); src.connect(f).connect(g).connect(this.ctx.destination); src.start(t); }

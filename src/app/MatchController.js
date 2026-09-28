@@ -53,7 +53,7 @@ export class MatchController {
       if (team === 1) this.scoreB++; else this.scoreR++;
       this.deps.hud.setScore(this.scoreB, this.scoreR);
       if (killer && killer.isLocal) {
-        this.playerKills++; this.deps.skills.addPoint(1); this.deps.hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => this.deps.hud.clearHint(), 1500); this.deps.daily.track('kills');
+        this.playerKills++; this.deps.skills.addPoint(1); this.deps.audio?.playSound('levelup'); this.deps.hud.flash('+1 技能点 (按 K 分配)'); setTimeout(() => this.deps.hud.clearHint(), 1500); this.deps.daily.track('kills');
         if (this.deps.campaign.nightmare) this.deps.daily.track('nightmareKills');
         if (victim && victim._isBoss) {
           this.deps.daily.track('bossKill'); this.deps.saveNow();
@@ -61,11 +61,11 @@ export class MatchController {
           const types = ['锋锐', '迅捷', '暴怒', '吸血', '坚韧', '幸运'];
           const affixType = types[Math.floor(Math.random() * types.length)];
           const granted = this.deps.affixes?.grant(affixType, tier);
-          if (granted) { bus.emit(EV.AFFIX_DROP, { type: affixType, tier, boss: true }); this.deps.hud.flash('Boss 掉落词缀！'); setTimeout(() => this.deps.hud.clearHint(), 2000); }
+          if (granted) { bus.emit(EV.AFFIX_DROP, { type: affixType, tier, boss: true }); this.deps.audio?.playSound('pickup'); this.deps.hud.flash('Boss 掉落词缀！'); setTimeout(() => this.deps.hud.clearHint(), 2000); }
         } else if (this.deps.affixes) {
           const luck = this.deps.affixes.affixBonus(killer.weapon, '幸运');
           const dropped = this.deps.affixes.drop(luck);
-          if (dropped) { bus.emit(EV.AFFIX_DROP, { ...dropped, boss: false }); this.deps.hud.flash('词缀掉落！'); setTimeout(() => this.deps.hud.clearHint(), 1500); }
+          if (dropped) { bus.emit(EV.AFFIX_DROP, { ...dropped, boss: false }); this.deps.audio?.playSound('pickup'); this.deps.hud.flash('词缀掉落！'); setTimeout(() => this.deps.hud.clearHint(), 1500); }
         }
         if (victim instanceof CavalryEnemy) bus.emit(EV.COMBAT_CAVALRYKILL, { killer, victim });
         bus.emit(EV.DAILY_UPDATE, this.deps.daily.challenges);
@@ -97,6 +97,7 @@ export class MatchController {
     this.deps.spawnAll();
     this.deps.state.transit(States.READY);
     this.deps.state.transit(States.PLAYING);
+    this.deps.audio?.playSound('stageStart');
     this.deps.hud.flash('遭遇战开始！点击锁定鼠标');
     setTimeout(() => this.deps.hud.clearHint(), 1800);
   }

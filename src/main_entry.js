@@ -289,7 +289,7 @@ async function bootstrap() {
     getMode: () => mode
   });
   const match = new MatchController({
-    bus, state, hud, resultScreen, camera, progression, progressUI, daily, skills, campaign, siege, weather, affixes, assist,
+    bus, state, hud, resultScreen, camera, progression, progressUI, daily, skills, campaign, siege, weather, affixes, assist, audio,
     get runBuffs() { return runBuffs; },
     get upgradePicker() { return upgradePicker; },
     spawnAll: () => spawnAll(),
@@ -397,7 +397,7 @@ async function bootstrap() {
   const affixesUI = new AffixesUI(affixes, player, keyBindings);
   const achievementsUI = new AchievementsUI(achievements);
   const runBuffs = new RunBuffs();
-  const upgradePicker = new UpgradePicker(runBuffs, player, bus);
+  const upgradePicker = new UpgradePicker(runBuffs, player, bus, audio);
   state.transit(States.PLAYING);
   audio.playSound('bgmStart', { intensity: 0 });
   let _bgmCombatSet = true;

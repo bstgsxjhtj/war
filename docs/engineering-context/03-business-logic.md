@@ -57,6 +57,7 @@
 - **环境杀地图扩散**：毒沼（field/forest，25 DPS）和油渍（bridge/river，雷击引燃 80 爆发，引燃后消耗）扩散到多张地图。
 - **每日挑战×新模式**：DailyChallenge 新增 endlessWave/nightmareWin/nightmareKills 模式专属挑战，_regenerate 保证每日至少 1 个模式专属挑战。
 - **噩梦专属奖励**：通关噩梦战役解锁 nightmare_clear 成就，奖励传说皮肤（forceUnlock 免分解锁）+ 三级幸运词条 + 3 技能点。
+- **正反馈音效**（P2-3，2026-09-28）：AudioEngine 新增 4 个 WebAudio 合成音效——pickup（880→1320Hz triangle 双音上行，词条掉落）、levelup（C 大调琶音 523/659/784/1047 triangle，技能点+1）、buffSelect（660Hz sine 确认音，选 buff）、stageStart（330/440/660 sawtooth 三音上行，关卡开始）。接线点：MatchController.combat.kill 内 levelup/pickup、MatchController.startRound 内 stageStart、UpgradePicker 点击 buffSelect。kill/ultimate 音效仍由 main_entry 进度处理器单一播放（不重复）。
 
 ## 4. 成就事件契约
 

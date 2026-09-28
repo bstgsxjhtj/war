@@ -65,15 +65,18 @@ describe('MatchController', () => {
     expect(deps.hud.setScore).toHaveBeenLastCalledWith(1, 1);
   });
 
-  it('本地击杀 +1 技能点并闪现提示；Boss 击杀触发存档；音效交由 main_entry 进度处理器单一播放（不重复）', () => {
-    const { deps, bus } = makeDeps();
+  it('本地击杀 +1 技能点并闪现提示；Boss 击杀触发存档；播放 levelup/pickup 正反馈音效（kill 音效仍由 main_entry 处理不重复）', () => {
+    const { deps, bus } = makeDeps({ affixes: { grant: vi.fn(() => true), affixBonus: vi.fn(() => 0) } });
     const mc = new MatchController(deps);
     bus.emit('combat.kill', { team: 1, killer: { isLocal: true }, victim: { _isBoss: true } });
     expect(deps.skills.addPoint).toHaveBeenCalledWith(1);
     expect(deps.hud.flash).toHaveBeenCalledWith('+1 技能点 (按 K 分配)');
     expect(mc.playerKills).toBe(1);
     expect(deps.saveNow).toHaveBeenCalled();
-    expect(deps.audio.playSound).not.toHaveBeenCalled();
+    expect(deps.audio.playSound).toHaveBeenCalledWith('levelup');
+    expect(deps.audio.playSound).toHaveBeenCalledWith('pickup');
+    expect(deps.audio.playSound).not.toHaveBeenCalledWith('kill');
+    expect(deps.audio.playSound).not.toHaveBeenCalledWith('ultimate');
   });
 
   it('死斗：先赢一局进 ROUND_END（3 秒倒计时），连胜两局进 ENDED 并 recordWin', () => {

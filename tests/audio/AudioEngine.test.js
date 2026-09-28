@@ -287,4 +287,73 @@ describe('AudioEngine', () => {
       expect(spy).toHaveBeenCalledWith('victory');
     });
   });
+
+  describe('正反馈音效（P2-3）', () => {
+    it('playSound pickup 调用 pickup', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, 'pickup');
+      a.playSound('pickup');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('pickup 播放 2 个上行 triangle 音（880→1320）', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, '_toneAt');
+      a.pickup();
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy.mock.calls[0][0]).toBe(880);
+      expect(spy.mock.calls[1][0]).toBe(1320);
+      expect(spy.mock.calls[0][2]).toBe('triangle');
+    });
+
+    it('playSound levelup 调用 levelup', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, 'levelup');
+      a.playSound('levelup');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('levelup 播放 4 音上行琶音（523/659/784/1047）', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, '_toneAt');
+      a.levelup();
+      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy.mock.calls[0][0]).toBe(523);
+      expect(spy.mock.calls[1][0]).toBe(659);
+      expect(spy.mock.calls[2][0]).toBe(784);
+      expect(spy.mock.calls[3][0]).toBe(1047);
+    });
+
+    it('playSound buffSelect 调用 buffSelect', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, 'buffSelect');
+      a.playSound('buffSelect');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('buffSelect 播放 sine 660Hz 确认音', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, '_tone');
+      a.buffSelect();
+      expect(spy).toHaveBeenCalledWith(660, expect.any(Number), 'sine', expect.any(Number), expect.any(Number));
+    });
+
+    it('playSound stageStart 调用 stageStart', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, 'stageStart');
+      a.playSound('stageStart');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('stageStart 播放 3 音上行 sawtooth（330/440/660）', () => {
+      const a = new AudioEngine();
+      const spy = vi.spyOn(a, '_toneAt');
+      a.stageStart();
+      expect(spy).toHaveBeenCalledTimes(3);
+      expect(spy.mock.calls[0][0]).toBe(330);
+      expect(spy.mock.calls[1][0]).toBe(440);
+      expect(spy.mock.calls[2][0]).toBe(660);
+      expect(spy.mock.calls[0][2]).toBe('sawtooth');
+    });
+  });
 });

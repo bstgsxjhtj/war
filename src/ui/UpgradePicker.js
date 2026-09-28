@@ -1,8 +1,9 @@
 export class UpgradePicker {
-  constructor(runBuffs, player, bus) {
+  constructor(runBuffs, player, bus, audio = null) {
     this.runBuffs = runBuffs;
     this.player = player;
     this.bus = bus;
+    this.audio = audio;
     this._callback = null;
     this._picks = [];
     this.el = document.createElement('div');
@@ -38,6 +39,7 @@ export class UpgradePicker {
         const id = card.getAttribute('data-id');
         const picked = picks.find(p => p.id === id);
         this.runBuffs.apply(this.player, id);
+        this.audio?.playSound('buffSelect');
         this.hide();
         if (this.bus) this.bus.emit('hud.flash', { text: '已获得：' + picked.name });
         if (this._callback) { const cb = this._callback; this._callback = null; cb(); }
