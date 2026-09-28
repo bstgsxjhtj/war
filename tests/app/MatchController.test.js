@@ -189,3 +189,61 @@ describe('MatchController 死因统计', () => {
     }));
   });
 });
+
+describe('MatchController 表现统计', () => {
+  it('累计命中/暴击/最大连击/落空/完美格挡闪避/处决', () => {
+    const { deps, bus } = makeDeps();
+    const mc = new MatchController(deps);
+    bus.emit('combat.hit', { attacker: { isLocal: true }, victim: {}, damage: 10, combo: 3, crit: true });
+    bus.emit('combat.hit', { attacker: { isLocal: true }, victim: {}, damage: 10, combo: 7, crit: false });
+    bus.emit('hud.miss', { target: {} });
+    bus.emit('fx.perfectBlock', { char: { isLocal: true } });
+    bus.emit('fx.perfectDodge', { char: { isLocal: true } });
+    bus.emit('combat.execute', { char: { isLocal: true } });
+    expect(mc.playerHits).toBe(2);
+    expect(mc.playerCrits).toBe(1);
+    expect(mc.playerMaxCombo).toBe(7);
+    expect(mc.playerMisses).toBe(1);
+    expect(mc.playerPerfectBlocks).toBe(1);
+    expect(mc.playerPerfectDodges).toBe(1);
+    expect(mc.playerExecutes).toBe(1);
+  });
+
+  it('非本地来源不计入', () => {
+    const { deps, bus } = makeDeps();
+    const mc = new MatchController(deps);
+    bus.emit('combat.hit', { attacker: { isLocal: false }, victim: {}, damage: 10, combo: 5 });
+    bus.emit('combat.hit', { victim: {}, damage: 10, combo: 5 });
+    bus.emit('fx.perfectBlock', { char: { isLocal: false } });
+    bus.emit('fx.perfectDodge', { char: { isLocal: false } });
+    bus.emit('combat.execute', { char: { isLocal: false } });
+    expect(mc.playerHits).toBe(0);
+    expect(mc.playerMaxCombo).toBe(0);
+    expect(mc.playerPerfectBlocks).toBe(0);
+    expect(mc.playerPerfectDodges).toBe(0);
+    expect(mc.playerExecutes).toBe(0);
+  });
+
+  it('startRound 重置表现统计与承伤', () => {
+    const { deps, bus } = makeDeps();
+    const mc = new MatchController(deps);
+    mc.playerHits = 5; mc.playerMaxCombo = 9; mc.playerCrits = 2; mc.playerTaken = 300;
+    mc.startRound();
+    expect(mc.playerHits).toBe(0);
+    expect(mc.playerMaxCombo).toBe(0);
+    expect(mc.playerCrits).toBe(0);
+    expect(mc.playerTaken).toBe(0);
+  });
+
+  it('resultScreen.show 收到 stats（含 maxCombo 与 taken）', () => {
+    const { deps, bus, state } = makeDeps();
+    const mc = new MatchController(deps);
+    bus.emit('combat.hit', { attacker: { isLocal: true }, victim: {}, damage: 10, combo: 4 });
+    mc.playerTaken = 55;
+    toPlaying(state); mc.checkWin();
+    toPlaying(state); mc.checkWin();
+    expect(deps.resultScreen.show).toHaveBeenCalledWith(expect.objectContaining({
+      stats: expect.objectContaining({ maxCombo: 4, taken: 55 })
+    }));
+  });
+});

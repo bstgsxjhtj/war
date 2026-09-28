@@ -55,6 +55,67 @@ describe('ResultScreen.show 渲染差一点反馈', () => {
   });
 });
 
+describe('ResultScreen 评级纳入承伤与表现', () => {
+  it('承伤按 0.05/点扣分', () => {
+    const base = ResultScreen._scoreOf(5, 150, 80);
+    const taken = ResultScreen._scoreOf(5, 150, 80, { taken: 400 });
+    expect(taken).toBeCloseTo(base - 20, 5);
+  });
+
+  it('表现维度（完美格挡/闪避/处决/暴击/连击）加分', () => {
+    const score = ResultScreen._scoreOf(0, 0, 200, { perfectBlocks: 3, perfectDodges: 2, executes: 4, crits: 10, maxCombo: 8 });
+    expect(score).toBeGreaterThan(0);
+  });
+
+  it('不传 stats 时评分与旧行为一致', () => {
+    expect(ResultScreen._scoreOf(5, 150, 80)).toBe(65);
+  });
+});
+
+describe('ResultScreen.show 战斗复盘', () => {
+  let rs, bus;
+  beforeEach(() => {
+    bus = { emit: vi.fn(), on: vi.fn() };
+    rs = new ResultScreen(bus);
+  });
+
+  it('渲染最大连击/完美格挡/闪避/处决/暴击/命中率', () => {
+    rs.show({ kills: 5, damage: 150, time: 80, win: true, stats: { taken: 0, maxCombo: 12, perfectBlocks: 3, perfectDodges: 2, executes: 1, crits: 4, hits: 30, misses: 10 } });
+    const h = rs.el.innerHTML;
+    expect(h).toContain('战斗复盘');
+    expect(h).toContain('最大连击');
+    expect(h).toContain('12');
+    expect(h).toContain('完美格挡');
+    expect(h).toContain('完美闪避');
+    expect(h).toContain('处决');
+    expect(h).toContain('暴击');
+    expect(h).toContain('命中率');
+    expect(h).toContain('75%');
+  });
+
+  it('无 stats 时不渲染战斗复盘区', () => {
+    rs.show({ kills: 5, damage: 150, time: 50, win: true });
+    expect(rs.el.innerHTML).not.toContain('战斗复盘');
+  });
+
+  it('用时为 0（战役）时隐藏 0:00 用时并显示承伤', () => {
+    rs.show({ kills: 5, damage: 150, time: 0, win: true, stats: { taken: 120, maxCombo: 3, perfectBlocks: 0, perfectDodges: 0, executes: 0, crits: 0, hits: 10, misses: 0 } });
+    const h = rs.el.innerHTML;
+    expect(h).not.toContain('0:00');
+    expect(h).not.toContain('用时');
+    expect(h).toContain('承伤');
+    expect(h).toContain('120');
+  });
+
+  it('有 stats 时用时与承伤同时展示', () => {
+    rs.show({ kills: 5, damage: 150, time: 80, win: true, stats: { taken: 40, maxCombo: 3, perfectBlocks: 0, perfectDodges: 0, executes: 0, crits: 0, hits: 10, misses: 0 } });
+    const h = rs.el.innerHTML;
+    expect(h).toContain('用时');
+    expect(h).toContain('承伤');
+    expect(h).toContain('40');
+  });
+});
+
 describe('ResultScreen.show 死因统计', () => {
   let rs, bus;
   beforeEach(() => {
