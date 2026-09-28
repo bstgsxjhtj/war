@@ -22,8 +22,8 @@ export class Tutorial {
       { text: () => '⑧ 克制：青色伤害数字 = 你克制敌人', event: EV.COMBAT_COUNTER },
       { text: (t) => `⑨ 锁定：${t.bindLabel('lock')} 键锁定敌人（镜头跟随，专注单挑）`, actions: ['lock'] },
       { text: () => '⑩ 连击终结：三段连击第三击触发终结技（大范围伤害）', event: EV.COMBO_FINISHER },
-      { text: () => '⑪ 技能树：K 键加点升级（8 分支 build）', keys: ['KeyK'] },
-      { text: () => '⑫ 词条：I 键管理装备词条（Boss 掉落）', keys: ['KeyI'] },
+      { text: () => '⑪ 技能树：K 键加点升级（8 分支 build）', actions: ['skilltree'] },
+      { text: () => '⑫ 词条：I 键管理装备词条（Boss 掉落）', actions: ['affix'] },
     ];
     this.step = 0;
     this.active = true;
@@ -103,7 +103,11 @@ export class Tutorial {
     const lock = this.bindLabel('lock');
     const dodge = this.bindLabel('dodge');
     const exec = this.bindLabel('execute');
-    this.el.innerHTML = `<div style="color:#4ade80;font-weight:600;">✓ 引导完成！${lock} 锁定 · ${dodge} 闪避 · ${exec} 处决 · K 技能树 · M 模式 · N 天气 · Esc 设置</div>`;
+    const sk = this.bindLabel('skilltree');
+    const md = this.bindLabel('mode');
+    const wt = this.bindLabel('weather');
+    const st = this.bindLabel('settings');
+    this.el.innerHTML = `<div style="color:#4ade80;font-weight:600;">✓ 引导完成！${lock} 锁定 · ${dodge} 闪避 · ${exec} 处决 · ${sk} 技能树 · ${md} 模式 · ${wt} 天气 · ${st} 设置</div>`;
   }
 
   update(dt) {

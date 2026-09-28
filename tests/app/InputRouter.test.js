@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventBus } from '../../src/core/EventBus.js';
 import { GameState, States } from '../../src/core/GameState.js';
 import { InputRouter } from '../../src/app/InputRouter.js';
+import { KeyBindings } from '../../src/core/input/KeyBindings.js';
 import { UIStack } from '../../src/ui/UIStack.js';
 import { Domination } from '../../src/gameplay/GameMode.js';
 
@@ -115,5 +116,42 @@ describe('InputRouter', () => {
     expect(deps.audio.resume).toHaveBeenCalled();
     key('KeyD');
     expect(deps.audio.resume).toHaveBeenCalledTimes(1); // 只恢复一次
+  });
+});
+
+describe('InputRouter - 快捷键随 KeyBindings 重绑（P2-2）', () => {
+  let deps, state, router, kb;
+  beforeEach(() => {
+    kb = new KeyBindings();
+    ({ deps, state } = makeDeps({ kb }));
+    router = new InputRouter(deps);
+    router.install();
+  });
+
+  it('重绑 weather→KeyP 后按 KeyP 切天气，KeyN 不再切', () => {
+    kb.set('weather', 'KeyP');
+    state.transit(States.PLAYING);
+    key('KeyN');
+    expect(deps.weather.toggle).not.toHaveBeenCalled();
+    key('KeyP');
+    expect(deps.weather.toggle).toHaveBeenCalled();
+  });
+
+  it('重绑 mode→KeyZ 后按 KeyZ 轮换模式，KeyM 不再轮换', () => {
+    kb.set('mode', 'KeyZ');
+    state.transit(States.PLAYING); state.transit(States.ENDED);
+    key('KeyM');
+    expect(deps._modeSet).toBeUndefined();
+    key('KeyZ');
+    expect(deps._modeSet).toBeInstanceOf(Domination);
+  });
+
+  it('不传 kb 时回退默认键码（向后兼容）', () => {
+    const { deps: d2, state: s2 } = makeDeps();
+    const r2 = new InputRouter(d2);
+    r2.install();
+    s2.transit(States.PLAYING);
+    key('KeyN');
+    expect(d2.weather.toggle).toHaveBeenCalled();
   });
 });

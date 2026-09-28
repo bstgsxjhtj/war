@@ -2,8 +2,10 @@
 import { UIStack } from './UIStack.js';
 
 export class UIPanel {
-  constructor({ id, toggleKey, width = '480px', position = 'center', style = {} } = {}) {
+  constructor({ id, toggleKey, width = '480px', position = 'center', style = {}, kb = null, action = null } = {}) {
     this.toggleKey = toggleKey;
+    this.kb = kb;
+    this.action = action;
     this.visible = false;
     this.el = document.createElement('div');
     this.el.id = id;
@@ -24,7 +26,8 @@ export class UIPanel {
   }
 
   _onKey(e) {
-    if (e.code === this.toggleKey) { e.preventDefault(); this.toggle(); }
+    const key = this.kb ? this.kb.get(this.action) : this.toggleKey;
+    if (e.code === key) { e.preventDefault(); this.toggle(); }
   }
 
   toggle() { this.visible ? this.hide() : this.show(); }

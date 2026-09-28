@@ -2,8 +2,8 @@ import { AFFIX_TYPES } from '../gameplay/Affixes.js';
 import { UIPanel } from './UIPanel.js';
 
 export class AffixesUI extends UIPanel {
-  constructor(affixes, player) {
-    super({ id: 'affixes-panel', toggleKey: 'KeyI' });
+  constructor(affixes, player, kb = null) {
+    super({ id: 'affixes-panel', toggleKey: 'KeyI', kb, action: 'affix' });
     this.affixes = affixes;
     this.player = player;
   }

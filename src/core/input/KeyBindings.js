@@ -15,7 +15,12 @@ export const DEFAULT_BINDINGS = {
   weapon1: 'Digit1',
   weapon2: 'Digit2',
   weapon3: 'Digit3',
-  weapon4: 'Digit4'
+  weapon4: 'Digit4',
+  skilltree: 'KeyK',
+  affix: 'KeyI',
+  mode: 'KeyM',
+  weather: 'KeyN',
+  settings: 'Escape'
 };
 
 export const BINDING_LABELS = {
@@ -33,13 +38,19 @@ export const BINDING_LABELS = {
   weapon1: '武器1',
   weapon2: '武器2',
   weapon3: '武器3',
-  weapon4: '武器4'
+  weapon4: '武器4',
+  skilltree: '技能树',
+  affix: '词条',
+  mode: '模式',
+  weather: '天气',
+  settings: '设置'
 };
 
 export const BINDING_ORDER = [
   'forward', 'back', 'left', 'right', 'sprint', 'jump',
   'dodge', 'skill', 'ultimate', 'execute', 'lock',
-  'weapon1', 'weapon2', 'weapon3', 'weapon4'
+  'weapon1', 'weapon2', 'weapon3', 'weapon4',
+  'skilltree', 'affix', 'mode', 'weather', 'settings'
 ];
 
 export function keyLabel(code) {

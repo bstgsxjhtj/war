@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { KeyBindings, DEFAULT_BINDINGS, keyLabel } from '../../../src/core/input/KeyBindings.js';
+import { KeyBindings, DEFAULT_BINDINGS, BINDING_ORDER, keyLabel } from '../../../src/core/input/KeyBindings.js';
 
 describe('KeyBindings', () => {
   beforeEach(() => { localStorage.clear(); });
@@ -107,5 +107,35 @@ describe('keyLabel（P1-3：键码→显示文本，与 Tutorial/HUD 提示共�
     expect(keyLabel('')).toBe('');
     expect(keyLabel(undefined)).toBe('');
     expect(keyLabel(null)).toBe('');
+  });
+});
+
+describe('UI 快捷键动作（P2-2）', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('默认绑定含 skilltree/affix/mode/weather/settings 五项', () => {
+    const kb = new KeyBindings();
+    expect(kb.get('skilltree')).toBe('KeyK');
+    expect(kb.get('affix')).toBe('KeyI');
+    expect(kb.get('mode')).toBe('KeyM');
+    expect(kb.get('weather')).toBe('KeyN');
+    expect(kb.get('settings')).toBe('Escape');
+  });
+
+  it('BINDING_ORDER 含五项（重绑 UI 可遍历）', () => {
+    expect(BINDING_ORDER).toContain('skilltree');
+    expect(BINDING_ORDER).toContain('affix');
+    expect(BINDING_ORDER).toContain('mode');
+    expect(BINDING_ORDER).toContain('weather');
+    expect(BINDING_ORDER).toContain('settings');
+  });
+
+  it('五项可重绑且冲突检测生效', () => {
+    const kb = new KeyBindings();
+    kb.set('skilltree', 'KeyZ');
+    expect(kb.get('skilltree')).toBe('KeyZ');
+    kb.set('affix', 'KeyP');
+    expect(kb.get('affix')).toBe('KeyP');
+    expect(kb.get('skilltree')).toBe('KeyZ');
   });
 });

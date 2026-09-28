@@ -28,7 +28,7 @@ export class InputRouter {
       if (state.current === States.ENDED) match.restart();
       else if (state.current === States.ROUND_END) { match.roundEndTimer = 0; match.startRound(); }
     }
-    if (e.code === 'KeyM' && (state.current === States.ENDED || state.current === States.ROUND_END || state.current === States.PLAYING && !this.deps.getPlayer()?.alive)) {
+    if (e.code === (this.deps.kb ? this.deps.kb.get('mode') : 'KeyM') && (state.current === States.ENDED || state.current === States.ROUND_END || state.current === States.PLAYING && !this.deps.getPlayer()?.alive)) {
       const { bus, getMode, setMode, loadMap, mapName } = this.deps;
       const mode = getMode();
       let next;
@@ -66,7 +66,7 @@ export class InputRouter {
       const done = daily.challenges.filter(c => c.done).length;
       hud.flash('每日挑战：' + done + '/' + daily.challenges.length + ' 完成');
     }
-    if (e.code === 'KeyN') { weather.toggle(); const wm = { clear: '晴', rain: '雨', night: '夜', snow: '雪', storm: '雷暴' }; hud.flash('天气：' + (wm[weather.mode] || weather.mode)); setTimeout(() => hud.clearHint(), 1500); }
-    if (e.code === 'Escape' && UIStack.empty) settings.show();
+    if (e.code === (this.deps.kb ? this.deps.kb.get('weather') : 'KeyN')) { weather.toggle(); const wm = { clear: '晴', rain: '雨', night: '夜', snow: '雪', storm: '雷暴' }; hud.flash('天气：' + (wm[weather.mode] || weather.mode)); setTimeout(() => hud.clearHint(), 1500); }
+    if (e.code === (this.deps.kb ? this.deps.kb.get('settings') : 'Escape') && UIStack.empty) settings.show();
   }
 }

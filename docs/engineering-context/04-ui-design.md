@@ -17,8 +17,9 @@
 
 已占用：Q F R M , K C D N I J V H Escape。
 面板开关键（I/J/V/H/K）由**面板组件在 document 自监听**，main_entry 不重复绑定。
-**新手引导（Tutorial）读 KeyBindings**（P0-3，2026-09-28）：步骤匹配与文案由 `kb.get(action)` 反查当前键码（dodge/ultimate/execute/lock/weapon1-4/移动），重绑后不再卡死；`kb=null` 回退 DEFAULT_BINDINGS。K/I 尚未纳入可重绑动作（P2-2）。
-**提示文案随键位动态化**（P1-3，2026-09-28）：键码→显示文本的格式化逻辑（`KeyR`→`R`、`Digit5`→`5`、`ShiftLeft`→`Shift`、`Space`/`Tab` 原样、空值→`''`）抽为 `keyLabel(code)` 导出函数，下沉至 `core/input/KeyBindings.js`（输入基础设施层），Tutorial 与 main_entry 共用同一份逻辑（Tutorial.keyLabel 方法委托该函数，消除重复）。两处消费点改为动态反查：① main_entry 处决提示 `hud.flash('按 ' + keyLabel(keyBindings.get('execute')) + ' 处决！')`；② Tutorial `_renderFinal` 完成条 lock/dodge/execute 三键由 `bindLabel()` 渲染。K/M/N/Esc 仍为 UI 面板硬编码键（待 P2-2 纳入可重绑）。
+**新手引导（Tutorial）读 KeyBindings**（P0-3，2026-09-28）：步骤匹配与文案由 `kb.get(action)` 反查当前键码（dodge/ultimate/execute/lock/weapon1-4/移动），重绑后不再卡死；`kb=null` 回退 DEFAULT_BINDINGS。
+**UI 快捷键纳入 KeyBindings**（P2-2，2026-09-28）：新增 skilltree(K)/affix(I)/mode(M)/weather(N)/settings(Esc) 5 个可重绑动作（共 20 项）。InputRouter 读 `kb.get('mode'/'weather'/'settings')` 替代硬编码 KeyM/KeyN/Escape；UIPanel 接受可选 `kb+action` 参数、AffixesUI 透传；SkillTreeUI 接受 `kb` 读 skilltree 键；Tutorial ⑪⑫步改 `actions` 驱动、_renderFinal 全键位动态化。无 kb 时回退默认键码（向后兼容）。
+**提示文案随键位动态化**（P1-3，2026-09-28）：键码→显示文本的格式化逻辑（`KeyR`→`R`、`Digit5`→`5`、`ShiftLeft`→`Shift`、`Space`/`Tab` 原样、空值→`''`）抽为 `keyLabel(code)` 导出函数，下沉至 `core/input/KeyBindings.js`（输入基础设施层），Tutorial 与 main_entry 共用同一份逻辑（Tutorial.keyLabel 方法委托该函数，消除重复）。两处消费点改为动态反查：① main_entry 处决提示 `hud.flash('按 ' + keyLabel(keyBindings.get('execute')) + ' 处决！')`；② Tutorial `_renderFinal` 完成条全部 7 键由 `bindLabel()` 渲染（lock/dodge/execute/skilltree/mode/weather/settings）。
 
 ## 3. UI 约定
 

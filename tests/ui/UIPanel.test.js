@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { UIPanel } from '../../src/ui/UIPanel.js';
 import { UIStack, installUIStackEscape } from '../../src/ui/UIStack.js';
+import { KeyBindings } from '../../src/core/input/KeyBindings.js';
+
+afterEach(() => { UIStack._stack.length = 0; });
 
 function key(code) {
   document.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
@@ -69,5 +72,27 @@ describe('UIPanel 基类（面板四胞胎共性）', () => {
   it('render 默认是空实现（子类覆写）', () => {
     const p = new UIPanel({ id: 'x', toggleKey: 'KeyX' });
     expect(() => p.render()).not.toThrow();
+  });
+});
+
+describe('UIPanel - toggleKey 随 KeyBindings 重绑（P2-2）', () => {
+  beforeEach(() => { document.body.innerHTML = ''; UIStack._stack.length = 0; });
+
+  it('传 kb+action 后按重绑键切换，原 toggleKey 不再切换', () => {
+    const kb = new KeyBindings();
+    kb.set('affix', 'KeyZ');
+    const p = new UIPanel({ id: 'test', toggleKey: 'KeyI', kb, action: 'affix' });
+    p.render = vi.fn();
+    key('KeyI');
+    expect(p.visible).toBe(false);
+    key('KeyZ');
+    expect(p.visible).toBe(true);
+  });
+
+  it('不传 kb 时回退 toggleKey（向后兼容）', () => {
+    const p = new UIPanel({ id: 'test', toggleKey: 'KeyI' });
+    p.render = vi.fn();
+    key('KeyI');
+    expect(p.visible).toBe(true);
   });
 });

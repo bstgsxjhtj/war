@@ -392,3 +392,28 @@ describe('Tutorial - KeyBindings 接入 (P0-3)', () => {
     expect(t.el.textContent).toContain('WASD');
   });
 });
+
+describe('Tutorial - 进阶步骤键位动态化（P2-2）', () => {
+  it('⑪ 技能树步：重绑 skilltree→KeyZ 后按 KeyZ 推进，KeyK 不再推进', () => {
+    const kb = new KeyBindings();
+    kb.set('skilltree', 'KeyZ');
+    const t = new Tutorial(mkBus(), kb);
+    t.step = 10; t.phase = 'hold'; t.phaseT = 10; t._render();
+    keydown('KeyK');
+    expect(t.step).toBe(10);
+    keydown('KeyZ');
+    expect(t.step).toBe(11);
+  });
+
+  it('⑫ 词条步：重绑 affix→KeyP 后按 KeyP 完成，KeyI 不再完成', () => {
+    const kb = new KeyBindings();
+    kb.set('affix', 'KeyP');
+    const t = new Tutorial(mkBus(), kb);
+    t.step = 11; t.phase = 'hold'; t.phaseT = 10; t._render();
+    keydown('KeyI');
+    expect(t.active).toBe(true);
+    keydown('KeyP');
+    expect(t.active).toBe(false);
+    expect(localStorage.getItem(LS.TUTORIAL_DONE)).toBe('1');
+  });
+});

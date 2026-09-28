@@ -9,14 +9,14 @@ main_entry.js（组合根 / composition root）
    ├── gameplay/    → 可依赖 core、render 的纯工厂/特效接口（显式例外）
    ├── world/       → 依赖 core（bus）；纹理由组合根经 opts.textures 注入（✅2026-09-22 移除 render 依赖）
    ├── engine/      → 依赖 render
-   └── core/        → EventBus / GameState / Time，不依赖任何上层
+   └── core/        → EventBus / GameState / Time / input/KeyBindings，不依赖任何上层
 net/ audio/ render/ 为基础设施，被上层使用。
 ESM 依赖图必须保持无环（DAG）。
 ```
 
 ## 2. 模块职责
 
-- **core**：EventBus（on 返回 off 函数）、GameState 状态机、Time 主循环。ECS.js 当前未被使用（保留待决）。
+- **core**：EventBus（on 返回 off 函数）、GameState 状态机、Time 主循环、input/KeyBindings（20 动作可重绑 + 冲突检测 + localStorage 持久化，纯数据输入基础设施）。ECS.js 当前未被使用（保留待决）。
 - **engine**：Renderer（three 后期管线）、Scene、Camera、AssetLoader。
 - **world**：Terrain、Environment、Water、WeatherSystem、MapGenerator、SiegeStructure、SupplyPoint。
 - **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/CavalryEnemy）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、weapons/*；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；SaveManager；战斗辅助（EnvironmentHazards 环境伤害、DifficultyAssist 动态难度）。

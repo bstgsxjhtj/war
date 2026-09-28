@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { SettingsMenu } from '../../src/ui/SettingsMenu.js';
 import { KeyBindings, BINDING_ORDER } from '../../src/core/input/KeyBindings.js';
+import { UIStack } from '../../src/ui/UIStack.js';
 import { EV } from '../../src/core/constants/events.js';
 import { LS } from '../../src/core/constants/storage-keys.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -10,16 +11,17 @@ describe('SettingsMenu 键位重绑', () => {
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = '';
+    UIStack._stack.length = 0;
     bus = { on: vi.fn(), emit: vi.fn() };
     audio = { setVolume: vi.fn(), resume: vi.fn(), getVolume: vi.fn(() => 0.7) };
     kb = new KeyBindings();
     menu = new SettingsMenu(bus, audio, kb);
   });
 
-  it('渲染键位区域，包含全部 15 个可重绑动作按钮', () => {
+  it('渲染键位区域，包含全部 20 个可重绑动作按钮', () => {
     const buttons = menu.el.querySelectorAll('[data-bind]');
     expect(buttons.length).toBe(BINDING_ORDER.length);
-    expect(BINDING_ORDER.length).toBe(15);
+    expect(BINDING_ORDER.length).toBe(20);
   });
 
   it('每个按钮显示当前绑定的键码', () => {

@@ -194,7 +194,8 @@ async function bootstrap() {
   const siege = new SiegeStructure(scene.scene, bus);
   const trajectory = new TrajectoryPreview(scene.scene);
   const skills = new SkillTree();
-  const skillUI = new SkillTreeUI(bus, skills);
+  const keyBindings = new KeyBindings();
+  const skillUI = new SkillTreeUI(bus, skills, keyBindings);
   const saveManager = new SaveManager();
   const audio = new AudioEngine();
   wireAchievements(bus, { achievements, getSkills: () => skills, getAffixes: () => affixes, getSkins: () => skins, hud, audio });
@@ -215,7 +216,6 @@ async function bootstrap() {
   bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => assist.setBaseLevel(difficulty));
   weather.onLightning((pos) => envHazards.onLightningStrike(pos));
   for (const box of siege.collisionBoxes) envHazards.addWallBox(box);
-  const keyBindings = new KeyBindings();
   const settings = new SettingsMenu(bus, audio, keyBindings);
   // P2-5 画质档位：统一应用到渲染器/环境粒子/天气粒子；低端机自适应降帧
   const qualityGovernor = new QualityGovernor({ quality: 'high' });
@@ -379,7 +379,7 @@ async function bootstrap() {
   }
 
   const inputRouter = new InputRouter({
-    bus, state, hud, campaign, daily, weather, settings, audio, match,
+    bus, state, hud, campaign, daily, weather, settings, audio, match, kb: keyBindings,
     getMode: () => mode,
     setMode: (m) => { mode = m; },
     loadMap: (k) => loadMap(k),
@@ -394,7 +394,7 @@ async function bootstrap() {
   spawnAll();
   window.__game = { get player() { return player; }, get ais() { return ais; }, combat, get match() { return match; }, get state() { return state; } };
   window.__mp = { get connected() { return net.connected; }, get id() { return net.id; }, get remotes() { return remotes.length; } };
-  const affixesUI = new AffixesUI(affixes, player);
+  const affixesUI = new AffixesUI(affixes, player, keyBindings);
   const achievementsUI = new AchievementsUI(achievements);
   const runBuffs = new RunBuffs();
   const upgradePicker = new UpgradePicker(runBuffs, player, bus);

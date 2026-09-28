@@ -1,9 +1,10 @@
 import { EV } from '../core/constants/events.js';
 // 技能树 UI v3：拖拽排序 + localStorage 持久化 + 渐变+图标+进度圆点+Tab+悬停预览+升级动画+重置
 export class SkillTreeUI {
-  constructor(bus, skill) {
+  constructor(bus, skill, kb = null) {
     this.bus = bus;
     this.skill = skill;
+    this.kb = kb;
     this.open = false;
     this._tab = 'skill';
     this._resetUsed = false;
@@ -47,7 +48,7 @@ export class SkillTreeUI {
     this.el.addEventListener('click', (e) => { if (e.target === this.el) this.hide(); });
     this._keyHandler = (e) => {
       if (e.code === 'Escape') { e.preventDefault(); this.hide(); return; }
-      if (e.code === 'KeyK') { e.preventDefault(); this.toggle(); }
+      if (e.code === (this.kb ? this.kb.get('skilltree') : 'KeyK')) { e.preventDefault(); this.toggle(); }
     };
     window.addEventListener('keydown', this._keyHandler);
   }
