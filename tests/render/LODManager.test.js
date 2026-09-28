@@ -145,4 +145,79 @@ describe('LODManager', () => {
     lod.dispose();
     expect(lod.chars.length).toBe(0);
   });
+
+  it('远距正在攻击的角色不降级（root 保持可见，不计入 proxy）', () => {
+    const c = makeChar(1, 0, 60);
+    c._attacking = true;
+    lod.register(c);
+    lod.tick();
+    expect(c._lodLevel).toBe(1);
+    expect(c.root.visible).toBe(true);
+    expect(lod.proxyCount).toBe(0);
+  });
+
+  it('远距正在 telegraph（_windupTimer>0）的角色不降级', () => {
+    const c = makeChar(1, 0, 60);
+    c._windupTimer = 0.3;
+    lod.register(c);
+    lod.tick();
+    expect(c._lodLevel).toBe(1);
+    expect(c.root.visible).toBe(true);
+    expect(lod.proxyCount).toBe(0);
+  });
+
+  it('远距冲锋中的骑兵不降级（_chargeState=charge）', () => {
+    const c = makeChar(1, 0, 60);
+    c._chargeState = 'charge';
+    lod.register(c);
+    lod.tick();
+    expect(c._lodLevel).toBe(1);
+    expect(c.root.visible).toBe(true);
+    expect(lod.proxyCount).toBe(0);
+  });
+
+  it('威胁解除后恢复降级到 proxy', () => {
+    const c = makeChar(1, 0, 60);
+    c._attacking = true;
+    lod.register(c);
+    lod.tick();
+    expect(c.root.visible).toBe(true);
+    c._attacking = false;
+    lod.tick();
+    expect(c._lodLevel).toBe(2);
+    expect(c.root.visible).toBe(false);
+    expect(lod.proxyCount).toBe(1);
+  });
+
+  it('远距精英敌人代理实例用金色 + 更大缩放区分', () => {
+    const c = makeChar(1, 0, 60);
+    c._isElite = true;
+    lod.register(c);
+    lod.tick();
+    expect(c._lodLevel).toBe(2);
+    expect(lod.proxyCount).toBe(1);
+    const col = new THREE.Color();
+    lod._proxyMesh.getColorAt(0, col);
+    expect(col.getHex()).toBe(0xffd070);
+    const m = new THREE.Matrix4();
+    lod._proxyMesh.getMatrixAt(0, m);
+    const sc = new THREE.Vector3();
+    m.decompose(new THREE.Vector3(), new THREE.Quaternion(), sc);
+    expect(sc.x).toBeCloseTo(1.3);
+  });
+
+  it('远距普通敌人代理实例为灰色 + 标准缩放', () => {
+    const c = makeChar(1, 0, 60);
+    lod.register(c);
+    lod.tick();
+    expect(lod.proxyCount).toBe(1);
+    const col = new THREE.Color();
+    lod._proxyMesh.getColorAt(0, col);
+    expect(col.getHex()).toBe(0x888888);
+    const m = new THREE.Matrix4();
+    lod._proxyMesh.getMatrixAt(0, m);
+    const sc = new THREE.Vector3();
+    m.decompose(new THREE.Vector3(), new THREE.Quaternion(), sc);
+    expect(sc.x).toBeCloseTo(1.0);
+  });
 });

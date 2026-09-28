@@ -44,3 +44,10 @@ ESM 依赖图必须保持无环（DAG）。
 
 - main_entry 是唯一装配点；新增系统的实例化、事件接线、按键绑定都在此完成。
 - UI 面板按键惯例：面板组件在 `document` 上自监听 keydown（KeyI/J/V/H），main_entry 的 window handler **不得重复绑定**同一键（会双 toggle 抵消）。
+
+## 6. LOD 可见性规则（P1-4，2026-09-28）
+
+`render/LODManager` 按相机距离分 4 级（0 全显 / 1 藏装饰 / 2 藏 root 用代理胶囊 / 3 完全隐藏）。远距角色原本统一降为灰色 InstancedMesh 代理，导致两个体验级问题，已修复：
+
+- **远距隐形威胁**：`_isThreat(char)` 判定角色是否正在 `char._attacking`（攻击中）/ `char._windupTimer > 0`（AI telegraph 前摇）/ `char._chargeState ∈ {'windup','charge'}`（骑兵冲锋）。命中任一即把 `effectiveLevel = min(level, 1)`——root 保持可见，telegraph/武器动画不再被代理胶囊吞掉，玩家可看到远距来袭；威胁解除后恢复按距离降级到 proxy。
+- **精英代理区分**：proxy 基础材质改为白色（`0xffffff`）以承载 `instanceColor`——普通敌人 `setColorAt(灰 0x888888)`、精英（`char._isElite`，含 Boss）`setColorAt(金 0xffd070)` 且矩阵缩放 `1.3×`，远距一眼可辨威胁等级。每帧 `instanceColor.needsUpdate` 与 `instanceMatrix.needsUpdate` 同步。

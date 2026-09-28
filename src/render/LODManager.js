@@ -3,6 +3,9 @@ import * as THREE from 'three';
 const UP = new THREE.Vector3(0, 1, 0);
 const PROXY_MAX = 80;
 const QUALITY_SCALE = { high: 1.0, mid: 0.8, low: 0.5 };
+const PROXY_GRAY = 0x888888;
+const PROXY_GOLD = 0xffd070;
+const ELITE_SCALE = 1.3;
 const DECORATIVE = ['cape', 'emblem', 'factionFlag', 'rKneeguard', 'lKneeguard'];
 const MID_EXTRA = ['rPauldron', 'lPauldron', 'visor', 'belt', 'chestplate'];
 
@@ -15,11 +18,13 @@ export class LODManager {
     this._chars = [];
     this._enabled = true;
     this._proxyGeo = new THREE.CapsuleGeometry(0.5, 1.2, 2, 4);
-    this._proxyMat = new THREE.MeshBasicMaterial({ color: 0x888888 });
+    this._proxyMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     this._proxyMesh = new THREE.InstancedMesh(this._proxyGeo, this._proxyMat, PROXY_MAX);
     this._proxyMesh.count = 0;
     this._proxyMesh.castShadow = false;
     this._proxyMesh.frustumCulled = false;
+    this._proxyGray = new THREE.Color(PROXY_GRAY);
+    this._proxyGold = new THREE.Color(PROXY_GOLD);
     this._tmpMatrix = new THREE.Matrix4();
     this._tmpQuat = new THREE.Quaternion();
     this._tmpScale = new THREE.Vector3(1, 1, 1);
@@ -85,6 +90,13 @@ export class LODManager {
     return 0;
   }
 
+  _isThreat(char) {
+    if (char._attacking) return true;
+    if (char._windupTimer && char._windupTimer > 0) return true;
+    if (char._chargeState === 'windup' || char._chargeState === 'charge') return true;
+    return false;
+  }
+
   _applyLevel(char, level) {
     if (level === 0) {
       char.root.visible = true;
@@ -110,17 +122,22 @@ export class LODManager {
       if (!char.alive || !char.root || !char.position) continue;
       const d = this._distance(char);
       const level = this._levelForDistance(d);
-      if (level !== char._lodLevel) this._applyLevel(char, level);
-      if (level === 2 && proxyIdx < PROXY_MAX) {
+      const effective = this._isThreat(char) ? Math.min(level, 1) : level;
+      if (effective !== char._lodLevel) this._applyLevel(char, effective);
+      if (effective === 2 && proxyIdx < PROXY_MAX) {
         this._tmpPos.copy(char.position);
         this._tmpQuat.setFromAxisAngle(UP, 0);
+        const s = char._isElite ? ELITE_SCALE : 1;
+        this._tmpScale.set(s, s, s);
         this._tmpMatrix.compose(this._tmpPos, this._tmpQuat, this._tmpScale);
         this._proxyMesh.setMatrixAt(proxyIdx, this._tmpMatrix);
+        this._proxyMesh.setColorAt(proxyIdx, char._isElite ? this._proxyGold : this._proxyGray);
         proxyIdx++;
       }
     }
     this._proxyMesh.count = proxyIdx;
     if (this._proxyMesh.instanceMatrix) this._proxyMesh.instanceMatrix.needsUpdate = true;
+    if (this._proxyMesh.instanceColor) this._proxyMesh.instanceColor.needsUpdate = true;
   }
 
   dispose() {
