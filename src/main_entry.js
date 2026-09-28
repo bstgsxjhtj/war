@@ -544,6 +544,7 @@ async function bootstrap() {
         }
         if (!_wavePending && (mode.name === '波次' || mode.name === '无尽') && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
           _wavePending = true;
+          runBuffs.resetRerolls();
           upgradePicker.show(() => {
             _wavePending = false;
             const lay = mode.spawnLayout();

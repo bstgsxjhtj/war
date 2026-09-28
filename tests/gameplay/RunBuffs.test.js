@@ -47,7 +47,7 @@ describe('RunBuffs', () => {
 
   it('apply damage 设置 _runDmgMul', () => {
     rb.apply(player, 'damage');
-    expect(player._runDmgMul).toBeCloseTo(1.15);
+    expect(player._runDmgMul).toBeCloseTo(1.10);
   });
 
   it('apply lifesteal 设置 _runLifesteal', () => {

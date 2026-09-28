@@ -16,8 +16,8 @@ export class SkillTree {
     this.weaponOrder = [0, 1, 2, 3];
     this.branches = {
       berserk:   { level: 0, max: 1, name: '狂暴',   desc: '伤害+25%',           cost: 2, req: 'power',   excl: 'guardian' },
-      guardian:  { level: 0, max: 1, name: '守护',   desc: '减伤+15%',           cost: 2, req: 'power',   excl: 'berserk' },
-      regen:     { level: 0, max: 1, name: '回复',   desc: '每秒回血+2',          cost: 2, req: 'vigor',   excl: 'lifesteal' },
+      guardian:  { level: 0, max: 1, name: '守护',   desc: '减伤+25%',           cost: 2, req: 'power',   excl: 'berserk' },
+      regen:     { level: 0, max: 1, name: '回复',   desc: '每秒回血+5',          cost: 2, req: 'vigor',   excl: 'lifesteal' },
       lifesteal: { level: 0, max: 1, name: '吸血',   desc: '吸血+5%',            cost: 2, req: 'vigor',   excl: 'regen' },
       swift:     { level: 0, max: 1, name: '疾风',   desc: '移速+10%',           cost: 2, req: 'agility', excl: 'evade' },
       evade:     { level: 0, max: 1, name: '闪避',   desc: '闪避率+10%',         cost: 2, req: 'agility', excl: 'swift' },
@@ -76,9 +76,9 @@ export class SkillTree {
   weaponDamageMul(idx) { return 1 + (this.weaponLevel[idx] - 1) * 0.25; }
 
   get branchDamageMul() { return 1 + 0.25 * this.branches.berserk.level; }
-  get branchDefenseMul() { return 1 - 0.15 * this.branches.guardian.level; }
+  get branchDefenseMul() { return 1 - 0.25 * this.branches.guardian.level; }
   get branchLifesteal() { return 0.05 * this.branches.lifesteal.level; }
-  get branchRegen() { return 2 * this.branches.regen.level; }
+  get branchRegen() { return 5 * this.branches.regen.level; }
   get branchMoveSpeedMul() { return 1 + 0.10 * this.branches.swift.level; }
   get branchDodgeChance() { return 0.10 * this.branches.evade.level; }
   get branchAttackSpeedMul() { return 1 - 0.15 * this.branches.frenzy.level; }

@@ -82,9 +82,9 @@ describe('SkillTree branches', () => {
     expect(st.branchDamageMul).toBeCloseTo(1.25, 2);
   });
 
-  it('branchDefenseMul returns 0.85 when guardian is taken', () => {
+  it('branchDefenseMul returns 0.75 when guardian is taken', () => {
     st.branches.guardian.level = 1;
-    expect(st.branchDefenseMul).toBeCloseTo(0.85, 2);
+    expect(st.branchDefenseMul).toBeCloseTo(0.75, 2);
   });
 
   it('branchLifesteal returns 0.05 when lifesteal branch taken', () => {
@@ -92,9 +92,9 @@ describe('SkillTree branches', () => {
     expect(st.branchLifesteal).toBeCloseTo(0.05, 2);
   });
 
-  it('branchRegen returns 2 when regen branch taken', () => {
+  it('branchRegen returns 5 when regen branch taken', () => {
     st.branches.regen.level = 1;
-    expect(st.branchRegen).toBe(2);
+    expect(st.branchRegen).toBe(5);
   });
 
   it('branchMoveSpeedMul returns 1.10 when swift taken', () => {
