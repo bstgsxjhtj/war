@@ -11,6 +11,9 @@ export const STAGES = [
   { name: '终局之战', mapKey: 'keep', objective: 'Boss限时', enemyCount: 10, weather: 'storm', layout: '环形', events: { bossPhase: 0.5, reinforce: 0.3 }, difficulty: 2.4, weapons: ['sword', 'spear', 'warhammer'], bossType: 'behemoth' },
 ];
 
+// P3-2 噩梦新周目：敌人随机词条、环境陷阱增强、Boss 强制阶段 3
+const NIGHTMARE_AFFIX_POOL = ['reflect', 'vampire', 'lucky', 'swift', 'ironhide'];
+
 export class CampaignMode {
   constructor(bus, nightmare = false) {
     this.bus = bus;
@@ -22,6 +25,7 @@ export class CampaignMode {
     this._reinforced = false;
     this._bossPhase = 1;
     this._weatherShifted = false;
+    this._nightmareSeed = nightmare ? Math.floor(Math.random() * 1e6) : 0;
   }
 
   get displayName() { return this.nightmare ? '噩梦战役' : '战役'; }
@@ -34,7 +38,18 @@ export class CampaignMode {
   get currentStage() {
     const s = STAGES[Math.min(this.stage, STAGES.length - 1)];
     if (!this.nightmare) return s;
-    return { ...s, difficulty: s.difficulty * 1.35, enemyCount: s.enemyCount + 2 };
+    // P3-2 噩梦：数值 +35% / +2 敌人；新增 enemyMods / hazardBoost / bossPhase3
+    const seed = this._nightmareSeed + this.stage;
+    const mods = [];
+    for (let i = 0; i < 2; i++) mods.push(NIGHTMARE_AFFIX_POOL[(seed * 7 + i * 13) % NIGHTMARE_AFFIX_POOL.length]);
+    return {
+      ...s,
+      difficulty: s.difficulty * 1.35,
+      enemyCount: s.enemyCount + 2,
+      enemyMods: mods,
+      hazardBoost: 1 + 0.3 + (this.stage % 3) * 0.1,
+      bossPhase3: !!s.bossType
+    };
   }
   get stageInfo() { return { ...this.currentStage, index: this.stage, total: this.maxStages, cleared: this.cleared }; }
 

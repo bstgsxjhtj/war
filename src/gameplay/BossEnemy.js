@@ -3,10 +3,10 @@ import * as THREE from 'three';
 import { EV } from '../core/constants/events.js';
 
 const BOSS_TYPES = {
-  warlord: { hp: 300, speed: 5.5, name: '战将', skills: ['charge', 'roar', 'summon'] },
-  ranger:  { hp: 220, speed: 6.0, name: '游侠', skills: ['rapidshot', 'dodge', 'trap'] },
-  mage:    { hp: 180, speed: 5.0, name: '法师', skills: ['fireball', 'teleport', 'aoe'] },
-  behemoth:{ hp: 400, speed: 4.5, name: '巨兽', skills: ['slam', 'charge', 'regenerate'] },
+  warlord: { hp: 300, speed: 5.5, name: '战将', skills: ['charge', 'roar', 'summon'], phase3: null },
+  ranger:  { hp: 220, speed: 6.0, name: '游侠', skills: ['rapidshot', 'dodge', 'trap'], phase3: 'clone' },
+  mage:    { hp: 180, speed: 5.0, name: '法师', skills: ['fireball', 'teleport', 'aoe'], phase3: 'meteor' },
+  behemoth:{ hp: 400, speed: 4.5, name: '巨兽', skills: ['slam', 'charge', 'regenerate'], phase3: 'quake' },
 };
 // 技能阶段门槛：基础技阶段 1 开放，未列出的默认阶段 2，summon 阶段 3
 const PHASE_GATE = { slam: 1, dodge: 1, summon: 3 };
@@ -29,6 +29,7 @@ export class BossEnemy extends AIController {
     this._aoeRadius = 6;
     this._name = cfg.name;
     this._skillSet = mini ? cfg.skills.slice(0, 2) : cfg.skills.slice();
+    this._phase3Skill = cfg.phase3 || null;
     this._meshScaled = false;
     this.damageReduction = 0;
     this._chargeCd = 0;
@@ -45,6 +46,9 @@ export class BossEnemy extends AIController {
     this._aoeSkillCd = 0;
     this._slamCd = 0;
     this._regenAcc = 0;
+    this._quakeCd = 0;
+    this._meteorCd = 0;
+    this._cloneCd = 0;
     if (this.root) {
       const s = mini ? 1.1 : 1.35;
       this.root.scale.set(s, s, s);
@@ -154,6 +158,29 @@ export class BossEnemy extends AIController {
     }
   }
 
+  // 阶段 3 专属机制
+  _skillQuake(combat, now) {
+    if (!combat.spawnAoE) return;
+    const p = this.root.position;
+    combat.spawnAoE(p, 6, 20, this, now);
+    setTimeout(() => combat.spawnAoE && combat.spawnAoE(p, 9, 20, this, now + 0.3), 300);
+    setTimeout(() => combat.spawnAoE && combat.spawnAoE(p, 12, 25, this, now + 0.6), 600);
+    this._quakeCd = 14;
+    this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.7 });
+  }
+
+  _skillMeteor(target, combat, now) {
+    if (!target || !combat.spawnAoE) return;
+    combat.spawnAoE(target.position, 5, 40, this, now);
+    this._meteorCd = 12;
+    this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.5 });
+  }
+
+  _skillClone() {
+    this._bus && this._bus.emit(EV.BOSS_SUMMON, { pos: this.root.position.clone(), team: this.team, count: 2 });
+    this._cloneCd = 16;
+  }
+
   update(dt, terrain, combat, enemies, now) {
     if (!this._meshScaled && this.root) {
       const s = this._isMini ? 1.1 : 1.35;
@@ -183,6 +210,9 @@ export class BossEnemy extends AIController {
     this._teleportCd -= dt * cdRate;
     this._aoeSkillCd -= dt * cdRate;
     this._slamCd -= dt * cdRate;
+    this._quakeCd -= dt * cdRate;
+    this._meteorCd -= dt * cdRate;
+    this._cloneCd -= dt * cdRate;
     if (this._trapTimer > 0) {
       this._trapTimer -= dt;
       if (this._trapTimer <= 0 && this._trapPos) {
@@ -208,6 +238,10 @@ export class BossEnemy extends AIController {
     if (this._phase >= this._phaseGate('aoe') && this._skillSet.includes('aoe') && this._aoeSkillCd <= 0) this._skillAoe(combat, now);
     if (this._phase >= this._phaseGate('slam') && this._skillSet.includes('slam') && this._slamCd <= 0 && tgt) this._skillSlam(combat, now);
     if (this._skillSet.includes('regenerate')) this._skillRegenerate(dt);
+    // P3-1 阶段 3 专属机制
+    if (this._phase >= 3 && this._phase3Skill === 'quake' && this._quakeCd <= 0) this._skillQuake(combat, now);
+    if (this._phase >= 3 && this._phase3Skill === 'meteor' && this._meteorCd <= 0 && tgt) this._skillMeteor(tgt, combat, now);
+    if (this._phase >= 3 && this._phase3Skill === 'clone' && this._cloneCd <= 0) this._skillClone();
     super.update(dt, terrain, combat, enemies, now);
   }
 }
