@@ -19,7 +19,8 @@ export class UIPanel {
       ...style
     });
     document.body.appendChild(this.el);
-    document.addEventListener('keydown', (e) => this._onKey(e));
+    this._boundKey = (e) => this._onKey(e);
+    document.addEventListener('keydown', this._boundKey);
   }
 
   _onKey(e) {
@@ -42,4 +43,10 @@ export class UIPanel {
   }
 
   render() {}
+
+  destroy() {
+    document.removeEventListener('keydown', this._boundKey);
+    if (this.visible) this.hide();
+    this.el.remove();
+  }
 }

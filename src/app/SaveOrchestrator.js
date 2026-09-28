@@ -83,8 +83,14 @@ export class SaveOrchestrator {
   }
 
   startTimers() {
-    setInterval(() => this.tickPlayTime(), 1000);
-    setInterval(() => { if (this.deps.state.current === States.PLAYING) this.saveNow(); }, 60000);
-    window.addEventListener('beforeunload', () => { try { this.saveNow(); } catch (e) { /* ignore */ } });
+    this._playTimer = setInterval(() => this.tickPlayTime(), 1000);
+    this._saveTimer = setInterval(() => { if (this.deps.state.current === States.PLAYING) this.saveNow(); }, 60000);
+    window.addEventListener('beforeunload', this._onUnload = () => { try { this.saveNow(); } catch (e) { /* ignore */ } });
+  }
+
+  dispose() {
+    if (this._playTimer) { clearInterval(this._playTimer); this._playTimer = null; }
+    if (this._saveTimer) { clearInterval(this._saveTimer); this._saveTimer = null; }
+    if (this._onUnload) { window.removeEventListener('beforeunload', this._onUnload); this._onUnload = null; }
   }
 }

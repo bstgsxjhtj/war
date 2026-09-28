@@ -12,12 +12,16 @@ export class Time {
     this.now = 0;
     this._maxSteps = 4;
     this._maxDelta = 0.1;
-    document.addEventListener('visibilitychange', () => {
+    document.addEventListener('visibilitychange', this._onVisibility = () => {
       if (!document.hidden) {
         this._last = performance.now();
         this._acc = 0;
       }
     });
+  }
+
+  dispose() {
+    document.removeEventListener('visibilitychange', this._onVisibility);
   }
 
   tick(onFixed, onRender) {

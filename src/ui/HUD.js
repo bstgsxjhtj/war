@@ -1,8 +1,10 @@
-import { EV } from '../core/constants/events.js';
+﻿import { EV } from '../core/constants/events.js';
 // HUD：雷达/血条/耐力/连击/锁定/据点/模式/击杀横幅
 export class HUD {
   constructor(bus) {
     this.bus = bus;
+    this._unsubs = [];
+    const on = (ev, fn) => this._unsubs.push(bus.on(ev, fn));
     this._endLocked = false;
     this._killTimer = 0;
     this._radarAcc = 0;
@@ -110,7 +112,7 @@ export class HUD {
     });
     document.body.appendChild(this._errPanel);
 
-    bus.on(EV.ENGINE_ERROR, ({ err, ts, frame }) => {
+    on(EV.ENGINE_ERROR, ({ err, ts, frame }) => {
       this._errCount++;
       this._errLog.push({ msg: err && err.message ? err.message : String(err), ts, frame });
       if (this._errLog.length > 10) this._errLog.shift();
@@ -120,28 +122,30 @@ export class HUD {
       this._errTimer = 2;
     });
 
-    document.addEventListener('keydown', (e) => {
+    this._onKeydown = (e) => {
       if (e.key === 'F3') {
         e.preventDefault();
         const show = this._errPanel.style.display === 'none';
         this._errPanel.style.display = show ? 'block' : 'none';
         if (show) this._renderErrLog();
       }
-    });
+    };
+    document.addEventListener('keydown', this._onKeydown);
 
-    this._locklost.addEventListener('click', () => document.querySelector('#app')?.requestPointerLock());
-    bus.on(EV.UI_LOCKLOST, () => { this._locklost.style.display = 'flex'; });
-    bus.on(EV.UI_LOCKED, () => { this._locklost.style.display = 'none'; });
-    bus.on(EV.HUD_FLASH, ({ text } = {}) => { if (text) this.flash(text); });
-    bus.on(EV.HUD_MISS, () => this.flash('落空'));
-    bus.on(EV.COMBAT_HIT, ({ victim }) => {
+    this._onLockClick = () => document.querySelector('#app')?.requestPointerLock();
+    this._locklost.addEventListener('click', this._onLockClick);
+    on(EV.UI_LOCKLOST, () => { this._locklost.style.display = 'flex'; });
+    on(EV.UI_LOCKED, () => { this._locklost.style.display = 'none'; });
+    on(EV.HUD_FLASH, ({ text } = {}) => { if (text) this.flash(text); });
+    on(EV.HUD_MISS, () => this.flash('落空'));
+    on(EV.COMBAT_HIT, ({ victim }) => {
       if (victim && victim.isLocal) {
         this._hp.style.background = 'linear-gradient(90deg,#f44,#fa3)';
         setTimeout(() => { this._hp.style.background = 'linear-gradient(90deg,#d33,#f70)'; }, 180);
         this.flashHitVignette();
       }
     });
-    bus.on(EV.COMBAT_KILL, ({ killer, victim }) => {
+    on(EV.COMBAT_KILL, ({ killer, victim }) => {
       if (killer && killer.isLocal) {
         if (killer.killstreak !== undefined) {
           killer._killstreak = (killer._killstreak || 0) + 1;
@@ -161,7 +165,7 @@ export class HUD {
     });
     document.body.appendChild(this._challengeEl);
     this._daily = null;
-    bus.on(EV.DAILY_UPDATE, (challenges) => {
+    on(EV.DAILY_UPDATE, (challenges) => {
       this._daily = challenges;
       this._renderChallenges();
     });
@@ -189,7 +193,7 @@ export class HUD {
     document.body.appendChild(this._comboEl);
     this._comboTimer = 0;
     this._comboTier = 0;
-    bus.on(EV.COMBO_TIER, ({ tier, count }) => {
+    on(EV.COMBO_TIER, ({ tier, count }) => {
       this._comboTier = tier;
       this._comboEl.textContent = count + ' 连击';
       const colors = ['#fff', '#fff5c8', '#ffd700', '#ff4433'];
@@ -201,20 +205,20 @@ export class HUD {
       this._comboTimer = 2;
       this.flashComboPulse(tier);
     });
-    bus.on(EV.COMBO_BREAK, () => {
+    on(EV.COMBO_BREAK, () => {
       this._comboEl.style.opacity = '0';
       this._comboTimer = 0.3;
     });
-    bus.on(EV.COMBO_FINISHER, () => {
+    on(EV.COMBO_FINISHER, () => {
       this._comboEl.textContent = '终结就绪';
       this._comboEl.style.color = '#ff4433';
       this._comboEl.style.display = 'block';
       this._comboEl.style.opacity = '1';
       this._comboTimer = 1.5;
     });
-    bus.on(EV.HUD_BOSSPHASE, ({ phase } = {}) => this.flashBossPhase(phase));
-    bus.on(EV.COMBAT_EXECUTE, ({ char } = {}) => { if (char && char.isLocal) this.flashExecute(); });
-    bus.on(EV.FX_PERFECTBLOCK, ({ char } = {}) => { if (char && char.isLocal) this.flashParry(); });
+    on(EV.HUD_BOSSPHASE, ({ phase } = {}) => this.flashBossPhase(phase));
+    on(EV.COMBAT_EXECUTE, ({ char } = {}) => { if (char && char.isLocal) this.flashExecute(); });
+    on(EV.FX_PERFECTBLOCK, ({ char } = {}) => { if (char && char.isLocal) this.flashParry(); });
 
     this._skillEls = [];
     const skillColors = ['#dfe7ee', '#b98a4a', '#c9a44a', '#7a7a82'];
@@ -240,21 +244,21 @@ export class HUD {
       el.appendChild(cd);
       this._skillEls.push({ el, cd });
     }
-    bus.on(EV.SKILL_CAST, ({ weaponIdx, name }) => {
+    on(EV.SKILL_CAST, ({ weaponIdx, name }) => {
       const s = this._skillEls[weaponIdx];
       if (!s) return;
       s.el.textContent = name || '?';
       s.cd.style.display = 'flex';
       s.cd.textContent = '8';
     });
-    bus.on(EV.SKILL_REJECT, ({ weaponIdx }) => {
+    on(EV.SKILL_REJECT, ({ weaponIdx }) => {
       const s = this._skillEls[weaponIdx];
       if (!s) return;
       s.el.style.transform = 'scale(1.15)';
       setTimeout(() => { s.el.style.transform = 'scale(1)'; }, 100);
     });
 
-    bus.on(EV.COMBAT_COUNTER, ({ attacker, victim, mul }) => {
+    on(EV.COMBAT_COUNTER, ({ attacker, victim, mul }) => {
       const isPlayerAttacker = attacker && attacker.isLocal;
       const isPlayerVictim = victim && victim.isLocal;
       if (isPlayerAttacker) {
@@ -477,5 +481,12 @@ export class HUD {
       if (d > R - 4) { const k = (R - 4) / d; px = cx + (px - cx) * k; py = cy + (py - cy) * k; }
       ctx.fillStyle = '#f55'; ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
     }
+  }
+
+  dispose() {
+    for (const u of this._unsubs) u();
+    this._unsubs = [];
+    document.removeEventListener('keydown', this._onKeydown);
+    if (this._locklost) this._locklost.removeEventListener('click', this._onLockClick);
   }
 }

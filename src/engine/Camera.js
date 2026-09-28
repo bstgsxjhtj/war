@@ -19,14 +19,21 @@ export class Camera {
     this._shakeOffset = new THREE.Vector3();
     this._killCamTarget = null;
     this.lockTarget = null;
-    window.addEventListener('resize', () => {
+    window.addEventListener('resize', this._onResize = () => {
       this.cam.aspect = window.innerWidth / window.innerHeight;
       this.cam.updateProjectionMatrix();
     });
-    if (bus) bus.on(EV.FX_SHAKE, ({ amount }) => this.addShake(amount));
-    if (bus) bus.on(EV.FX_PERFECTDODGE, () => { this.addShake(0.5); this._curFov = 52; this.timeScale = 0.5; });
-    if (bus) bus.on(EV.FX_PERFECTBLOCK, () => { this.addShake(0.6); this._curFov = 50; });
-    if (bus) bus.on(EV.COMBAT_ULTIMATE, () => { this._curFov = 45; });
+    this._unsubs = [];
+    if (bus) this._unsubs.push(bus.on(EV.FX_SHAKE, ({ amount }) => this.addShake(amount)));
+    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTDODGE, () => { this.addShake(0.5); this._curFov = 52; this.timeScale = 0.5; }));
+    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTBLOCK, () => { this.addShake(0.6); this._curFov = 50; }));
+    if (bus) this._unsubs.push(bus.on(EV.COMBAT_ULTIMATE, () => { this._curFov = 45; }));
+  }
+
+  dispose() {
+    window.removeEventListener('resize', this._onResize);
+    for (const u of this._unsubs) u();
+    this._unsubs = [];
   }
 
   addShake(amount) { this._shake = Math.min(0.9, this._shake + amount); }
