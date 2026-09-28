@@ -70,6 +70,7 @@ import { LODManager } from './render/LODManager.js';
 import { Spawner } from './gameplay/Spawner.js';
 import { wireAchievements } from './app/AchievementWiring.js';
 import { InputRouter } from './app/InputRouter.js';
+import { GameClock } from './app/GameClock.js';
 import { installUIStackEscape } from './ui/UIStack.js';
 import { EV } from './core/constants/events.js';
 import { LS } from './core/constants/storage-keys.js';
@@ -148,6 +149,7 @@ async function bootstrap() {
   const weaponTrail = new WeaponTrail(scene.scene);
   const hitDirection = new HitDirection();
   const hitStop = new HitStop();
+  const gameClock = new GameClock();
   const dodgeGhosts = new DodgeGhosts(scene.scene);
   const deathFeedback = new DeathFeedback();
   const progression = new Progression();
@@ -318,6 +320,7 @@ async function bootstrap() {
 
   function spawnAll() {
     combat.clear();
+    gameClock.clear();
     horses.dispose();
     formations.clear();
     deathFeedback.hide();
@@ -461,6 +464,7 @@ async function bootstrap() {
         for (const a of ais) a.update(ldt, terrain, combat, enemies, now);
         for (const rp of remotes) rp.update(ldt, terrain, combat, now);
         combat.update(ldt, terrain, now);
+        gameClock.update(ldt);
         envHazards.update(ldt, combat.characters);
         comboSys.update(ldt, now);
         horses.update(ldt);
