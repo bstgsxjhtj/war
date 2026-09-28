@@ -352,3 +352,38 @@ describe('HUD 完美格挡闪屏', () => {
     expect(hud._parryTimer).toBe(0);
   });
 });
+
+describe('HUD 减少动效', () => {
+  it('开启后命中暗角与连击脉冲不再闪烁', () => {
+    const hud = mkHud();
+    hud.setReducedMotion(true);
+    hud.flashHitVignette();
+    hud.flashComboPulse(3);
+    expect(hud._hitVigTimer).toBe(0);
+    expect(hud._comboPulseTimer).toBe(0);
+    expect(hud._hitvignette.style.opacity).toBe('0');
+    expect(hud._combopulse.style.opacity).toBe('0');
+  });
+
+  it('开启后弹反闪光不再触发', () => {
+    const hud = mkHud();
+    hud.setReducedMotion(true);
+    hud.flashParry();
+    expect(hud._parryTimer).toBe(0);
+    expect(hud._parryglow.style.opacity).toBe('0');
+  });
+
+  it('开启后低血量不再脉冲动画', () => {
+    const hud = mkHud();
+    hud.setReducedMotion(true);
+    hud.setLowHP(true);
+    expect(hud._lowhp.style.display).toBe('block');
+    expect(hud._lowhp.style.animation).toBe('none');
+  });
+
+  it('关闭时保持原有闪烁行为', () => {
+    const hud = mkHud();
+    hud.flashHitVignette();
+    expect(hud._hitvignette.style.opacity).toBe('0.6');
+  });
+});

@@ -16,6 +16,8 @@ export class Camera {
     this._curFov = 60;
     this.target = new THREE.Vector3();
     this._shake = 0;
+    this._shakeMul = 1;
+    this._reducedMotion = false;
     this._shakeOffset = new THREE.Vector3();
     this._killCamTarget = null;
     this.lockTarget = null;
@@ -25,9 +27,9 @@ export class Camera {
     });
     this._unsubs = [];
     if (bus) this._unsubs.push(bus.on(EV.FX_SHAKE, ({ amount }) => this.addShake(amount)));
-    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTDODGE, () => { this.addShake(0.5); this._curFov = 52; this.timeScale = 0.5; }));
-    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTBLOCK, () => { this.addShake(0.6); this._curFov = 50; }));
-    if (bus) this._unsubs.push(bus.on(EV.COMBAT_ULTIMATE, () => { this._curFov = 45; }));
+    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTDODGE, () => { this.addShake(0.5); if (!this._reducedMotion) { this._curFov = 52; this.timeScale = 0.5; } }));
+    if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTBLOCK, () => { this.addShake(0.6); if (!this._reducedMotion) this._curFov = 50; }));
+    if (bus) this._unsubs.push(bus.on(EV.COMBAT_ULTIMATE, () => { if (!this._reducedMotion) this._curFov = 45; }));
   }
 
   dispose() {
@@ -36,7 +38,9 @@ export class Camera {
     this._unsubs = [];
   }
 
-  addShake(amount) { this._shake = Math.min(0.9, this._shake + amount); }
+  addShake(amount) { if (this._reducedMotion) return; this._shake = Math.min(0.9, this._shake + amount * this._shakeMul); }
+  setShakeIntensity(v) { this._shakeMul = Math.max(0, Math.min(1, v)); }
+  setReducedMotion(v) { this._reducedMotion = !!v; if (this._reducedMotion) this._shake = 0; }
 
   look(dx, dy, sensitivity = 0.0025) {
     this.yaw -= dx * sensitivity;

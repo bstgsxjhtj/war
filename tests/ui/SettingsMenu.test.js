@@ -75,3 +75,51 @@ describe('SettingsMenu', () => {
     expect(audio.getVolume).toHaveBeenCalled();
   });
 });
+
+describe('SettingsMenu 无障碍设置', () => {
+  let bus, audio, menu;
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = '';
+    bus = { on: vi.fn(), emit: vi.fn() };
+    audio = { setVolume: vi.fn(), resume: vi.fn(), getVolume: vi.fn(() => 0.7) };
+    menu = new SettingsMenu(bus, audio);
+  });
+
+  it('色弱模式勾选 → bus.emit settings.colorblind + 持久化', () => {
+    menu._cb.checked = true;
+    menu._cb.dispatchEvent(new Event('change'));
+    expect(bus.emit).toHaveBeenCalledWith('settings.colorblind', { colorblind: true });
+    expect(JSON.parse(localStorage.getItem('settings')).colorblind).toBe(true);
+  });
+
+  it('减少动效勾选 → bus.emit settings.reducedMotion + 持久化', () => {
+    menu._rm.checked = true;
+    menu._rm.dispatchEvent(new Event('change'));
+    expect(bus.emit).toHaveBeenCalledWith('settings.reducedMotion', { reducedMotion: true });
+    expect(JSON.parse(localStorage.getItem('settings')).reducedMotion).toBe(true);
+  });
+
+  it('震动强度 slider → bus.emit settings.shakeIntensity(0..1) + 持久化', () => {
+    menu._shakeEl.value = '40';
+    menu._shakeEl.dispatchEvent(new Event('input'));
+    expect(bus.emit).toHaveBeenCalledWith('settings.shakeIntensity', { shakeIntensity: 0.4 });
+    expect(JSON.parse(localStorage.getItem('settings')).shakeIntensity).toBe(0.4);
+  });
+
+  it('_load 读取无障碍设置并回填控件', () => {
+    localStorage.setItem('settings', JSON.stringify({ colorblind: true, reducedMotion: true, shakeIntensity: 0.3 }));
+    document.body.innerHTML = '';
+    const m = new SettingsMenu(bus, audio);
+    expect(m._cb.checked).toBe(true);
+    expect(m._rm.checked).toBe(true);
+    expect(m._shakeEl.value).toBe('30');
+  });
+
+  it('_applyAll 广播三项无障碍设置', () => {
+    menu._applyAll();
+    expect(bus.emit).toHaveBeenCalledWith('settings.colorblind', { colorblind: false });
+    expect(bus.emit).toHaveBeenCalledWith('settings.reducedMotion', { reducedMotion: false });
+    expect(bus.emit).toHaveBeenCalledWith('settings.shakeIntensity', { shakeIntensity: 1 });
+  });
+});

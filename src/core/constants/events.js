@@ -49,6 +49,9 @@ export const EV = {
   SETTINGS_QUALITY: 'settings.quality',
   SETTINGS_SENSITIVITY: 'settings.sensitivity',
   SETTINGS_DIFFICULTY: 'settings.difficulty',
+  SETTINGS_COLORBLIND: 'settings.colorblind',
+  SETTINGS_REDUCED_MOTION: 'settings.reducedMotion',
+  SETTINGS_SHAKE_INTENSITY: 'settings.shakeIntensity',
   // 回合
   ROUND_RESTART: 'round.restart',
   // 引擎

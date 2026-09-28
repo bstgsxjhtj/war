@@ -17,6 +17,7 @@ export class MiniMap {
     this.ctx = this.canvas.getContext('2d');
     this._player = null; this._ais = []; this._camera = null;
     this._supply = [];
+    this._colorblind = false;
     bus.on(EV.MINIMAP_SUPPLY, (pts) => { this._supply = pts || []; });
   }
 
@@ -50,7 +51,12 @@ export class MiniMap {
       if (Math.abs(dx) > R || Math.abs(dz) > R) continue;
       ctx.fillStyle = ai.team === 0 ? '#4488ff' : '#ff4444';
       const r = ai._isBoss ? 5 : 3;
-      ctx.beginPath(); ctx.arc(dx, dz, r, 0, Math.PI * 2); ctx.fill();
+      if (this._colorblind && ai.team !== 0) {
+        // 色弱模式：敌人用方形，与友军圆点形成形状区分（不依赖颜色）
+        ctx.beginPath(); ctx.rect(dx - r, dz - r, r * 2, r * 2); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.arc(dx, dz, r, 0, Math.PI * 2); ctx.fill();
+      }
       if (ai._isElite) {
         ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(dx, dz, r + 2, 0, Math.PI * 2); ctx.stroke();
@@ -78,4 +84,5 @@ export class MiniMap {
   }
 
   setWorldSize(s) { if (this.worldSize !== s) this.worldSize = s; }
+  setColorblind(v) { this._colorblind = !!v; }
 }

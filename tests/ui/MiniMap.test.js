@@ -7,10 +7,11 @@ function mkCtx() {
   ops = [];
   const ctx = {
     clearRect() {}, save() {}, restore() {}, translate() {}, rotate() {}, scale() {}, clip() {},
-    beginPath() {}, arc() {},
+    beginPath() {}, arc() { ops.push({ op: 'arc' }); },
     fill() { ops.push({ op: 'fill', style: ctx.fillStyle }); },
     stroke() { ops.push({ op: 'stroke', style: ctx.strokeStyle }); },
-    moveTo() {}, lineTo() {}, closePath() {}, fillRect() {},
+    moveTo() {}, lineTo() {}, closePath() {}, fillRect() { ops.push({ op: 'fillRect' }); },
+    rect() { ops.push({ op: 'rect' }); },
     fillStyle: '#000', strokeStyle: '#000', lineWidth: 1,
   };
   return ctx;
@@ -48,5 +49,32 @@ describe('MiniMap 濒死敌人标记', () => {
     mm.setRefs(mkPlayer(), [mkAI()], cam);
     mm.update(0.016);
     expect(ops.some(o => o.op === 'stroke' && o.style === '#ffea00')).toBe(false);
+  });
+});
+
+describe('MiniMap 色弱模式形状区分', () => {
+  it('开启后敌人改用方形绘制', () => {
+    const mm = new MiniMap(mkBus());
+    mm.setColorblind(true);
+    mm.setRefs(mkPlayer(), [mkAI()], cam);
+    mm.update(0.016);
+    expect(ops.some(o => o.op === 'rect')).toBe(true);
+  });
+
+  it('开启后友军仍用圆形绘制', () => {
+    const mm = new MiniMap(mkBus());
+    mm.setColorblind(true);
+    mm.setRefs(mkPlayer(), [mkAI({ team: 0 })], cam);
+    mm.update(0.016);
+    expect(ops.some(o => o.op === 'arc')).toBe(true);
+    expect(ops.some(o => o.op === 'rect')).toBe(false);
+  });
+
+  it('关闭时敌人仍用圆形绘制', () => {
+    const mm = new MiniMap(mkBus());
+    mm.setRefs(mkPlayer(), [mkAI()], cam);
+    mm.update(0.016);
+    expect(ops.some(o => o.op === 'rect')).toBe(false);
+    expect(ops.some(o => o.op === 'arc')).toBe(true);
   });
 });

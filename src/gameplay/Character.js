@@ -136,6 +136,13 @@ export class Character {
     // 锁定标记
     this._lockMark = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffd070, transparent: true, opacity: 0, depthTest: false }));
     this._lockMark.scale.set(0.5, 0.5, 1); this._lockMark.position.y = 2.9; this._lockMark.renderOrder = 1001;
+    // 色弱模式：头顶形状标记（友军圆环 / 敌军方块），非本地单位默认隐藏，由 setColorblind 控制
+    const markGeo = this.team === 0 ? new THREE.TorusGeometry(0.16, 0.045, 6, 14) : new THREE.BoxGeometry(0.24, 0.24, 0.24);
+    this._teamMark = new THREE.Mesh(
+      markGeo,
+      new THREE.MeshBasicMaterial({ color: this.team === 0 ? 0x66aaff : 0xff6666, transparent: true, opacity: 0.9, depthTest: false })
+    );
+    this._teamMark.position.y = 3.15; this._teamMark.renderOrder = 1002; this._teamMark.visible = false;
     const showBar = !this.isLocal;
     this._hpBar.visible = showBar; this._hpBarBg.visible = showBar;
     this.skeleton = new Skeleton(this.root);
@@ -145,7 +152,7 @@ export class Character {
       head: this.head, helm, visor, cape: this.cape, weaponPivot: this.weaponPivot,
       rPauldron, lPauldron, rKneeguard, lKneeguard, chestplate, emblem, factionFlag
     });
-    this.root.add(this._hpBar, this._hpBarBg, this._lockMark);
+    this.root.add(this._hpBar, this._hpBarBg, this._lockMark, this._teamMark);
   }
 
   spawn(pos) {
@@ -555,6 +562,7 @@ export class Character {
 
   setCameraRef(cam) { this._cam = cam.cam || cam; }
   setLockMark(v) { this._lockMark.material.opacity = v ? 0.9 : 0; }
+  setColorblind(v) { if (this._teamMark) this._teamMark.visible = !!v && !this.isLocal; }
   tryUltimate(combat) {
     if (this._rage < this.maxRage || !this.alive || this._executing > 0) return false;
     this._rage = 0;

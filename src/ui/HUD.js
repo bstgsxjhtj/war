@@ -11,6 +11,7 @@ export class HUD {
     this._unsubs = [];
     const on = (ev, fn) => this._unsubs.push(bus.on(ev, fn));
     this._endLocked = false;
+    this._reducedMotion = false;
     this._killTimer = 0;
     this._hitVigTimer = 0;
     this._comboPulseTimer = 0;
@@ -348,12 +349,13 @@ export class HUD {
     this._bossPips.textContent = s;
   }
   hideBoss() { this._bossbar.style.display = 'none'; }
-  setLowHP(active) { this._lowhp.style.display = active ? 'block' : 'none'; }
-  flashHitVignette() { this._hitVigTimer = 0.35; this._hitvignette.style.opacity = '0.6'; }
-  flashComboPulse(tier = 0) { this._comboPulseTimer = 0.3; this._combopulse.style.opacity = String(Math.min(0.6, 0.25 + tier * 0.1)); }
+  setLowHP(active) { this._lowhp.style.display = active ? 'block' : 'none'; this._lowhp.style.animation = (active && this._reducedMotion) ? 'none' : ''; }
+  setReducedMotion(v) { this._reducedMotion = !!v; }
+  flashHitVignette() { if (this._reducedMotion) { this._hitvignette.style.opacity = '0'; return; } this._hitVigTimer = 0.35; this._hitvignette.style.opacity = '0.6'; }
+  flashComboPulse(tier = 0) { if (this._reducedMotion) { this._combopulse.style.opacity = '0'; return; } this._comboPulseTimer = 0.3; this._combopulse.style.opacity = String(Math.min(0.6, 0.25 + tier * 0.1)); }
   flashBossPhase(phase = 2) { this._bossPhaseTimer = 1.5; this._bossphase.textContent = phase >= 3 ? '⚔ Boss 狂暴！' : 'Boss 激怒！'; this._bossphase.style.opacity = '1'; }
   flashExecute() { this._execBannerTimer = 1.0; this._execute.textContent = '⚔ 处决！'; this._execute.style.opacity = '1'; }
-  flashParry() { this._parryTimer = 0.8; this._parryflash.textContent = '🛡 弹反！'; this._parryflash.style.opacity = '1'; this._parryglow.style.opacity = '0.8'; }
+  flashParry() { if (this._reducedMotion) { this._parryTimer = 0; this._parryflash.style.opacity = '0'; this._parryglow.style.opacity = '0'; return; } this._parryTimer = 0.8; this._parryflash.textContent = '🛡 弹反！'; this._parryflash.style.opacity = '1'; this._parryglow.style.opacity = '0.8'; }
   setScore(b, r) { this._score.textContent = `蓝方 ${b}  |  ${r} 红方`; }
   setRound(b, r, target) { this._round.textContent = `局比分 ${b} - ${r}（先到 ${target} 胜）`; }
   setWave(wave, best, endless, modifierInfo) {

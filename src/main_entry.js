@@ -212,6 +212,12 @@ async function bootstrap() {
   bus.on(EV.SETTINGS_QUALITY, ({ quality }) => { if (renderer) renderer.setQuality(quality); });
   bus.on(EV.SETTINGS_SENSITIVITY, ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
   bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
+  // 无障碍：色弱形状区分 / 减少动效（关脉冲+震动+顿帧）/ 屏幕震动强度
+  let _colorblind = false;
+  let _reducedMotion = false;
+  bus.on(EV.SETTINGS_COLORBLIND, ({ colorblind }) => { _colorblind = !!colorblind; miniMap.setColorblind(_colorblind); for (const c of enemies) if (c.setColorblind) c.setColorblind(_colorblind); });
+  bus.on(EV.SETTINGS_REDUCED_MOTION, ({ reducedMotion }) => { _reducedMotion = !!reducedMotion; camera.setReducedMotion(_reducedMotion); hud.setReducedMotion(_reducedMotion); });
+  bus.on(EV.SETTINGS_SHAKE_INTENSITY, ({ shakeIntensity }) => { camera.setShakeIntensity(shakeIntensity); });
   // 启动应用延后到 player/aiManager 赋值后避免 TDZ
   bus.on(EV.HUD_BOSSPHASE, () => { audio.playSound('bossRoar'); audio.playSound('bgmIntensity', { intensity: 2 }); });
   bus.on(EV.FX_BOSSROAR, () => audio.playSound('bossRoar'));
@@ -341,6 +347,7 @@ async function bootstrap() {
       weather.scheduleNext(['rain','night','snow','storm'][Math.floor(Math.random() * 4)], 30 + Math.random() * 30);
     }
     enemies = [player, ...ais];
+    if (_colorblind) for (const c of enemies) if (c.setColorblind) c.setColorblind(true);
     hud.setRefs(player, ais, camera);
     miniMap.setRefs(player, ais, camera.cam);
     miniMap.setWorldSize(MapGenerator.MAPS[currentMapKey].size[0]);
@@ -401,7 +408,8 @@ async function bootstrap() {
         if (upgradePicker.visible) { env.update(dt, now); return; }
 
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
-        const ldt = (combat.hitstop > 0 || deathFeedback.paused) ? 0 : (hitStop.active ? hitStop.timeScale * dt : dt);
+        const _freeze = (!_reducedMotion && combat.hitstop > 0) || deathFeedback.paused;
+        const ldt = _freeze ? 0 : ((!_reducedMotion && hitStop.active) ? hitStop.timeScale * dt : dt);
 
         let _bgmTarget = 0;
         let _bossRef = null;
