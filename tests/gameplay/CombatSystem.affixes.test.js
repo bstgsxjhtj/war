@@ -159,3 +159,77 @@ describe('CombatSystem 噩梦词条 (P0-1)', () => {
     expect(a.health.hp).toBeCloseTo(60);
   });
 });
+
+describe('CombatSystem AOE telegraph 延迟结算 (P1-1)', () => {
+  let cs, bus, terrain;
+  beforeEach(() => {
+    bus = { emit: vi.fn() };
+    cs = new CombatSystem({ add() {}, remove() {} }, bus);
+    cs._emitHit = vi.fn();
+    cs.spawnHitFX = vi.fn();
+    cs.createDamageNumber = vi.fn();
+    terrain = { heightAt: () => 0 };
+  });
+
+  it('delay>0 立即不造成伤害', () => {
+    const attacker = mockChar(0, 0, 0);
+    const victim = mockChar(1, 0, 2);
+    cs.characters = [attacker, victim];
+    cs.spawnAoE(attacker.position, 5, 10, attacker, 0, 0.5);
+    expect(victim.takeDamage).not.toHaveBeenCalled();
+    expect(cs._pendingStrikes.length).toBe(1);
+  });
+
+  it('delay 到期后结算伤害', () => {
+    const attacker = mockChar(0, 0, 0);
+    const victim = mockChar(1, 0, 2);
+    cs.characters = [attacker, victim];
+    cs.spawnAoE(attacker.position, 5, 10, attacker, 0, 0.5);
+    cs.update(0.6, terrain);
+    expect(victim.takeDamage).toHaveBeenCalled();
+    expect(cs._pendingStrikes.length).toBe(0);
+  });
+
+  it('delay=0 立即结算（向后兼容）', () => {
+    const attacker = mockChar(0, 0, 0);
+    const victim = mockChar(1, 0, 2);
+    cs.characters = [attacker, victim];
+    cs.spawnAoE(attacker.position, 5, 10, attacker, 0);
+    expect(victim.takeDamage).toHaveBeenCalled();
+    expect(cs._pendingStrikes.length).toBe(0);
+  });
+
+  it('多个延迟 AOE 各自到期结算', () => {
+    const attacker = mockChar(0, 0, 0);
+    const victim = mockChar(1, 0, 2);
+    cs.characters = [attacker, victim];
+    cs.spawnAoE(attacker.position, 5, 10, attacker, 0, 0.3);
+    cs.spawnAoE(attacker.position, 5, 20, attacker, 0, 0.6);
+    cs.update(0.4, terrain);
+    expect(victim.takeDamage).toHaveBeenCalledTimes(1);
+    cs.update(0.3, terrain);
+    expect(victim.takeDamage).toHaveBeenCalledTimes(2);
+  });
+
+  it('clear 清除待结算 AOE 与预警圈', () => {
+    const attacker = mockChar(0, 0, 0);
+    cs.spawnAoE(attacker.position, 5, 10, attacker, 0, 0.5);
+    expect(cs._pendingStrikes.length).toBe(1);
+    cs.clear();
+    expect(cs._pendingStrikes.length).toBe(0);
+  });
+
+  it('到期结算伤害走词条加伤与吸血链', () => {
+    const attacker = mockChar(0, 0, 0);
+    const victim = mockChar(1, 0, 2);
+    cs.characters = [attacker, victim];
+    cs.setAffixes(mockAffixes({ 锋锐: 1.0, 吸血: 0.5 }));
+    attacker.health.hp = 40;
+    cs.spawnAoE(attacker.position, 5, 10, attacker, 0, 0.2);
+    cs.update(0.3, terrain);
+    expect(victim.takeDamage).toHaveBeenCalled();
+    const dmg = victim.takeDamage.mock.calls[0][0];
+    expect(dmg).toBeCloseTo(16); // 10 * (1-1/5) * (1+1.0)
+    expect(attacker.health.hp).toBeCloseTo(45); // 40 + lost(10)*0.5
+  });
+});

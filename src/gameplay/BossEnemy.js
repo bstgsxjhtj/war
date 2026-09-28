@@ -141,12 +141,12 @@ export class BossEnemy extends AIController {
   }
 
   _skillAoe(combat, now) {
-    combat.spawnAoE && combat.spawnAoE(this.root.position, 8, 35, this, now);
+    combat.spawnAoE && combat.spawnAoE(this.root.position, 8, 35, this, now, 0.35);
     this._aoeSkillCd = 12;
   }
 
   _skillSlam(combat, now) {
-    combat.spawnAoE && combat.spawnAoE(this.root.position, 8, 30, this, now);
+    combat.spawnAoE && combat.spawnAoE(this.root.position, 8, 30, this, now, 0.3);
     this._slamCd = 6;
     this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.5 });
   }
@@ -162,16 +162,16 @@ export class BossEnemy extends AIController {
   _skillQuake(combat, now) {
     if (!combat.spawnAoE) return;
     const p = this.root.position;
-    combat.spawnAoE(p, 6, 20, this, now);
-    setTimeout(() => combat.spawnAoE && combat.spawnAoE(p, 9, 20, this, now + 0.3), 300);
-    setTimeout(() => combat.spawnAoE && combat.spawnAoE(p, 12, 25, this, now + 0.6), 600);
+    combat.spawnAoE(p, 6, 20, this, now, 0.4);
+    combat.spawnAoE(p, 9, 20, this, now, 0.7);
+    combat.spawnAoE(p, 12, 25, this, now, 1.0);
     this._quakeCd = 14;
     this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.7 });
   }
 
   _skillMeteor(target, combat, now) {
     if (!target || !combat.spawnAoE) return;
-    combat.spawnAoE(target.position, 5, 40, this, now);
+    combat.spawnAoE(target.position, 5, 40, this, now, 0.6);
     this._meteorCd = 12;
     this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.5 });
   }

@@ -60,6 +60,11 @@ export class CombatSystem {
       this.scene.add(spr);
       this._numSprites.push({ spr, life: 0, vy: 0 });
     }
+
+    // P1-1: 延迟 AOE 预警——共享单位环（按 radius 缩放），待结算队列
+    this._aoeRingGeo = new THREE.RingGeometry(0.85, 1.0, 32);
+    this._aoeRingMat = new THREE.MeshBasicMaterial({ color: 0xff5533, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false });
+    this._pendingStrikes = [];
   }
 
   register(c) { this.characters.push(c); if (c.setBus) c.setBus(this.bus); }
@@ -70,6 +75,8 @@ export class CombatSystem {
     for (const s of this._partSlots) s.active = false;
     this._partPts.visible = false;
     for (const n of this._numSprites) n.spr.visible = false;
+    for (const s of this._pendingStrikes) { if (s.mesh) this.scene.remove(s.mesh); if (s.mat) s.mat.dispose(); }
+    this._pendingStrikes.length = 0;
     this.characters.length = 0;
   }
 
@@ -85,6 +92,8 @@ export class CombatSystem {
       this.scene.remove(n.spr);
       if (n.spr.material) n.spr.material.dispose();
     }
+    if (this._aoeRingGeo) this._aoeRingGeo.dispose();
+    if (this._aoeRingMat) this._aoeRingMat.dispose();
     this.scene.remove(this._partPts);
   }
 
@@ -221,7 +230,22 @@ export class CombatSystem {
     }
   }
 
-  spawnAoE(origin, radius, damage, attacker, now = 0) {
+  spawnAoE(origin, radius, damage, attacker, now = 0, delay = 0) {
+    if (delay > 0) {
+      const mat = this._aoeRingMat.clone();
+      const mesh = new THREE.Mesh(this._aoeRingGeo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(origin.x || 0, 0.08, origin.z || 0);
+      mesh.scale.set(radius, radius, radius);
+      this.scene.add(mesh);
+      const o = origin.clone ? origin.clone() : new THREE.Vector3(origin.x || 0, 0, origin.z || 0);
+      this._pendingStrikes.push({ origin: o, radius, damage, attacker, now, delay, mesh, mat });
+      return;
+    }
+    this._resolveAoE(origin, radius, damage, attacker, now);
+  }
+
+  _resolveAoE(origin, radius, damage, attacker, now) {
     for (const c of this.characters) {
       if (!c.alive || c.team === attacker.team) continue;
       const d = c.position.distanceTo(origin);
@@ -363,6 +387,18 @@ export class CombatSystem {
       n.vy -= 1.5 * dt;
       n.spr.material.opacity = Math.max(0, n.life / 0.9);
       if (n.life <= 0) n.spr.visible = false;
+    }
+
+    for (let i = this._pendingStrikes.length - 1; i >= 0; i--) {
+      const s = this._pendingStrikes[i];
+      s.delay -= dt;
+      if (s.mat) s.mat.opacity = 0.3 + 0.35 * Math.abs(Math.sin(s.delay * 18));
+      if (s.delay <= 0) {
+        this._resolveAoE(s.origin, s.radius, s.damage, s.attacker, s.now);
+        if (s.mesh) this.scene.remove(s.mesh);
+        if (s.mat) s.mat.dispose();
+        this._pendingStrikes.splice(i, 1);
+      }
     }
   }
 }

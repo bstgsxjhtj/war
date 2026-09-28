@@ -16,6 +16,8 @@
 
 词条效果必须在**所有伤害路径**（近战/箭矢/AOE）一致生效。
 
+**Boss AOE 预警 + 延迟结算**（P1-1，2026-09-28）：`CombatSystem.spawnAoE(origin, radius, damage, attacker, now, delay=0)`——`delay>0` 时先在地面投放单位环预警（按 radius 缩放，脉冲透明度），推入 `_pendingStrikes` 队列，由 `update(dt)` 递减 delay，到期调 `_resolveAoE` 结算（仍走词条加伤/吸血/克制链）；`delay=0` 立即结算（向后兼容，玩家大招/连击 AOE 仍即时）。Boss 全部 AOE 技能（quake 三段 0.4/0.7/1.0s、meteor 0.6s、slam 0.3s、aoe 0.35s）均带 delay，移除 quake 原裸 setTimeout（不再脱离 timeScale/clear）。玩家获得可闪避窗口。
+
 **AI 闪避 i 帧**（P0-2，2026-09-28）：AIController.takeDamage 顶部 `if (this._dodgeTimer > 0) return 0;`——闪避期间完全免伤并跳过格挡/反击/ironhide/reflect 全链，与玩家 `_dodgeIFrame` 对称（AI 不复用 `_dodgeIFrame` 以免触发玩家专属的完美闪避逻辑）。
 
 **噩梦敌人词条**（P0-1，2026-09-28）：`currentStage.enemyMods`（reflect/vampire/lucky/swift/ironhide）由 Spawner._applyEnemyMods 注入非 Boss 敌人（AIController.setEnemyMods），行为分挂战斗管线两侧：

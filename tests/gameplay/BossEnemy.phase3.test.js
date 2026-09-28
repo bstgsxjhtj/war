@@ -74,3 +74,38 @@ describe('P3-1 Boss 阶段 3 专属机制', () => {
     expect(b._phase3Skill).toBeFalsy();
   });
 });
+
+describe('P1-1 Boss AOE telegraph 延迟结算', () => {
+  it('quake 三段均带 delay（可闪避窗口，无裸 setTimeout）', () => {
+    const b = new BossEnemy({ type: 'behemoth' });
+    b._phase = 3;
+    const spawnAoE = vi.fn();
+    b._skillQuake({ spawnAoE, characters: [] }, 0);
+    expect(spawnAoE).toHaveBeenCalledTimes(3);
+    for (const call of spawnAoE.mock.calls) {
+      expect(call[5]).toBeGreaterThan(0);
+    }
+    const delays = spawnAoE.mock.calls.map(c => c[5]);
+    expect(Math.min(...delays)).toBeGreaterThanOrEqual(0.4);
+    expect(Math.max(...delays)).toBeGreaterThanOrEqual(1.0);
+  });
+
+  it('meteor 落点带 delay（可闪避）', () => {
+    const b = new BossEnemy({ type: 'mage' });
+    const spawnAoE = vi.fn();
+    const target = { position: new THREE.Vector3(3, 0, 0) };
+    b._skillMeteor(target, { spawnAoE, characters: [] }, 0);
+    expect(spawnAoE).toHaveBeenCalledTimes(1);
+    expect(spawnAoE.mock.calls[0][5]).toBeGreaterThan(0);
+  });
+
+  it('slam/aoe 阶段技能也带 delay', () => {
+    const b = new BossEnemy({ type: 'warlord' });
+    const slamAoE = vi.fn();
+    b._skillSlam({ spawnAoE: slamAoE, characters: [] }, 0);
+    expect(slamAoE.mock.calls[0][5]).toBeGreaterThan(0);
+    const aoeMock = vi.fn();
+    b._skillAoe({ spawnAoE: aoeMock, characters: [] }, 0);
+    expect(aoeMock.mock.calls[0][5]).toBeGreaterThan(0);
+  });
+});
