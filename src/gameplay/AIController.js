@@ -78,6 +78,7 @@ export class AIController extends Character {
   }
 
   takeDamage(amount, heavy, attacker, now) {
+    if (this._dodgeTimer > 0) return 0;
     if (this._blockTimer > 0) amount *= 0.3;
     if (this._enemyMods && this._enemyMods.includes('ironhide')) amount *= ENEMY_MODS.IRONHIDE_DMG_TAKEN_MUL;
     const lost = super.takeDamage(amount, heavy, attacker, now);

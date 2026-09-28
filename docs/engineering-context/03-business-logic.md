@@ -16,6 +16,8 @@
 
 词条效果必须在**所有伤害路径**（近战/箭矢/AOE）一致生效。
 
+**AI 闪避 i 帧**（P0-2，2026-09-28）：AIController.takeDamage 顶部 `if (this._dodgeTimer > 0) return 0;`——闪避期间完全免伤并跳过格挡/反击/ironhide/reflect 全链，与玩家 `_dodgeIFrame` 对称（AI 不复用 `_dodgeIFrame` 以免触发玩家专属的完美闪避逻辑）。
+
 **噩梦敌人词条**（P0-1，2026-09-28）：`currentStage.enemyMods`（reflect/vampire/lucky/swift/ironhide）由 Spawner._applyEnemyMods 注入非 Boss 敌人（AIController.setEnemyMods），行为分挂战斗管线两侧：
 - 受击侧（AIController.takeDamage）：ironhide 受伤 ×0.75；reflect 反弹 10% 给攻击者（_reflecting 守卫防双方递归）。
 - 攻击侧（CombatSystem._affixApply/_affixLeech）：lucky 暴击 +15%（×2）；vampire 吸血 15%；swift 由 Spawner 直接 speed ×1.2。

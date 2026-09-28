@@ -343,3 +343,56 @@ describe('AIController 噩梦词条 (P0-1)', () => {
     attackerSpy.mockRestore();
   });
 });
+
+describe('AIController 闪避 i 帧 (P0-2)', () => {
+  let ai, superUpdate, superTakeDamage;
+  beforeEach(() => {
+    superUpdate = vi.spyOn(Character.prototype, 'update').mockImplementation(() => {});
+    superTakeDamage = vi.spyOn(Character.prototype, 'takeDamage').mockImplementation(function (amount) { return amount; });
+    ai = new AIController({ team: 1 });
+  });
+  afterEach(() => { superUpdate.mockRestore(); superTakeDamage.mockRestore(); });
+
+  it('闪避中(_dodgeTimer>0)受伤为 0 且不调 super', () => {
+    ai._dodgeTimer = 0.3;
+    const attacker = mkEnemy(0, 1, 0);
+    const lost = ai.takeDamage(100, false, attacker, 0);
+    expect(lost).toBe(0);
+    expect(superTakeDamage).not.toHaveBeenCalled();
+  });
+
+  it('闪避结束(_dodgeTimer=0)正常受伤', () => {
+    ai._dodgeTimer = 0;
+    const attacker = mkEnemy(0, 1, 0);
+    const lost = ai.takeDamage(100, false, attacker, 0);
+    expect(lost).toBe(100);
+    expect(superTakeDamage).toHaveBeenCalledWith(100, false, attacker, 0);
+  });
+
+  it('闪避 i 帧跳过格挡减伤与反击', () => {
+    ai._dodgeTimer = 0.3;
+    ai._blockTimer = 0.4;
+    ai._isElite = true; ai._eliteSkill = 'blockCounter';
+    const attacker = mkEnemy(0, 1, 0);
+    const lost = ai.takeDamage(100, false, attacker, 0);
+    expect(lost).toBe(0);
+    expect(ai._counterTimer).toBe(0);
+  });
+
+  it('闪避中不触发 reflect（无伤害可反弹）', () => {
+    ai.setEnemyMods(['reflect']);
+    ai._dodgeTimer = 0.3;
+    const attacker = { alive: true, team: 0, position: new THREE.Vector3(1, 0, 0), takeDamage: vi.fn(() => 0) };
+    ai.takeDamage(100, false, attacker, 0);
+    expect(attacker.takeDamage).not.toHaveBeenCalled();
+  });
+
+  it('闪避中不触发 ironhide 减伤链', () => {
+    ai.setEnemyMods(['ironhide']);
+    ai._dodgeTimer = 0.3;
+    const attacker = mkEnemy(0, 1, 0);
+    const lost = ai.takeDamage(100, false, attacker, 0);
+    expect(lost).toBe(0);
+    expect(superTakeDamage).not.toHaveBeenCalled();
+  });
+});
