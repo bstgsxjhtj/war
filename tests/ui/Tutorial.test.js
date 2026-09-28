@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Tutorial } from '../../src/ui/Tutorial.js';
 import { EV } from '../../src/core/constants/events.js';
 import { LS } from '../../src/core/constants/storage-keys.js';
-import { DEFAULT_BINDINGS } from '../../src/core/input/KeyBindings.js';
+import { DEFAULT_BINDINGS, KeyBindings } from '../../src/core/input/KeyBindings.js';
 
 function mkBus() {
   const handlers = {};
@@ -257,6 +257,43 @@ describe('Tutorial - 完成与收尾', () => {
     expect(t.el.textContent).toContain('Tab');
     expect(t.el.textContent).toContain('K');
     expect(t.el.textContent).toContain('E');
+  });
+});
+
+describe('Tutorial - 完成条键位动态化（P1-3）', () => {
+  it('默认绑定时完成条含 Tab/Q/E 三键（回归守卫）', () => {
+    const t = new Tutorial(mkBus(), new KeyBindings());
+    t._finish();
+    expect(t.el.textContent).toContain('Tab');
+    expect(t.el.textContent).toContain('Q');
+    expect(t.el.textContent).toContain('E');
+  });
+
+  it('重绑 dodge→KeyR 后完成条显示 R 闪避（不再出现 Q 闪避）', () => {
+    const kb = new KeyBindings();
+    kb.set('dodge', 'KeyR');
+    const t = new Tutorial(mkBus(), kb);
+    t._finish();
+    expect(t.el.textContent).toContain('R 闪避');
+    expect(t.el.textContent).not.toContain('Q 闪避');
+  });
+
+  it('重绑 execute→Digit5 后完成条显示 5 处决', () => {
+    const kb = new KeyBindings();
+    kb.set('execute', 'Digit5');
+    const t = new Tutorial(mkBus(), kb);
+    t._finish();
+    expect(t.el.textContent).toContain('5 处决');
+    expect(t.el.textContent).not.toContain('E 处决');
+  });
+
+  it('重绑 lock→KeyG 后完成条显示 G 锁定', () => {
+    const kb = new KeyBindings();
+    kb.set('lock', 'KeyG');
+    const t = new Tutorial(mkBus(), kb);
+    t._finish();
+    expect(t.el.textContent).toContain('G 锁定');
+    expect(t.el.textContent).not.toContain('Tab 锁定');
   });
 });
 

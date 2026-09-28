@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { KeyBindings, DEFAULT_BINDINGS } from '../../../src/core/input/KeyBindings.js';
+import { KeyBindings, DEFAULT_BINDINGS, keyLabel } from '../../../src/core/input/KeyBindings.js';
 
 describe('KeyBindings', () => {
   beforeEach(() => { localStorage.clear(); });
@@ -78,5 +78,34 @@ describe('KeyBindings', () => {
     expect(all.dodge).toBe('KeyQ');
     all.dodge = 'KeyZ';
     expect(kb.get('dodge')).toBe('KeyQ');
+  });
+});
+
+describe('keyLabel（P1-3：键码→显示文本，与 Tutorial/HUD 提示共用）', () => {
+  it('KeyX 键码转单字母（KeyR→R、KeyE→E）', () => {
+    expect(keyLabel('KeyR')).toBe('R');
+    expect(keyLabel('KeyE')).toBe('E');
+  });
+
+  it('DigitX 键码转数字（Digit5→5、Digit1→1）', () => {
+    expect(keyLabel('Digit5')).toBe('5');
+    expect(keyLabel('Digit1')).toBe('1');
+  });
+
+  it('ShiftLeft/Right 统一显示 Shift', () => {
+    expect(keyLabel('ShiftLeft')).toBe('Shift');
+    expect(keyLabel('ShiftRight')).toBe('Shift');
+  });
+
+  it('Space/Tab 等无前缀键码原样返回', () => {
+    expect(keyLabel('Space')).toBe('Space');
+    expect(keyLabel('Tab')).toBe('Tab');
+    expect(keyLabel('Enter')).toBe('Enter');
+  });
+
+  it('空值/undefined 返回空串（提示拼接不出现 undefined）', () => {
+    expect(keyLabel('')).toBe('');
+    expect(keyLabel(undefined)).toBe('');
+    expect(keyLabel(null)).toBe('');
   });
 });

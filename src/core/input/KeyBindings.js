@@ -42,6 +42,14 @@ export const BINDING_ORDER = [
   'weapon1', 'weapon2', 'weapon3', 'weapon4'
 ];
 
+export function keyLabel(code) {
+  if (!code) return '';
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  if (code === 'ShiftLeft' || code === 'ShiftRight') return 'Shift';
+  return code;
+}
+
 export class KeyBindings {
   constructor() {
     this._bindings = { ...DEFAULT_BINDINGS };

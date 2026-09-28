@@ -525,7 +525,7 @@ async function bootstrap() {
         for (const a of ais) {
           if (a.alive && a.canBeExecuted && a.position.distanceTo(player.position) < EXECUTE.RANGE) { _execNearby = true; break; }
         }
-        if (_execNearby && !_execHintShown) { hud.flash('按 E 处决！'); _execHintShown = true; }
+        if (_execNearby && !_execHintShown) { hud.flash('按 ' + keyLabel(keyBindings.get('execute')) + ' 处决！'); _execHintShown = true; }
         else if (!_execNearby && _execHintShown) { hud.clearHint(); _execHintShown = false; }
         if (mode.name === '据点') { mode.onTick(dt, combat.characters); hud.setDomination(mode); }
         if (tutorial) tutorial.update(dt);

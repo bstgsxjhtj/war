@@ -1,7 +1,7 @@
 // 新手引导：12 步 toast 教程（基础 8 步 + 进阶 4 步），动作/事件推进，仅首局出现
 import { EV } from '../core/constants/events.js';
 import { LS } from '../core/constants/storage-keys.js';
-import { DEFAULT_BINDINGS } from '../core/input/KeyBindings.js';
+import { DEFAULT_BINDINGS, keyLabel } from '../core/input/KeyBindings.js';
 
 const FADE = 0.3;
 const STEP_TIMEOUT = 10;
@@ -57,13 +57,7 @@ export class Tutorial {
 
   bindCode(action) { return this.kb ? this.kb.get(action) : DEFAULT_BINDINGS[action]; }
   bindLabel(action) { return this.keyLabel(this.bindCode(action)); }
-  keyLabel(code) {
-    if (!code) return '';
-    if (code.startsWith('Key')) return code.slice(3);
-    if (code.startsWith('Digit')) return code.slice(5);
-    if (code === 'ShiftLeft' || code === 'ShiftRight') return 'Shift';
-    return code;
-  }
+  keyLabel(code) { return keyLabel(code); }
 
   _match(a) {
     if (!this.active) return;
@@ -106,7 +100,10 @@ export class Tutorial {
   }
 
   _renderFinal() {
-    this.el.innerHTML = '<div style="color:#4ade80;font-weight:600;">✓ 引导完成！Tab 锁定 · Q 闪避 · E 处决 · K 技能树 · M 模式 · N 天气 · Esc 设置</div>';
+    const lock = this.bindLabel('lock');
+    const dodge = this.bindLabel('dodge');
+    const exec = this.bindLabel('execute');
+    this.el.innerHTML = `<div style="color:#4ade80;font-weight:600;">✓ 引导完成！${lock} 锁定 · ${dodge} 闪避 · ${exec} 处决 · K 技能树 · M 模式 · N 天气 · Esc 设置</div>`;
   }
 
   update(dt) {
