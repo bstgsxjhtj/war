@@ -11,6 +11,7 @@ export const LS = {
   OLD_SKINS: 'weapon_skins',
   // 独立保留
   SETTINGS: 'settings',
+  KEYBINDINGS: 'keybindings',
   AUDIO_VOLUME: 'audio_volume',
   TUTORIAL_DONE: 'tutorial_done',
   SKILLTREE_PROFILE_PREFIX: 'skilltree_profile_',

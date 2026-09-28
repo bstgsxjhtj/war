@@ -65,6 +65,7 @@ import { SaveUI } from './ui/SaveUI.js';
 import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
 import { QualityGovernor } from './app/QualityGovernor.js';
+import { KeyBindings } from './app/KeyBindings.js';
 import { Spawner } from './gameplay/Spawner.js';
 import { wireAchievements } from './app/AchievementWiring.js';
 import { InputRouter } from './app/InputRouter.js';
@@ -212,7 +213,8 @@ async function bootstrap() {
   bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => assist.setBaseLevel(difficulty));
   weather.onLightning((pos) => envHazards.onLightningStrike(pos));
   for (const box of siege.collisionBoxes) envHazards.addWallBox(box);
-  const settings = new SettingsMenu(bus, audio);
+  const keyBindings = new KeyBindings();
+  const settings = new SettingsMenu(bus, audio, keyBindings);
   // P2-5 画质档位：统一应用到渲染器/环境粒子/天气粒子；低端机自适应降帧
   const qualityGovernor = new QualityGovernor({ quality: 'high' });
   function applyQuality(q) {
@@ -318,7 +320,7 @@ async function bootstrap() {
     if (player) { if (player.dispose) player.dispose(); scene.remove(player.root); }
     for (const a of ais) { if (a.dispose) a.dispose(); scene.remove(a.root); }
     ais = [];
-    player = new Player(camera, bus);
+    player = new Player(camera, bus, keyBindings);
     player.setComboSys(comboSys);
     comboSys.count = 0; comboSys._tier = 0; comboSys._finisher = false;
     player.setWeaponSkills(weaponSkills);

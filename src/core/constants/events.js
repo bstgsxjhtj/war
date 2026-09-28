@@ -52,6 +52,7 @@ export const EV = {
   SETTINGS_COLORBLIND: 'settings.colorblind',
   SETTINGS_REDUCED_MOTION: 'settings.reducedMotion',
   SETTINGS_SHAKE_INTENSITY: 'settings.shakeIntensity',
+  SETTINGS_KEYBIND: 'settings.keybind',
   // 回合
   ROUND_RESTART: 'round.restart',
   // 引擎

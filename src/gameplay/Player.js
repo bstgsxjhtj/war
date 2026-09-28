@@ -6,14 +6,16 @@ import { Spear } from './weapons/Spear.js';
 import { SwordShield } from './weapons/SwordShield.js';
 import { Warhammer } from './weapons/Warhammer.js';
 import { EV } from '../core/constants/events.js';
+import { KeyBindings } from '../app/KeyBindings.js';
 
 // 本地玩家：Tab锁定 / 右键格挡(持刀) / 蓄力越肩(弓) / Q闪避
 export class Player extends Character {
-  constructor(camera, bus) {
+  constructor(camera, bus, keyBindings) {
     super({ team: 0, isLocal: true, speed: 8.5, maxHp: 160 });
     this.camera = camera;
     this.setBus(bus);
     this._keys = new Set();
+    this._kb = keyBindings || new KeyBindings();
     this._attackQueued = false;
     this._queueTime = 0;
     this._dodgeBuf = null; // 闪避输入缓冲 { dir, t }
@@ -56,16 +58,18 @@ export class Player extends Character {
     const onContextMenu = (e) => e.preventDefault();
     const onKeyDown = (e) => {
       this._keys.add(e.code);
-      if (e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3' || e.code === 'Digit4') {
-        const idx = parseInt(e.code.slice(-1)) - 1;
-        if (idx < this.weapons.length) { this.switchWeapon(idx); this.setCharging(false); this.camera.aimMode = false; }
+      for (let i = 0; i < 4; i++) {
+        if (e.code === this._kb.get('weapon' + (i + 1))) {
+          if (i < this.weapons.length) { this.switchWeapon(i); this.setCharging(false); this.camera.aimMode = false; }
+        }
       }
-      if (e.code === 'KeyQ') this.requestDodge(this.camera.forward());
-      if (e.code === 'KeyF') this.trySkill(this._pendingCombat);
-      if (e.code === 'KeyT') this.tryUltimate(this._pendingCombat);
-      if (e.code === 'KeyE') this.requestExecute(this._pendingCombat);
-      if (e.code === 'Tab') { e.preventDefault(); this._toggleLock(); }
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) this._tryDodgeFromKey(e.code);
+      if (e.code === this._kb.get('dodge')) this.requestDodge(this.camera.forward());
+      if (e.code === this._kb.get('skill')) this.trySkill(this._pendingCombat);
+      if (e.code === this._kb.get('ultimate')) this.tryUltimate(this._pendingCombat);
+      if (e.code === this._kb.get('execute')) this.requestExecute(this._pendingCombat);
+      if (e.code === this._kb.get('lock')) { e.preventDefault(); this._toggleLock(); }
+      const dirKeys = [this._kb.get('forward'), this._kb.get('back'), this._kb.get('left'), this._kb.get('right')];
+      if (dirKeys.includes(e.code)) this._tryDodgeFromKey(e.code);
     };
     const onKeyUp = (e) => this._keys.delete(e.code);
     this._handlers = [
@@ -120,10 +124,10 @@ export class Player extends Character {
   _dirFromKey(code) {
     const f = this.camera.forward();
     const r = this.camera.right();
-    if (code === 'KeyW') return f;
-    if (code === 'KeyS') return f.clone().negate();
-    if (code === 'KeyA') return r.clone().negate();
-    if (code === 'KeyD') return r;
+    if (code === this._kb.get('forward')) return f;
+    if (code === this._kb.get('back')) return f.clone().negate();
+    if (code === this._kb.get('left')) return r.clone().negate();
+    if (code === this._kb.get('right')) return r;
     return null;
   }
 
@@ -183,14 +187,15 @@ export class Player extends Character {
     } else {
       this.setLook(this.camera.yaw);
     }
-    const f = (this._keys.has('KeyW') ? 1 : 0) - (this._keys.has('KeyS') ? 1 : 0);
-    const r = (this._keys.has('KeyD') ? 1 : 0) - (this._keys.has('KeyA') ? 1 : 0);
+    const f = (this._keys.has(this._kb.get('forward')) ? 1 : 0) - (this._keys.has(this._kb.get('back')) ? 1 : 0);
+    const r = (this._keys.has(this._kb.get('right')) ? 1 : 0) - (this._keys.has(this._kb.get('left')) ? 1 : 0);
     this.setMove(f, r);
-    const sprinting = this._keys.has('ShiftLeft') || this._keys.has('ShiftRight');
+    const sc = this._kb.get('sprint');
+    const sprinting = this._keys.has(sc) || (sc === 'ShiftLeft' && this._keys.has('ShiftRight')) || (sc === 'ShiftRight' && this._keys.has('ShiftLeft'));
     if (sprinting && this.stamina.cur > 0) this.setSprint(true);
     else { this.setSprint(false); }
     if (sprinting) this.stamina.consume(18 * dt);
-    if (this._keys.has('Space')) this.jump();
+    if (this._keys.has(this._kb.get('jump'))) this.jump();
 
     if (this._attackQueued) {
       this._queueTime += dt;
