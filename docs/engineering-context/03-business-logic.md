@@ -16,6 +16,8 @@
 
 词条效果必须在**所有伤害路径**（近战/箭矢/AOE）一致生效。
 
+**近战倍率上限钳制**（P2-1，2026-09-28）：乘算堆叠（_perfectBuff×1.5 / skill.totalMul / _runDmgMul / killstreak / branchDamageMul / branchCrit×2 / counterMul / 背刺×2 / comboMul / 词条锋锐 / 暴怒暴击×2）无上限曾催生秒杀最优解。`resolveMelee` 在 `_affixApply` 后对最终伤害 `Math.min(dmg, weapon.damage * COMBAT.DMG_MUL_MAX)`（=6× 武器基础伤害）钳制后再传入 `takeDamage`。仅作用于近战结算（箭矢/AOE/大招保留各自平衡，不共用此钳制）；数值收敛 `balance.js COMBAT.DMG_MUL_MAX = 6.0`。
+
 **Boss AOE 预警 + 延迟结算**（P1-1，2026-09-28）：`CombatSystem.spawnAoE(origin, radius, damage, attacker, now, delay=0)`——`delay>0` 时先在地面投放单位环预警（按 radius 缩放，脉冲透明度），推入 `_pendingStrikes` 队列，由 `update(dt)` 递减 delay，到期调 `_resolveAoE` 结算（仍走词条加伤/吸血/克制链）；`delay=0` 立即结算（向后兼容，玩家大招/连击 AOE 仍即时）。Boss 全部 AOE 技能（quake 三段 0.4/0.7/1.0s、meteor 0.6s、slam 0.3s、aoe 0.35s）均带 delay，移除 quake 原裸 setTimeout（不再脱离 timeScale/clear）。玩家获得可闪避窗口。
 
 **AI 闪避 i 帧**（P0-2，2026-09-28）：AIController.takeDamage 顶部 `if (this._dodgeTimer > 0) return 0;`——闪避期间完全免伤并跳过格挡/反击/ironhide/reflect 全链，与玩家 `_dodgeIFrame` 对称（AI 不复用 `_dodgeIFrame` 以免触发玩家专属的完美闪避逻辑）。

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CombatSystem } from '../../src/gameplay/CombatSystem.js';
+import { COMBAT } from '../../src/core/constants/balance.js';
 
 vi.mock('../../src/render/ParticleFX.js', () => ({
   ParticleFX: Object.assign(
@@ -71,5 +72,42 @@ describe('CombatSystem.resolveMelee 主路径', () => {
     victim.takeDamage = vi.fn(() => { victim.health.alive = false; return 999; });
     cs.resolveMelee(attacker, attacker.weapon, 0, 0);
     expect(bus.emit).toHaveBeenCalledWith('combat.kill', expect.objectContaining({ victim }));
+  });
+});
+
+describe('CombatSystem.resolveMelee 伤害倍率钳制（P2-1）', () => {
+  let cs, bus;
+  beforeEach(() => {
+    bus = { emit: vi.fn() };
+    const scene = { add() {}, remove() {} };
+    cs = new CombatSystem(scene, bus);
+    cs._emitHit = vi.fn();
+    cs.spawnHitFX = vi.fn();
+    cs.createDamageNumber = vi.fn();
+    cs.spawnAoE = vi.fn();
+  });
+
+  it('乘算堆叠超上限时钳制到 weapon.damage × DMG_MUL_MAX', () => {
+    const attacker = mockChar(0, 0, 0);
+    attacker._runDmgMul = 10;
+    const victim = mockChar(1, 0, 2);
+    cs.characters = [attacker, victim];
+    victim.takeDamage = vi.fn((d) => d);
+    cs.resolveMelee(attacker, attacker.weapon, 0, 0);
+    const cap = attacker.weapon.damage * COMBAT.DMG_MUL_MAX;
+    expect(victim.takeDamage.mock.calls[0][0]).toBe(cap);
+  });
+
+  it('倍率未超上限时不钳制（正常伤害原样传入）', () => {
+    const attacker = mockChar(0, 0, 0);
+    attacker._runDmgMul = 2;
+    const victim = mockChar(1, 0, 2);
+    cs.characters = [attacker, victim];
+    victim.takeDamage = vi.fn((d) => d);
+    cs.resolveMelee(attacker, attacker.weapon, 0, 0);
+    const cap = attacker.weapon.damage * COMBAT.DMG_MUL_MAX;
+    const dealt = victim.takeDamage.mock.calls[0][0];
+    expect(dealt).toBeLessThanOrEqual(cap);
+    expect(dealt).toBe(40);
   });
 });

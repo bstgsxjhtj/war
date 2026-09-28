@@ -214,7 +214,8 @@ export class CombatSystem {
         if (perfect) attacker._perfectRebound = false;
         const comboMul = this._comboSys ? this._comboSys.onHit(countered, perfect, now) : 1;
         const dmg = this._affixApply(attacker, weapon, baseDmg * counterMul * (isBackstab ? 2 : 1) * comboMul);
-        const lost = c.takeDamage(dmg, heavy || isBackstab, attacker, now);
+        const finalDmg = Math.min(dmg, weapon.damage * COMBAT.DMG_MUL_MAX);
+        const lost = c.takeDamage(finalDmg, heavy || isBackstab, attacker, now);
         if (lost > 0) {
           this._emitHit(attacker, c, lost, weapon.name, 0xff3322, combo, heavy, now, isBackstab, branchCrit || this._lastAffixCrit);
           this._affixLeech(attacker, lost);
