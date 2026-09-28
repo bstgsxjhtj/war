@@ -19,6 +19,8 @@ export class AIController extends Character {
     this._focusTimer = 0;
     this._vDir = new THREE.Vector3();
     this._vFlank = new THREE.Vector3();
+    this._vFlankRet = new THREE.Vector3();
+    this._vCover = new THREE.Vector3();
     this._dodgeTimer = 0;
     this._blockTimer = 0;
     this._dodgeCd = 0;
@@ -49,23 +51,25 @@ export class AIController extends Character {
     this._patrolTarget.set(base.x + Math.cos(a) * r, 0, base.z + Math.sin(a) * r);
   }
 
+  // 复用预分配向量，避免每帧 clone/new 分配
   _calcFlankDir(target, allAllies) {
     if (this._squadRole === 'ranged') {
-      return this._vFlank.subVectors(this.position, target.position).setY(0).normalize();
+      this._vFlank.subVectors(this.position, target.position).setY(0).normalize();
+      return this._vFlank;
     }
     this._vFlank.subVectors(target.position, this.position).setY(0).normalize();
     let cover = 0;
     for (const a of allAllies) {
       if (a === this || !a.alive) continue;
-      const d = a.position.clone().sub(target.position).setY(0).normalize();
+      const d = this._vCover.subVectors(a.position, target.position).setY(0).normalize();
       const dot = d.dot(this._vFlank);
       if (dot > 0.3) cover += 1;
     }
     if (cover >= 2) {
-      const perp = new THREE.Vector3(-this._vFlank.z, 0, this._vFlank.x);
-      return perp.multiplyScalar(Math.sin(this._strafePhase) > 0 ? 1 : -1);
+      this._vFlankRet.set(-this._vFlank.z, 0, this._vFlank.x);
+      return this._vFlankRet.multiplyScalar(Math.sin(this._strafePhase) > 0 ? 1 : -1);
     }
-    return this._vFlank.clone();
+    return this._vFlank;
   }
 
   takeDamage(amount, heavy, attacker, now) {

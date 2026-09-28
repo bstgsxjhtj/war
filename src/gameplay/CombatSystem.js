@@ -99,8 +99,8 @@ export class CombatSystem {
     if (counterMul > 1.2) this.bus.emit(EV.COMBAT_COUNTER, { attacker, victim, mul: counterMul });
     this.bus.emit(EV.COMBAT_HIT, { attacker, victim, damage, weapon: weaponName, combo, heavy, backstab, crit });
     this._tmpOrigin.copy(victim.position).add(this._tmpTo.set(0, 1.6, 0));
-    this.spawnHitFX(this._tmpOrigin.clone(), color);
-    this.createDamageNumber(this._tmpOrigin.clone(), Math.round(damage), counterMul > 1.2, crit);
+    this.spawnHitFX(this._tmpOrigin, color);
+    this.createDamageNumber(this._tmpOrigin, Math.round(damage), counterMul > 1.2, crit);
     const shakeMap = [0.16, 0.18, 0.32];
     this.bus.emit(EV.FX_SHAKE, { amount: Math.min(0.9, (shakeMap[combo] ?? 0.16) + (heavy ? 0.14 : 0)) });
     const hsMap = [0.04, 0.05, 0.11];
@@ -239,7 +239,7 @@ export class CombatSystem {
   spawnArrow(attacker, weapon, charge) {
     const mesh = new THREE.Mesh(this._arrowGeo, this._arrowMat);
     mesh.castShadow = true;
-    this._tmpOrigin.copy(attacker.position).add(this._tmpTo.set(0, 1.5, 0)).add(attacker.forward.clone().multiplyScalar(0.7));
+    this._tmpOrigin.copy(attacker.position).add(this._tmpTo.set(0, 1.5, 0)).addScaledVector(attacker.forward, 0.7);
     const vel = attacker.forward.clone().multiplyScalar(weapon.speedFor(charge));
     vel.y += 1.8;
     const weatherFx = this._weatherEffects || { bowAccuracy: 1.0 };

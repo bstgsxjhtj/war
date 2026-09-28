@@ -128,7 +128,14 @@ export class Skeleton {
     const span = next.t - prev.t;
     const localT = span > 0 ? (t - prev.t) / span : 0;
     const eased = localT < 0.5 ? 2 * localT * localT : 1 - Math.pow(-2 * localT + 2, 2) / 2;
-    const allBones = new Set([...Object.keys(prev.bones), ...Object.keys(next.bones)]);
+    // 预分配骨骼名并集，避免每帧 new Set([...keys]) 分配
+    const cacheKey = prev.t + ':' + next.t + ':' + state;
+    let allBones = this._boneSetCache && this._boneSetCacheKey === cacheKey ? this._boneSetCache : null;
+    if (!allBones) {
+      allBones = Object.keys(prev.bones);
+      for (const k of Object.keys(next.bones)) if (allBones.indexOf(k) < 0) allBones.push(k);
+      this._boneSetCache = allBones; this._boneSetCacheKey = cacheKey;
+    }
     for (const b of allBones) {
       const pb = prev.bones[b] || [0, 0, 0];
       const nb = next.bones[b] || [0, 0, 0];
