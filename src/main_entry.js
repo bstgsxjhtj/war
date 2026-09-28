@@ -66,6 +66,7 @@ import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
 import { QualityGovernor } from './app/QualityGovernor.js';
 import { KeyBindings } from './app/KeyBindings.js';
+import { LODManager } from './render/LODManager.js';
 import { Spawner } from './gameplay/Spawner.js';
 import { wireAchievements } from './app/AchievementWiring.js';
 import { InputRouter } from './app/InputRouter.js';
@@ -132,13 +133,14 @@ async function bootstrap() {
   const AI_DIFFICULTY = 'normal';
   aiManager.setDifficulty(AI_DIFFICULTY);
   const hud = new HUD(bus);
+  const lod = new LODManager({ camera: camera.cam, scene: scene.scene });
   bus.on(EV.BOSS_SUMMON, ({ pos, team, count }) => {
     for (let i = 0; i < count; i++) {
       const e = new AIController({ team, passive: false, maxHp: Math.round(50 * aiManager.difficulty().maxHpMul) });
       e.setBus(bus); e.setWeapons([new Sword()]); e.setAIManager(aiManager);
       const px = pos.x + (Math.random()-0.5)*6, pz = pos.z + (Math.random()-0.5)*6;
       e.spawn(new THREE.Vector3(px, terrain.heightAt(px, pz), pz));
-      e.setCameraRef(camera); scene.add(e.root); combat.register(e); ais.push(e);
+      e.setCameraRef(camera); scene.add(e.root); combat.register(e); lod.register(e); ais.push(e);
     }
     audio.playSound('ultimate');
   });
@@ -223,6 +225,7 @@ async function bootstrap() {
     renderer.setQuality(q);
     if (env && env.setQuality) env.setQuality(q);
     if (weather && weather.setQuality) weather.setQuality(q);
+    lod.setQuality(q);
   }
   bus.on(EV.SETTINGS_QUALITY, ({ quality }) => { qualityGovernor.setQuality(quality); applyQuality(quality); });
   applyQuality(settings.quality || 'high');
@@ -306,7 +309,7 @@ async function bootstrap() {
   bus.emit(EV.DAILY_UPDATE, daily.challenges);
   progressUI.refresh();
 
-  const spawner = new Spawner({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign });
+  const spawner = new Spawner({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign, lod });
 
   function spawnRed(redLayout, { bossWave = false, modifier = null, stageDifficulty = 1 } = {}) {
     spawner.spawnRed(redLayout, ais, { bossWave, modeName: mode.name, modifier, stageDifficulty });
@@ -317,6 +320,7 @@ async function bootstrap() {
     horses.dispose();
     formations.clear();
     deathFeedback.hide();
+    lod.clear();
     if (player) { if (player.dispose) player.dispose(); scene.remove(player.root); }
     for (const a of ais) { if (a.dispose) a.dispose(); scene.remove(a.root); }
     ais = [];
@@ -572,6 +576,7 @@ async function bootstrap() {
         }
         deathFeedback.update(dt);
         if (deathFeedback.paused) return;
+        lod.tick(dt);
         match.checkWin();
       },
       () => { renderer.render(); }

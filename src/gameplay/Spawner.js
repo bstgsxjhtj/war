@@ -15,11 +15,11 @@ const CAVALRY_SCORE_GATE = 500;
 const TRAINING_DUMMY_HP = 500;
 
 export class Spawner {
-  constructor({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign }) {
+  constructor({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign, lod }) {
     this.scene = scene; this.camera = camera; this.terrain = terrain;
     this.combat = combat; this.aiManager = aiManager; this.formations = formations;
     this.weaponTrail = weaponTrail; this.horses = horses; this.audio = audio; this.bus = bus;
-    this.progression = progression; this.campaign = campaign;
+    this.progression = progression; this.campaign = campaign; this.lod = lod;
   }
 
   _maybeElite(ai, eliteChanceMul = 1) {
@@ -37,6 +37,7 @@ export class Spawner {
     this.scene.add(ai.root);
     this.combat.register(ai);
     if (ai._weaponMesh) this.weaponTrail.attach(ai._weaponMesh, ai.team === 1 ? 0xff8060 : 0x60a0ff);
+    if (this.lod) this.lod.register(ai);
     ais.push(ai);
   }
 
