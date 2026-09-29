@@ -31,6 +31,7 @@ export class Camera {
     if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTDODGE, () => { this.addShake(0.5); if (!this._reducedMotion) { this._curFov = CAMERA.FOV_PERFECT_DODGE; this.timeScale = CAMERA.PERFECT_DODGE_TIME_SCALE; } }));
     if (bus) this._unsubs.push(bus.on(EV.FX_PERFECTBLOCK, () => { this.addShake(0.6); if (!this._reducedMotion) this._curFov = CAMERA.FOV_PERFECT_BLOCK; }));
     if (bus) this._unsubs.push(bus.on(EV.COMBAT_ULTIMATE, () => { if (!this._reducedMotion) this._curFov = 45; }));
+    if (bus) this._unsubs.push(bus.on(EV.HUD_BOSSPHASE, ({ phase }) => { this.addShake(0.7); if (!this._reducedMotion) this._curFov = phase >= 3 ? CAMERA.FOV_BOSS_PHASE3 : CAMERA.FOV_BOSS_PHASE2; }));
   }
 
   dispose() {

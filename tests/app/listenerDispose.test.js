@@ -27,11 +27,11 @@ function mkBus() {
 }
 
 describe('Camera 监听器可退订 (P1-6)', () => {
-  it('dispose 退订 4 个 bus 事件并移除 resize 监听', () => {
+  it('dispose 退订 5 个 bus 事件并移除 resize 监听', () => {
     const { bus, offs } = mkBus();
     const rmSpy = vi.spyOn(window, 'removeEventListener');
     const cam = new Camera(bus);
-    expect(offs.length).toBe(4);
+    expect(offs.length).toBe(5);
     cam.dispose();
     for (const off of offs) expect(off).toHaveBeenCalled();
     expect(rmSpy).toHaveBeenCalledWith('resize', expect.any(Function));

@@ -257,7 +257,7 @@ async function bootstrap() {
   });
   const saveUI = new SaveUI(bus, saveManager, () => saveOrch.capture(), () => saveOrch.reset());
   // P3-1 事件接线下沉：17 个纯处理器（无 mutable-local 依赖）移至 app/EventWiring.js
-  wireCoreHandlers(bus, { audio, hitStop, hitDirection, weaponTrail, daily, progression, progressUI, deathFeedback, assist, aiManager, camera, dodgeGhosts, match });
+  wireCoreHandlers(bus, { audio, hitStop, hitDirection, weaponTrail, daily, progression, progressUI, deathFeedback, assist, aiManager, camera, dodgeGhosts, match, weather });
   bus.on(EV.SKINS_CHANGED, ({ weaponIdx }) => { if (player && player._weaponMesh) skins.applyToWeapon(player._weaponMesh, weaponIdx); });
   // 启动加载应用存档 + 定时/卸载自动存档
   saveOrch.applyOnBoot();

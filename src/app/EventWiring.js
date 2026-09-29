@@ -7,7 +7,7 @@ import { EV } from '../core/constants/events.js';
 // 余下 7 个引用 player/ais/enemies/_colorblind 等 mutable let 绑定或位于条件块（net）的处理器仍留在 main_entry.js。
 export function wireCoreHandlers(bus, deps) {
   const { audio, hitStop, hitDirection, weaponTrail, daily, progression, progressUI,
-    deathFeedback, assist, aiManager, camera, dodgeGhosts, match } = deps;
+    deathFeedback, assist, aiManager, camera, dodgeGhosts, match, weather } = deps;
 
   bus.on(EV.FX_PERFECTBLOCK, () => {
     if (daily.track('perfect')) bus.emit(EV.DAILY_UPDATE, daily.challenges);
@@ -63,7 +63,7 @@ export function wireCoreHandlers(bus, deps) {
   bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => assist.setBaseLevel(difficulty));
   bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
   bus.on(EV.SETTINGS_SHAKE_INTENSITY, ({ shakeIntensity }) => { camera.setShakeIntensity(shakeIntensity); });
-  bus.on(EV.HUD_BOSSPHASE, () => { audio.playSound('bossRoar'); audio.playSound('bgmIntensity', { intensity: 2 }); });
+  bus.on(EV.HUD_BOSSPHASE, ({ phase }) => { audio.playSound('bossRoar'); audio.playSound('bgmIntensity', { intensity: 2 }); if (weather) weather.setMode(phase >= 3 ? 'night' : 'storm'); });
   bus.on(EV.FX_BOSSROAR, () => audio.playSound('bossRoar'));
   bus.on(EV.FX_DODGE, (p) => { if (p && p.char && p.char.isLocal) dodgeGhosts.begin(p.char); });
   bus.on(EV.COMBAT_ULTIMATE, () => audio.playSound('ultimate'));
