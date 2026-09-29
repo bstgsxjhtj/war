@@ -58,17 +58,17 @@ export class Environment {
   }
 
   _scatterTrees(n) {
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2f1a, roughness: 1, flatShading: true });
-    const leafMats = [0x355028, 0x3a4a20, 0x446030].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1, flatShading: true }));
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2f1a, roughness: 1 });
+    const leafMats = [0x355028, 0x3a4a20, 0x446030].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1 }));
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, r = 32 + Math.random() * 60;
       const x = Math.cos(a) * r, z = Math.sin(a) * r, y = this.terrain.heightAt(x, z);
       const g = new THREE.Group();
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.42, 2.6, 6), trunkMat);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.42, 2.6, 8), trunkMat);
       trunk.position.y = 1.3; trunk.castShadow = true;
       const lm = leafMats[Math.floor(Math.random() * 3)];
       for (let j = 0; j < 3; j++) {
-        const leaf = new THREE.Mesh(new THREE.ConeGeometry(1.8 - j * 0.35, 1.6, 6), lm);
+        const leaf = new THREE.Mesh(new THREE.ConeGeometry(1.8 - j * 0.35, 1.6, 8), lm);
         leaf.position.y = 2.6 + j * 0.9; leaf.castShadow = true;
         g.add(leaf);
       }
@@ -80,12 +80,12 @@ export class Environment {
   }
 
   _scatterRocks(n) {
-    const mat = new THREE.MeshStandardMaterial({ color: 0x6b6862, roughness: 1, flatShading: true });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x6b6862, roughness: 1 });
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, r = 14 + Math.random() * 75;
       const x = Math.cos(a) * r, z = Math.sin(a) * r, y = this.terrain.heightAt(x, z);
       const s = 0.5 + Math.random() * 1.8;
-      const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), mat);
+      const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 1), mat);
       rock.position.set(x, y + s * 0.3, z);
       rock.rotation.set(Math.random(), Math.random(), Math.random());
       rock.castShadow = true; rock.receiveShadow = true;
@@ -94,7 +94,7 @@ export class Environment {
   }
 
   _grass(n) {
-    const mats = [0x4a6030, 0x5a6a38, 0x3e5628].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1, side: THREE.DoubleSide, flatShading: true }));
+    const mats = [0x4a6030, 0x5a6a38, 0x3e5628].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1, side: THREE.DoubleSide }));
     const geoA = new THREE.PlaneGeometry(0.18, 0.7, 1, 2);
     const geoB = geoA.clone(); geoB.rotateY(Math.PI / 2); // 十字双面防侧面消失
     for (let m = 0; m < 3; m++) {
@@ -118,7 +118,7 @@ export class Environment {
   }
 
   _ruins() {
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x6a6258, roughness: 0.9, flatShading: true });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x6a6258, roughness: 0.9 });
     for (let i = 0; i < 8; i++) {
       const a = Math.random() * Math.PI * 2, r = 18 + Math.random() * 30;
       const x = Math.cos(a) * r, z = Math.sin(a) * r, y = this.terrain.heightAt(x, z);
@@ -126,7 +126,7 @@ export class Environment {
       w.position.set(x, y + 1.5, z); w.rotation.set((Math.random() - 0.5) * 0.3, Math.random() * Math.PI, (Math.random() - 0.5) * 0.4);
       w.castShadow = true; w.receiveShadow = true; this.group.add(w);
       for (let j = 0; j < 3; j++) {
-        const r2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3 + Math.random() * 0.4, 0), wallMat);
+        const r2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3 + Math.random() * 0.4, 1), wallMat);
         r2.position.set(x + (Math.random() - 0.5) * 3, y + 0.2, z + (Math.random() - 0.5) * 3);
         r2.castShadow = true; this.group.add(r2);
       }
@@ -134,8 +134,8 @@ export class Environment {
   }
 
   _landmarks() {
-    const mat = new THREE.MeshStandardMaterial({ color: 0x8a8278, roughness: 0.85, flatShading: true });
-    const mat2 = new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.8, flatShading: true });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x8a8278, roughness: 0.85 });
+    const mat2 = new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.8 });
     for (const [tx, tz] of [[-38, -28], [40, 32]]) {
       const y = this.terrain.heightAt(tx, tz);
       const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10, 8, 1, true), mat);
@@ -154,7 +154,7 @@ export class Environment {
   }
 
   _tents() {
-    const tentMat = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, flatShading: true, side: THREE.DoubleSide });
+    const tentMat = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, side: THREE.DoubleSide });
     for (let i = 0; i < 4; i++) {
       const x = -18 - i * 3, z = -8 + (i % 2) * 5, y = this.terrain.heightAt(x, z);
       const t = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.2, 6), tentMat(0x2f5fa8));
@@ -192,7 +192,7 @@ export class Environment {
       log.rotation.z = Math.PI / 2; log.rotation.y = (i / 5) * Math.PI;
       this.group.add(log);
     }
-    const fire = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 6), new THREE.MeshStandardMaterial({ color: 0xff7030, emissive: 0xff5020, emissiveIntensity: 2.5, flatShading: true }));
+    const fire = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 10), new THREE.MeshStandardMaterial({ color: 0xff7030, emissive: 0xff5020, emissiveIntensity: 2.5 }));
     fire.position.set(x, y + 0.8, z);
     this.group.add(fire); this._fire = this._fire || []; this._fire.push(fire);
     // 火苗粒子
@@ -215,12 +215,12 @@ export class Environment {
   }
 
   _tents(n) {
-    const clothMat = new THREE.MeshStandardMaterial({ color: 0x6a5a3a, roughness: 1, flatShading: true, side: THREE.DoubleSide });
+    const clothMat = new THREE.MeshStandardMaterial({ color: 0x6a5a3a, roughness: 1, side: THREE.DoubleSide });
     for (let i = 0; i < n; i++) {
       const ang = Math.random() * Math.PI * 2, r = 24 + Math.random() * 16;
       const x = Math.cos(ang) * r, z = Math.sin(ang) * r, y = this.terrain.heightAt(x, z);
       const g = new THREE.Group();
-      const tent = new THREE.Mesh(new THREE.ConeGeometry(2.2, 2.0, 6), clothMat);
+      const tent = new THREE.Mesh(new THREE.ConeGeometry(2.2, 2.0, 10), clothMat);
       tent.position.y = 1.0; tent.castShadow = true;
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3, 5), new THREE.MeshStandardMaterial({ color: 0x3a2a20 }));
       pole.position.y = 1.5;
@@ -231,7 +231,7 @@ export class Environment {
   }
 
   _wreckage(n) {
-    const shieldMat = new THREE.MeshStandardMaterial({ color: 0x6a6258, roughness: 1, flatShading: true, side: THREE.DoubleSide });
+    const shieldMat = new THREE.MeshStandardMaterial({ color: 0x6a6258, roughness: 1, side: THREE.DoubleSide });
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 1 });
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, r = 8 + Math.random() * 12;
@@ -269,7 +269,7 @@ export class Environment {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, r = 60 + Math.random() * 30;
       const x = Math.cos(a) * r, z = Math.sin(a) * r, y = this.terrain.heightAt(x, z);
-      const col = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 0.4, 18, 6), mat);
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 0.4, 18, 10), mat);
       col.position.set(x, y + 9, z);
       this.group.add(col);
     }

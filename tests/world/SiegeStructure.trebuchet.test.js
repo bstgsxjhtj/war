@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { SiegeStructure } from '../../src/world/SiegeStructure.js';
+vi.mock('../../src/render/TextureFactory.js', () => ({ TextureFactory: { brick: () => ({ isTexture: true }), noise: () => ({ isTexture: true }), rough: () => ({ isTexture: true }), normal: () => ({ isTexture: true }) } }));
 
 describe('SiegeStructure trebuchet', () => {
   let siege, scene, combat;

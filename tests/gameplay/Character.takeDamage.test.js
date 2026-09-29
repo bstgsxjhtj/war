@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../../src/render/TextureFactory.js', () => ({
   TextureFactory: {
     noise: () => ({ isTexture: true }),
-    rough: () => ({ isTexture: true })
+    rough: () => ({ isTexture: true }), normal: () => ({ isTexture: true }), brick: () => ({ isTexture: true })
   }
 }));
 

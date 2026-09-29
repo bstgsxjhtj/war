@@ -187,6 +187,7 @@ async function bootstrap() {
     _quality = q;
     renderer.setQuality(q);
     if (env && env.setQuality) env.setQuality(q);
+    if (water && water.setQuality) water.setQuality(q);
     if (weather && weather.setQuality) weather.setQuality(q);
     lod.setQuality(q);
   }

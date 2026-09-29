@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { SiegeStructure } from '../../src/world/SiegeStructure.js';
+vi.mock('../../src/render/TextureFactory.js', () => ({ TextureFactory: { brick: () => ({ isTexture: true }), noise: () => ({ isTexture: true }), rough: () => ({ isTexture: true }), normal: () => ({ isTexture: true }) } }));
 
 describe('SiegeStructure collisionBoxes', () => {
   let siege;

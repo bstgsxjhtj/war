@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../src/render/TextureFactory.js', () => ({
-  TextureFactory: { noise: () => ({ isTexture: true }), rough: () => ({ isTexture: true }) }
+  TextureFactory: { noise: () => ({ isTexture: true }), rough: () => ({ isTexture: true }), normal: () => ({ isTexture: true }), brick: () => ({ isTexture: true }) }
 }));
 vi.mock('../../src/render/ParticleFX.js', () => ({
   ParticleFX: Object.assign(class { constructor() {} spawnBurst() {} spawn() {} update() {} }, { blood: () => ({ isTexture: true }) })

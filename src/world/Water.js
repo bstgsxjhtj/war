@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { deepDispose } from '../render/disposeUtils.js';
 
 // 水面：法线波动 + 折射色 + 透明，覆盖河流区域
@@ -36,8 +37,7 @@ export class Water {
   }
   async init() {
     try {
-      const { Reflector } = await import(/* @vite-ignore */ '/node_modules/three/examples/jsm/objects/Reflector.js');
-      this.reflector = new Reflector(new THREE.PlaneGeometry(this.width, this.depth), { clipBias: 0.003, textureWidth: 1024, textureHeight: 1024, color: 0x3a4a6a });
+      this.reflector = new Reflector(new THREE.PlaneGeometry(this.width, this.depth), { clipBias: 0.003, textureWidth: 1024, textureHeight: 1024, color: 0x4a4038 });
       this.reflector.rotation.x = -Math.PI / 2;
       this.reflector.position.y = 0.05;
       this.mesh.add(this.reflector);
@@ -49,6 +49,10 @@ export class Water {
       if (rt && typeof rt.dispose === 'function') rt.dispose();
     }
     deepDispose(this.mesh);
+  }
+
+  setQuality(q) {
+    if (this.reflector) this.reflector.visible = q !== 'low';
   }
 
   update(dt, now) {

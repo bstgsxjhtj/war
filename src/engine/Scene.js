@@ -5,9 +5,9 @@ import { deepDispose } from '../render/disposeUtils.js';
 export class Scene {
   constructor() {
     this.scene = new THREE.Scene();
-    const fogColor = 0x9a8a78;
+    const fogColor = 0x8a7458;
     this.scene.background = new THREE.Color(fogColor);
-    this.scene.fog = new THREE.Fog(fogColor, 60, 220);
+    this.scene.fog = new THREE.Fog(fogColor, 40, 200);
 
     const hemi = new THREE.HemisphereLight(0xffd9a8, 0x5a4a36, 0.65);
     this.scene.add(hemi);
@@ -27,23 +27,23 @@ export class Scene {
     this.scene.add(sun);
     this.sun = sun;
 
-    const rim = new THREE.DirectionalLight(0x88a0c8, 0.28);
-    rim.position.set(-50, 35, -30);
-    this.scene.add(rim);
-
     // 远山 3 层（色阶向雾色靠拢，均在 fog 内）
     this._mountains = new THREE.Group();
     const layers = [
-      { r: 100, col: 0x6a5848, h: [18, 30] },
-      { r: 140, col: 0x807466, h: [20, 36] },
-      { r: 180, col: 0x948878, h: [22, 40] }
+      { r: 100, col: 0x6a5238, h: [18, 30] },
+      { r: 140, col: 0x78685a, h: [20, 36] },
+      { r: 180, col: 0x8a7458, h: [22, 40] }
     ];
     for (const L of layers) {
-      const mat = new THREE.MeshStandardMaterial({ color: L.col, roughness: 1, flatShading: true });
+      const mat = new THREE.MeshStandardMaterial({ color: L.col, roughness: 1 });
       for (let i = 0; i < 8; i++) {
         const a = (i / 8) * Math.PI * 2 + L.r * 0.01;
         const h = L.h[0] + Math.random() * (L.h[1] - L.h[0]);
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(16 + Math.random() * 14, h, 5), mat);
+        const mGeo = new THREE.ConeGeometry(16 + Math.random() * 14, h, 8);
+        const mp = mGeo.attributes.position;
+        for (let v = 0; v < mp.count; v++) { mp.setX(v, mp.getX(v) + (Math.random() - 0.5) * 2); mp.setZ(v, mp.getZ(v) + (Math.random() - 0.5) * 2); }
+        mp.needsUpdate = true; mGeo.computeVertexNormals();
+        const cone = new THREE.Mesh(mGeo, mat);
         cone.position.set(Math.cos(a) * L.r, h / 2 - 4, Math.sin(a) * L.r);
         cone.rotation.y = Math.random() * Math.PI;
         cone.castShadow = false;
@@ -55,7 +55,7 @@ export class Scene {
     // 天穹渐变 + 地平线暖光带
     const skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false,
-      uniforms: { top: { value: new THREE.Color(0x5a6a8a) }, bottom: { value: new THREE.Color(0xd8a060) } },
+      uniforms: { top: { value: new THREE.Color(0x6a5a48) }, bottom: { value: new THREE.Color(0xc89058) } },
       vertexShader: `varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
       fragmentShader: `varying vec3 vP; uniform vec3 top; uniform vec3 bottom; void main(){
         float h=normalize(vP).y;

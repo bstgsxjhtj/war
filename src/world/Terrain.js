@@ -57,7 +57,7 @@ export class Terrain {
     geo.computeVertexNormals();
     // 纹理由上层注入（world 不依赖 render）；未注入时用纯色材质
     const tex = opts.textures || {};
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: tex.map || null, normalMap: tex.normalMap || null, roughness: 0.95, flatShading: true });
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: tex.map || null, normalMap: tex.normalMap || null, roughness: 0.95 });
     this.mesh = new THREE.Mesh(geo, mat);
     this.mesh.receiveShadow = true;
     this._geo = geo;
@@ -65,7 +65,7 @@ export class Terrain {
   }
 
   _scatterRocks() {
-    const mat = new THREE.MeshStandardMaterial({ color: 0x6a6258, roughness: 1, flatShading: true });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x6a6258, roughness: 1 });
     for (let i = 0; i < 40; i++) {
       const a = Math.random() * Math.PI * 2;
       const r = 2 + Math.random() * 16;

@@ -4,6 +4,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
 import { EnvMap } from '../render/EnvMap.js';
 
 function viewport() {
@@ -12,7 +13,7 @@ function viewport() {
 
 // 暗角(0.22)+暖调分级(0.15)，收窄暗角范围避免中心变暗
 const VignetteShader = {
-  uniforms: { tDiffuse: { value: null }, vignette: { value: 0.22 }, grade: { value: 0.15 } },
+  uniforms: { tDiffuse: { value: null }, vignette: { value: 0.18 }, grade: { value: 0.15 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
   fragmentShader: `
     uniform sampler2D tDiffuse; uniform float vignette; uniform float grade; varying vec2 vUv;
@@ -41,7 +42,7 @@ export class Renderer {
     this._quality = 'high';
 
     this.composer = new EffectComposer(this.webgl);
-    this._bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.32, 0.3, 1.05);
+    this._bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.22, 0.3, 1.05);
     this._vignette = new ShaderPass(VignetteShader);
     this.composer.addPass(new OutputPass());
     this._resizeHandler = () => this._onResize();
@@ -54,7 +55,6 @@ export class Renderer {
     try { scene.environment = EnvMap.create(); } catch (e) { console.warn('[EnvMap] fail:', e.message); }
     try {
       const [w, h] = viewport();
-      const { SSAOPass } = await import(/* @vite-ignore */ '/node_modules/three/examples/jsm/postprocessing/SSAOPass.js');
       this._ssao = new SSAOPass(scene, camera, w, h);
       this._ssao.kernelRadius = 8;
       this._ssao.minDistance = 0.005;

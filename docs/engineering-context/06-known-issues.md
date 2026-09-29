@@ -158,6 +158,7 @@
 | 2026-09-29 | da634c5 | Round 6 P3-2：AI 涌现行为——连续被完美格挡后变招（叫援军+适应撤退）+计数衰减 |
 | 2026-09-29 | 1e5ea90 | Round 6 P3-3：词条行为统一抽象——AffixBehavior 接口+applyEnemyBehaviors 调度器，三消费方收敛 |
 | 2026-09-29 | b4e7793 | Round 6 P3-4：Boss 阶段转换演出——镜头 FOV 收缩+吼叫音效+环境天气切换（storm/night） |
+| 2026-09-29 | — | Round 6 视觉重塑三阶段：地基（SSAO/Reflector 静态 import 修 dist 404+去 flatShading 提面数+Fresnel 金边轮廓光+琥珀调色+Bloom 降参+low 降级关 SSAO/Bloom/Reflector）+塑形（刀刃 ExtrudeGeometry+头盔 LatheGeometry+甲胄法线贴图+城墙砖纹+远山 8 面扰动+树提段）+精修（雾层次 40-200+帐篷/烟柱/石头/篝火提段+水面反射暖色） |
 
 ## 部署后修复（2026-09-29）
 

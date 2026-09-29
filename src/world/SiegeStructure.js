@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { EV } from '../core/constants/events.js';
+import { TextureFactory } from '../render/TextureFactory.js';
 
 // 攻城结构：城门(可破坏) + 投石机(占领后轰击)
 export class SiegeStructure {
@@ -19,8 +20,8 @@ export class SiegeStructure {
 
   _buildGate() {
     const g = new THREE.Group();
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x8a8278, roughness: 0.9, flatShading: true });
-    const gateMat = new THREE.MeshStandardMaterial({ color: 0x6a4220, roughness: 0.8, flatShading: true, emissive: 0x1a0a00, emissiveIntensity: 0.1 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x8a8278, map: TextureFactory.brick(), roughness: 0.9 });
+    const gateMat = new THREE.MeshStandardMaterial({ color: 0x6a4220, roughness: 0.8, emissive: 0x1a0a00, emissiveIntensity: 0.1 });
     // 左右城墙
     const lw = new THREE.Mesh(new THREE.BoxGeometry(4, 7, 2), wallMat); lw.position.set(-5, 3.5, 40); lw.castShadow = true; lw.receiveShadow = true;
     const rw = lw.clone(); rw.position.set(5, 3.5, 40);
@@ -38,7 +39,7 @@ export class SiegeStructure {
 
   _buildTrebuchet() {
     const g = new THREE.Group();
-    const wood = new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.85, flatShading: true });
+    const wood = new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.85 });
     const base = new THREE.Mesh(new THREE.BoxGeometry(3, 0.5, 3), wood); base.position.y = 0.25; base.castShadow = true;
     const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 6, 6), wood); arm.position.set(0, 3, 0); arm.rotation.z = 0.3; arm.castShadow = true;
     const counter = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), wood); counter.position.set(-2.5, 3, 0);
@@ -50,7 +51,7 @@ export class SiegeStructure {
 
   _buildWalls() {
     // 简易城墙两侧延伸
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x8a8278, roughness: 0.9, flatShading: true });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x8a8278, map: TextureFactory.brick(), roughness: 0.9 });
     for (const side of [-1, 1]) {
       for (let i = 1; i <= 3; i++) {
         const w = new THREE.Mesh(new THREE.BoxGeometry(4, 7, 2), wallMat);
@@ -117,7 +118,7 @@ export class SiegeStructure {
       }
       // 发射投石
       const origin = this.trebuchet.position.clone().add(new THREE.Vector3(0, 5, 0));
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), new THREE.MeshStandardMaterial({ color: 0x555555, flatShading: true }));
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), new THREE.MeshStandardMaterial({ color: 0x555555 }));
       mesh.position.copy(origin); this.scene.add(mesh);
       const vel = target.clone().sub(origin).multiplyScalar(0.5); vel.y += 8;
       combat.arrows.push({ mesh, pos: origin.clone(), vel, team: this.trebuchet.team, damage: 80, life: 4, attacker: null, charge: 1, isSiege: true });

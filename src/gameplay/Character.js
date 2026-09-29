@@ -10,7 +10,24 @@ import { TextureFactory } from '../render/TextureFactory.js';
 import { deepDispose } from '../render/disposeUtils.js';
 import { Skeleton } from './Skeleton.js';
 import { EV } from '../core/constants/events.js';
+
 import { COMBAT, EXECUTE } from '../core/constants/balance.js';
+
+function applyFresnelRim(mat, rimColor, intensity) {
+  const c = new THREE.Color(rimColor);
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uRimColor = { value: c };
+    shader.uniforms.uRimIntensity = { value: intensity };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vViewPosition;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvViewPosition = -mvPosition.xyz;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vViewPosition;\nuniform vec3 uRimColor;\nuniform float uRimIntensity;')
+      .replace('#include <lights_fragment_end>', '#include <lights_fragment_end>\nfloat rim=pow(1.0-max(dot(normal,normalize(vViewPosition)),0.0),3.0);\ngl_FragColor.rgb+=rim*uRimColor*uRimIntensity;');
+  };
+  mat.customProgramCacheKey = () => 'fresnelRim';
+  return mat;
+}
 
 // 角色：耐力+锁定+格挡+完美闪避+击飞+涉水(第三轮进化)
 export class Character {
@@ -85,32 +102,39 @@ export class Character {
     const trim = this.team === 0 ? 0xd4b25a : 0xe0c060;
     const skin = 0xc89060;
     this.root = new THREE.Group();
-    const matBody = new THREE.MeshStandardMaterial({ color: teamColor, roughness: 0.55, metalness: 0.35, flatShading: true, emissive: teamColor, emissiveIntensity: 0.12 });
-    const matArmor = new THREE.MeshStandardMaterial({ color: armor, map: TextureFactory.noise(256, 256, '#4a4a4a', 18, 4), roughnessMap: TextureFactory.rough(256, 256, 0.5), roughness: 0.4, metalness: 0.6, flatShading: true });
-    const matTrim = new THREE.MeshStandardMaterial({ color: trim, roughness: 0.5, metalness: 0.7, flatShading: true });
-    const matSkin = new THREE.MeshStandardMaterial({ color: skin, roughness: 0.8, flatShading: true });
+    const matBody = new THREE.MeshStandardMaterial({ color: teamColor, roughness: 0.55, metalness: 0.35, emissive: teamColor, emissiveIntensity: 0.12 });
+    const matArmor = new THREE.MeshStandardMaterial({ color: armor, map: TextureFactory.noise(256, 256, '#4a4a4a', 18, 4), normalMap: TextureFactory.normal(256, 256, 0.4), normalScale: new THREE.Vector2(0.6, 0.6), roughnessMap: TextureFactory.rough(256, 256, 0.5), roughness: 0.4, metalness: 0.6 });
+    const matTrim = new THREE.MeshStandardMaterial({ color: trim, roughness: 0.5, metalness: 0.7 });
+    applyFresnelRim(matArmor, 0xffb060, 0.5); applyFresnelRim(matTrim, 0xffb060, 0.6);
+    const matSkin = new THREE.MeshStandardMaterial({ color: skin, roughness: 0.8 });
     this._mats = [matBody, matArmor, matTrim, matSkin];
 
-    const legGeo = new THREE.CapsuleGeometry(0.16, 0.7, 3, 6);
+    const legGeo = new THREE.CapsuleGeometry(0.16, 0.7, 4, 12);
     this.rLeg = new THREE.Mesh(legGeo, matArmor); this.rLeg.position.set(0.2, 0.5, 0); this.rLeg.castShadow = true;
     this.lLeg = new THREE.Mesh(legGeo, matArmor); this.lLeg.position.set(-0.2, 0.5, 0); this.lLeg.castShadow = true;
-    this.torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 0.95, 4, 10), matArmor); this.torso.position.y = 1.35; this.torso.castShadow = true;
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.18, 8), matTrim); belt.position.y = 0.85;
-    const shoGeo = new THREE.IcosahedronGeometry(0.28, 0);
+    this.torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 0.95, 6, 16), matArmor); this.torso.position.y = 1.35; this.torso.castShadow = true;
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.18, 12), matTrim); belt.position.y = 0.85;
+    const shoGeo = new THREE.IcosahedronGeometry(0.28, 1);
     this.rSho = new THREE.Mesh(shoGeo, matArmor); this.rSho.position.set(0.5, 1.65, 0); this.rSho.castShadow = true;
     this.lSho = new THREE.Mesh(shoGeo, matArmor); this.lSho.position.set(-0.5, 1.65, 0); this.lSho.castShadow = true;
-    const armGeo = new THREE.CapsuleGeometry(0.12, 0.5, 3, 6);
+    const armGeo = new THREE.CapsuleGeometry(0.12, 0.5, 4, 12);
     this.rArm = new THREE.Mesh(armGeo, matBody); this.rArm.position.set(0.5, 1.3, 0); this.rArm.castShadow = true;
     this.lArm = new THREE.Mesh(armGeo, matBody); this.lArm.position.set(-0.5, 1.3, 0); this.lArm.castShadow = true;
-    this.head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 0), matSkin); this.head.position.y = 2.1; this.head.castShadow = true;
-    const helm = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.5, 8), matTrim); helm.position.y = 2.28; helm.castShadow = true;
+    this.head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 1), matSkin); this.head.position.y = 2.1; this.head.castShadow = true;
+    const helmPoints = [
+      new THREE.Vector2(0.34, 0), new THREE.Vector2(0.32, 0.05),
+      new THREE.Vector2(0.30, 0.12), new THREE.Vector2(0.26, 0.25),
+      new THREE.Vector2(0.18, 0.38), new THREE.Vector2(0.10, 0.46),
+      new THREE.Vector2(0, 0.50),
+    ];
+    const helm = new THREE.Mesh(new THREE.LatheGeometry(helmPoints, 16), matTrim); helm.position.y = 2.28; helm.castShadow = true;
     const visor = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.1), matArmor); visor.position.set(0, 2.12, 0.28);
-    const rPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.3, 6), matTrim); rPauldron.position.set(0.5, 1.82, 0); rPauldron.castShadow = true;
-    const lPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.3, 6), matTrim); lPauldron.position.set(-0.5, 1.82, 0); lPauldron.castShadow = true;
-    const rKneeguard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 0), matTrim); rKneeguard.position.set(0.2, 0.28, 0.05); rKneeguard.castShadow = true;
-    const lKneeguard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 0), matTrim); lKneeguard.position.set(-0.2, 0.28, 0.05); lKneeguard.castShadow = true;
+    const rPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.3, 12), matTrim); rPauldron.position.set(0.5, 1.82, 0); rPauldron.castShadow = true;
+    const lPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.3, 12), matTrim); lPauldron.position.set(-0.5, 1.82, 0); lPauldron.castShadow = true;
+    const rKneeguard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 1), matTrim); rKneeguard.position.set(0.2, 0.28, 0.05); rKneeguard.castShadow = true;
+    const lKneeguard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 1), matTrim); lKneeguard.position.set(-0.2, 0.28, 0.05); lKneeguard.castShadow = true;
     const chestplate = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.35), matArmor); chestplate.position.set(0, 1.45, 0.05); chestplate.castShadow = true;
-    const emblemGeo = new THREE.CircleGeometry(0.12, 6);
+    const emblemGeo = new THREE.CircleGeometry(0.12, 16);
     const emblemMat = new THREE.MeshBasicMaterial({ color: trim, side: THREE.DoubleSide });
     const emblem = new THREE.Mesh(emblemGeo, emblemMat); emblem.position.set(0, 1.5, 0.23);
     const factionFlag = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.4), new THREE.MeshStandardMaterial({ color: teamColor, roughness: 0.6, side: THREE.DoubleSide, emissive: teamColor, emissiveIntensity: 0.2 }));
