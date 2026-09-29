@@ -40,9 +40,10 @@ export class UpgradePicker {
         const picked = picks.find(p => p.id === id);
         this.runBuffs.apply(this.player, id);
         this.audio?.playSound('buffSelect');
-        this.hide();
         if (this.bus) this.bus.emit('hud.flash', { text: '已获得：' + picked.name });
-        if (this._callback) { const cb = this._callback; this._callback = null; cb(); }
+        const cb = this._callback;
+        this.hide();
+        if (cb) cb();
       });
     });
     const rerollEl = this.el.querySelector('#upgrade-reroll');

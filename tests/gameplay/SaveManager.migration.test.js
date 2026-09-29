@@ -113,3 +113,35 @@ describe('SaveManager 损坏备份恢复', () => {
     expect(localStorage.getItem(LS.SAVEGAME_BACKUP)).toBeNull();
   });
 });
+
+describe('存档损坏恢复 e2e（P2-7：部分字段缺失合并默认 + 旧键逐项容错）', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('主存档 JSON 合法但缺字段时，合并默认补齐所有字段', () => {
+    localStorage.setItem(LS.SAVEGAME, JSON.stringify({ version: 2, stage: 3, score: 500 }));
+    const sm = new SaveManager();
+    const d = sm.load();
+    expect(d).not.toBeNull();
+    expect(d.stage).toBe(3);
+    expect(d.score).toBe(500);
+    expect(d.kills).toBe(0);
+    expect(d.affixSlots).toEqual({});
+    expect(d.achievements).toEqual({});
+    expect(d.skillPoints).toBe(0);
+    expect(d.playTime).toBe(0);
+    expect(d.version).toBe(2);
+  });
+
+  it('旧键中某一项损坏 JSON 时，其他旧键仍正常迁移（逐项 try/catch 容错）', () => {
+    localStorage.setItem(LS.OLD_CAMPAIGN_CLEARED, JSON.stringify(5));
+    localStorage.setItem(LS.OLD_PROGRESSION, '{bad progression json');
+    localStorage.setItem(LS.OLD_SKILLTREE, JSON.stringify({ points: 7 }));
+    const sm = new SaveManager();
+    const d = sm.load();
+    expect(d).not.toBeNull();
+    expect(d.campaignCleared).toBe(5);
+    expect(d.skillPoints).toBe(7);
+    expect(d.progressionFull).toBeNull();
+    expect(d.score).toBe(0);
+  });
+});

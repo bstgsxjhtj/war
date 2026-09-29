@@ -139,3 +139,41 @@ describe('UI 快捷键动作（P2-2）', () => {
     expect(kb.get('skilltree')).toBe('KeyZ');
   });
 });
+
+describe('键位重绑 e2e 流程（P2-7：损坏恢复 + 冲突检测 + 持久化）', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('localStorage 中 keybindings 为损坏 JSON 时，构造静默回退到全部默认', () => {
+    localStorage.setItem('keybindings', '{broken json,,,');
+    const kb = new KeyBindings();
+    expect(kb.get('forward')).toBe('KeyW');
+    expect(kb.get('dodge')).toBe('KeyQ');
+    expect(kb.get('settings')).toBe('Escape');
+  });
+
+  it('重绑冲突键后旧动作归还默认，新绑定持久化，重载后恢复', () => {
+    const kb = new KeyBindings();
+    kb.set('dodge', 'KeyR');
+    expect(kb.get('dodge')).toBe('KeyR');
+    kb.set('jump', 'KeyR');
+    expect(kb.get('jump')).toBe('KeyR');
+    expect(kb.get('dodge')).toBe('KeyQ');
+    const saved = JSON.parse(localStorage.getItem('keybindings'));
+    expect(saved.jump).toBe('KeyR');
+    expect(saved.dodge).toBe('KeyQ');
+    const kb2 = new KeyBindings();
+    expect(kb2.get('jump')).toBe('KeyR');
+    expect(kb2.get('dodge')).toBe('KeyQ');
+  });
+
+  it('重绑到与自身默认相同键码时短路保存，不影响其他动作', () => {
+    const kb = new KeyBindings();
+    kb.set('jump', 'KeyC');
+    kb.set('dodge', 'KeyC');
+    expect(kb.get('dodge')).toBe('KeyC');
+    expect(kb.get('jump')).toBe('Space');
+    kb.set('dodge', 'KeyQ');
+    expect(kb.get('dodge')).toBe('KeyQ');
+    expect(kb.get('jump')).toBe('Space');
+  });
+});
