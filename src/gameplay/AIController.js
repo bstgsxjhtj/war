@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Character } from './Character.js';
 import { EV } from '../core/constants/events.js';
-import { ENEMY_MODS } from '../core/constants/balance.js';
+import { ENEMY_MODS, POSTURE } from '../core/constants/balance.js';
 import { TelegraphIndicator } from '../render/TelegraphIndicator.js';
 import { applyEnemyBehaviors } from './AffixBehavior.js';
 
@@ -143,6 +143,10 @@ export class AIController extends Character {
     if (this._perfectBlockDecay > 0) {
       this._perfectBlockDecay -= dt;
       if (this._perfectBlockDecay <= 0) { this._perfectBlockDecay = 0; this._perfectBlockCount = 0; }
+    }
+
+    if (this._posture > POSTURE.MAX * 0.7 && this.alive && this._postureBroken <= 0) {
+      this._adaptRetreat = Math.max(this._adaptRetreat, 1.5);
     }
 
     if (this._isElite && this._eliteSkill === 'enrage' && this.health.ratio < 0.5) {

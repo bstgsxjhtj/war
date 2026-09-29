@@ -477,6 +477,7 @@ async function bootstrap() {
         hud.updateBuffs(player);
         hud.setStamina(player.stamina);
         hud.setRage(player);
+        hud.setPosture(player);
         hud.setCharge(player.charge);
         if (player.weapon.type === 'projectile' && player.charge > 0.05) {
           _trajOrigin.copy(player.position).add(_trajOffset);

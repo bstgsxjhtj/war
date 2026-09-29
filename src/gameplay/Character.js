@@ -11,7 +11,7 @@ import { deepDispose } from '../render/disposeUtils.js';
 import { Skeleton } from './Skeleton.js';
 import { EV } from '../core/constants/events.js';
 
-import { COMBAT, EXECUTE } from '../core/constants/balance.js';
+import { COMBAT, EXECUTE, POSTURE } from '../core/constants/balance.js';
 
 function applyFresnelRim(mat, rimColor, intensity) {
   const c = new THREE.Color(rimColor);
@@ -69,6 +69,7 @@ export class Character {
     this._perfectDodge = false; this._perfectBuff = 0;
     this._launchRot = 0;
     this._inWater = false;
+    this._posture = 0; this._postureBroken = 0; this._postureRegenDelay = 0;
     this._rage = 0; this.maxRage = 100; this._killstreak = 0; this._killstreakTimer = 0;
     this._executing = 0; this._executingTarget = null;
 
@@ -94,7 +95,7 @@ export class Character {
     if (k >= 7) { dmgMul = 1.3; lifesteal = 0.05; }
     return { dmgMul, cdMul, lifesteal };
   }
-  get canBeExecuted() { return this.alive && this.health.ratio < COMBAT.EXECUTE_HP_RATIO; }
+  get canBeExecuted() { return this.alive && (this.health.ratio < COMBAT.EXECUTE_HP_RATIO || this._postureBroken > 0); }
 
   _build() {
     const teamColor = this.team === 0 ? 0x2f5fa8 : 0xa83030;
@@ -260,6 +261,7 @@ export class Character {
       this._comboTimer = this._comboWindow;
     }
     if (this._audio) this._audio.swing();
+    this._addPosture(this.weapon.armorPierce ? POSTURE.ATTACK_HEAVY : POSTURE.ATTACK_LIGHT);
     return true;
   }
 
@@ -284,7 +286,20 @@ export class Character {
   }
   releaseBlock() { this._blocking = false; }
 
+  _addPosture(n) {
+    if (!this.alive || this._postureBroken > 0 || n <= 0) return;
+    this._posture = Math.min(POSTURE.MAX, this._posture + n);
+    this._postureRegenDelay = POSTURE.REGEN_DELAY;
+    if (this._posture >= POSTURE.MAX) {
+      this._postureBroken = POSTURE.BROKEN_STUN;
+      this._posture = POSTURE.BROKEN_RECOVER;
+      this._stun = Math.max(this._stun || 0, POSTURE.BROKEN_STUN);
+      if (this._bus) this._bus.emit(EV.FX_SHAKE, { amount: 0.6 });
+    }
+  }
+
   takeDamage(amount, heavy = false, attacker = null, now = 0) {
+    let blocked = false;
     if (this._dodgeIFrame > 0 || this._iFrame > 0 || !this.alive) {
       // 完美闪避：闪避刚开始0.12s内(_dodgeTimer>0.2)被攻击
       if (this._dodgeIFrame > 0 && this._dodgeTimer > 0.2 && !this._perfectDodge) {
@@ -304,7 +319,8 @@ export class Character {
         if (fwdDot > 0.5) { // 攻击者在前方±60°
           if (this._perfectWindow > 0) {
             attacker._hurt = Math.max(attacker._hurt, 0.4); // 弹刀
-            attacker._wasPerfectBlocked = true; // P3-2：标记攻击者被完美格挡，供 AIController 涌现变招消费
+            attacker._wasPerfectBlocked = true;
+            attacker._addPosture?.(POSTURE.PARRY_DEALT);
             this._perfectRebound = true; // 弹反标记：下次反击触发连击 perfect 加成
             this.stamina.consume(0);
             this.addRage(15);
@@ -313,14 +329,20 @@ export class Character {
           }
           if (!attacker.weapon.armorPierce) {
             amount *= 0.3;
+            blocked = true;
+            this._addPosture(POSTURE.BLOCK_TAKEN);
+            attacker._addPosture?.(POSTURE.BLOCK_DEALT);
             this.stamina.consume(12);
             if (this._bus) this._bus.emit(EV.FX_BLOCK, { char: this });
+          } else {
+            this._addPosture(POSTURE.ARMORPIERCE);
           }
         }
       }
     }
     if (this.damageReduction) amount *= (1 - this.damageReduction);
     if (this._skill && this._skill.branchDefenseMul) amount *= this._skill.branchDefenseMul;
+    if (!blocked) this._addPosture(POSTURE.HIT_TAKEN);
     const lost = this.health.damage(amount);
     if (attacker) this.lastAttacker = attacker;
     if (!this.health.alive && this.alive) { this.die(attacker); }
@@ -367,6 +389,13 @@ export class Character {
     if (this._executing > 0) { this._tickExecuting(dt, now); return; }
     this._tickTimers(dt);
     this.stamina.regen(dt * ((this._weatherEffects && this._weatherEffects.staminaRegenMul) || 1), this._attacking || this._dodgeTimer > 0 || this._blocking);
+    if (this._postureBroken > 0) {
+      this._postureBroken -= dt;
+      if (this._postureBroken <= 0) { this._postureBroken = 0; this._posture = 0; }
+    } else {
+      if (this._postureRegenDelay > 0) { this._postureRegenDelay -= dt; if (this._postureRegenDelay < 0) this._postureRegenDelay = 0; }
+      if (this._postureRegenDelay <= 0 && !this._blocking && !this._attacking && (this._hurt || 0) <= 0) this._posture = Math.max(0, this._posture - POSTURE.REGEN_RATE * dt);
+    }
     if (this._charging) this._charge = Math.min(1, this._charge + dt / 1.2);
     if (this.weapon.pullString) this.weapon.pullString(this._charging ? this._charge : 0);
 

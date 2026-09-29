@@ -50,6 +50,7 @@
 ## 3.2 第二轮玩法增强（2026-09-24 P0-P3）
 
 - **完美格挡/大招表现强化**：完美格挡触发 HitStop 顿帧（timeScale 0.3，持续 0.15s）+ FOV 收紧 50 + 震屏；大招触发 FOV 收紧 45。
+- **架势条（Posture，只狼式）**：格挡/受击/攻击累积削韧（POSTURE 常量），满 100 崩防（_postureBroken=1.2s 硬直+震屏），崩防期间 canBeExecuted 开启处决窗口（与 HP<20% 处决并行）。不格挡/不攻击/不受击 0.6s 后恢复（REGEN_RATE 18/s）。Warhammer armorPierce +20 破乌龟流。AIController 自身 posture>70 触发 _adaptRetreat 后撤恢复。HUD setPosture 渲染玩家架势条（满红闪）。与耐力共存：耐力管动作消耗，架势管防御博弈。
 - **无尽波次修饰词**：每 3 波随机激活修饰（狂暴/坚韧/蜂拥/精锐/暗夜），HUD 预告下一修饰；Spawner 应用 hpMul/speedMul/eliteChanceMul。
 - **无尽里程碑奖励**：每 5 波发放积分奖励（wave×10），破纪录额外 wave×15。
 - **AI争夺投石机**：AIController.setSiegeTarget 注入巡逻分支，敌人主动前往投石机占领。

@@ -1,4 +1,4 @@
-﻿import { EV } from '../core/constants/events.js';
+import { EV } from '../core/constants/events.js';
 
 // 限时 buff 时长上限（与 gameplay 侧初始值一致）
 const PERFECT_BUFF_DUR = 2;   // 完美闪避增益
@@ -69,6 +69,12 @@ export class HUD {
     this._hp = this.el.querySelector('#hp');
     this._stam = this.el.querySelector('#stam');
     this._rage = this.el.querySelector('#rage');
+    this._postureBar = document.createElement('div');
+    this._postureBar.style.cssText = 'position:absolute;left:20px;bottom:76px;width:180px;height:5px;background:rgba(0,0,0,0.5);border-radius:3px;overflow:hidden;display:none;z-index:5;';
+    this.el.appendChild(this._postureBar);
+    this._postureFill = document.createElement('div');
+    this._postureFill.style.cssText = 'width:0%;height:100%;background:linear-gradient(90deg,#c88,#fa4);transition:width 0.1s;';
+    this._postureBar.appendChild(this._postureFill);
     this._score = this.el.querySelector('#score');
     this._round = this.el.querySelector('#round');
     this._modeName = this.el.querySelector('#modeName');
@@ -300,6 +306,15 @@ export class HUD {
     if (!this._rage) return;
     this._write(this._rage, 'width', `${Math.min(1, c.rage / 100) * 100}%`);
     this._write(this._rage, 'boxShadow', c.rage >= 100 ? '0 0 8px #fa4' : 'none');
+  }
+  setPosture(c) {
+    if (!this._postureBar) return;
+    if (!c || !c.alive) { this._postureBar.style.display = 'none'; return; }
+    const p = c._posture || 0;
+    const broken = (c._postureBroken || 0) > 0;
+    this._postureBar.style.display = (p > 0 || broken) ? 'block' : 'none';
+    this._postureFill.style.width = `${Math.min(1, p / 100) * 100}%`;
+    this._postureFill.style.background = broken ? 'linear-gradient(90deg,#f00,#f44)' : (p > 70 ? 'linear-gradient(90deg,#f44,#fa0)' : 'linear-gradient(90deg,#c88,#fa4)');
   }
   flashKillstreak(n) { const msg = n >= 3 ? `${n}连杀！` : '击杀！'; this._kill.textContent = msg; this._kill.style.opacity = '1'; this._killTimer = 1.4; }
   // 单个 buff 标签：限时 buff 传 remain/max 时额外渲染倒计时条

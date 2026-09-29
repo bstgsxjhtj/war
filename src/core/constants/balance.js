@@ -60,6 +60,23 @@ export const EXECUTE = {
   DURATION: 1.2
 };
 
+// 架势条：格挡/受击累积削韧，满则崩防可处决（只狼式）
+export const POSTURE = {
+  MAX: 100,
+  REGEN_RATE: 18,
+  REGEN_DELAY: 0.6,
+  BLOCK_TAKEN: 8,
+  BLOCK_DEALT: 4,
+  PARRY_TAKEN: 0,
+  PARRY_DEALT: 12,
+  HIT_TAKEN: 15,
+  ATTACK_LIGHT: 3,
+  ATTACK_HEAVY: 6,
+  ARMORPIERCE: 20,
+  BROKEN_STUN: 1.2,
+  BROKEN_RECOVER: 60
+};
+
 // 噩梦敌人词条：数值收敛（P0-1）
 export const ENEMY_MODS = {
   SWIFT_SPEED_MUL: 1.2,

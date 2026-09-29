@@ -159,6 +159,10 @@
 | 2026-09-29 | 1e5ea90 | Round 6 P3-3：词条行为统一抽象——AffixBehavior 接口+applyEnemyBehaviors 调度器，三消费方收敛 |
 | 2026-09-29 | b4e7793 | Round 6 P3-4：Boss 阶段转换演出——镜头 FOV 收缩+吼叫音效+环境天气切换（storm/night） |
 | 2026-09-29 | — | Round 6 视觉重塑三阶段：地基（SSAO/Reflector 静态 import 修 dist 404+去 flatShading 提面数+Fresnel 金边轮廓光+琥珀调色+Bloom 降参+low 降级关 SSAO/Bloom/Reflector）+塑形（刀刃 ExtrudeGeometry+头盔 LatheGeometry+甲胄法线贴图+城墙砖纹+远山 8 面扰动+树提段）+精修（雾层次 40-200+帐篷/烟柱/石头/篝火提段+水面反射暖色） |
+| 2026-09-29 | 7f8b71c | 体验修复：鼠标 pitch 反向+环境碰撞(树/石头)+卡顿(SSAO high-only/像素比1.5/Reflector high-only/≤4核默认mid)+地面y阻尼+灵敏度0.0018+相机距7.5 |
+| 2026-09-29 | d1cfb14 | 击杀 2s 卡顿修复：TextureFactory canvas 静态缓存(根因)+hitstop 双重冻结去重(hitStop active 时不叠加 combat.hitstop) |
+| 2026-09-29 | 3bead8e | UX 轮：预警环分级(黄/红/白)+攻击收招取消(tryDodge 反向 bug)+锁定切目标+低血心跳+升级卡稀有度(加权抽取) |
+| 2026-09-29 | — | 架势条系统：POSTURE 常量+Character._addPosture(格挡/受击/攻击累积)+崩防可处决+regen(0.6s 延迟)+AIController posture>70 后撤+HUD setPosture 架势条 |
 
 ## 部署后修复（2026-09-29）
 
