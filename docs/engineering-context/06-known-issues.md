@@ -140,3 +140,21 @@
 | 2026-09-28 | 698efc1 | P3-4：键位重绑系统——KeyBindings 模块（15 动作可重绑+冲突检测+持久化）+ SettingsMenu 重绑 UI |
 | 2026-09-28 | 3e775d8 | P3-5：LOD 系统+角色批渲染——LODManager 4 级距离降级 + InstancedMesh 代理远距角色 |
 | 2026-09-28 | 0ad7ec7 | P3-6：存档版本迁移框架——CURRENT_VERSION=2 + MIGRATIONS 注册表 + 损坏备份恢复（savegame_v1_bak） |
+| 2026-09-28 | ee44f79 | Round 6 P0-1：噩梦 enemyMods/hazardBoost 消费端接线——Spawner._applyEnemyMods 注入词条、EnvironmentHazards.setHazardBoost 放大环境伤害 |
+| 2026-09-28 | 27e492d | Round 6 P0-2：AI 闪避 i 帧对称——AIController.takeDamage 顶部 _dodgeTimer>0 免伤，与玩家 _dodgeIFrame 对称 |
+| 2026-09-28 | c23c19e | Round 6 P0-3：教程读 KeyBindings 防重绑卡死——Tutorial 展示动作名而非硬编码键码 |
+| 2026-09-28 | b7eb639 | Round 6 P1-1：Boss AOE 预警+延迟结算——spawnAoE delay 参数+地面单位环预警+_pendingStrikes 队列 |
+| 2026-09-28 | 44b312d | Round 6 P1-2：KeyBindings 下沉 core/input 层——消除 gameplay/ui→app 反向依赖+架构守卫测试 |
+| 2026-09-28 | 8e3c197 | Round 6 P1-3：处决提示+教程进度条动态键位文本——KeyBindings.getBindingLabel 替换硬编码 |
+| 2026-09-28 | 576baeb | Round 6 P1-4：LOD 远距隐形威胁修复+精英代理区分——threat 矩阵+_proxyElite 标志 |
+| 2026-09-28 | a4bf6ac | Round 6 P2-1：伤害倍率封顶——resolveMelee/resolveArrow/resolveAoE 统一 Math.min(amount, COMBAT.MAX_DAMAGE) |
+| 2026-09-28 | d6fdd94 | Round 6 P2-2：UI 快捷键纳入 KeyBindings——skilltree/affix/mode/weather/settings 5 动作可重绑 |
+| 2026-09-28 | c1ec474 | Round 6 P2-3：正反馈音效——pickup/levelup/buffSelect/stageStart 4 音效+4 消费点接线 |
+| 2026-09-28 | 2416a11 | Round 6 P2-4：战役目标多样性审计——7 种变奏已全部实现且有测试覆盖 |
+| 2026-09-28 | 68fa8b0 | Round 6 P2-5：游戏时钟延迟设施——GameClock schedule(delay,fn) 随 timeScale 缩放+clear-on-reset |
+| 2026-09-29 | 59e17ea | Round 6 P2-6：箭矢对象池+LOD tick 降频——_acquireArrow/_releaseArrow 池(64)+LOD 0.25s 节流 |
+| 2026-09-29 | ef8ccff | Round 6 P2-7：e2e 覆盖新系统+UpgradePicker 回调修复——键位/存档/战役3选1 覆盖+hide 先于 callback bug 修复 |
+| 2026-09-29 | 0d3c7c5 | Round 6 P3-1：main_entry 拆分——EventWiring.js 下沉 17 个纯事件处理器，594→549 行 |
+| 2026-09-29 | da634c5 | Round 6 P3-2：AI 涌现行为——连续被完美格挡后变招（叫援军+适应撤退）+计数衰减 |
+| 2026-09-29 | 1e5ea90 | Round 6 P3-3：词条行为统一抽象——AffixBehavior 接口+applyEnemyBehaviors 调度器，三消费方收敛 |
+| 2026-09-29 | b4e7793 | Round 6 P3-4：Boss 阶段转换演出——镜头 FOV 收缩+吼叫音效+环境天气切换（storm/night） |
