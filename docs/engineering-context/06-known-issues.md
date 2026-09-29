@@ -158,3 +158,9 @@
 | 2026-09-29 | da634c5 | Round 6 P3-2：AI 涌现行为——连续被完美格挡后变招（叫援军+适应撤退）+计数衰减 |
 | 2026-09-29 | 1e5ea90 | Round 6 P3-3：词条行为统一抽象——AffixBehavior 接口+applyEnemyBehaviors 调度器，三消费方收敛 |
 | 2026-09-29 | b4e7793 | Round 6 P3-4：Boss 阶段转换演出——镜头 FOV 收缩+吼叫音效+环境天气切换（storm/night） |
+
+## 部署后修复（2026-09-29）
+
+| 日期 | Commit | 内容 |
+|------|--------|------|
+| 2026-09-29 | (pending) | 鼠标移动画面消失根因修复——Player 构造未初始化 lookSensitivity，`0.0025 * undefined = NaN` 污染相机 yaw/pitch，WebGL 投影矩阵 NaN 导致只剩底色。修复：Player 构造函数 `this.lookSensitivity = 1`（默认值=1，`0.0025*1=SENSITIVITY_DEFAULT`）。SettingsMenu._applyAll 只在 show() 时 emit，用户首次进入从不开设置面板时 lookSensitivity 永为 undefined。新增 3 个 NaN 根因防护测试。 |

@@ -16,6 +16,7 @@ export class Player extends Character {
     this.setBus(bus);
     this._keys = new Set();
     this._kb = keyBindings || new KeyBindings();
+    this.lookSensitivity = 1;
     this._attackQueued = false;
     this._queueTime = 0;
     this._dodgeBuf = null; // 闪避输入缓冲 { dir, t }
