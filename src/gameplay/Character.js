@@ -159,6 +159,11 @@ export class Character {
     this._hpBar.scale.set(0.9, 0.09, 1); this._hpBarBg.scale.set(0.94, 0.13, 1);
     this._hpBar.position.y = 2.6; this._hpBarBg.position.y = 2.6;
     this._hpBar.renderOrder = 999; this._hpBarBg.renderOrder = 998;
+    this._postureBar = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xc8a060, transparent: true, opacity: 0, depthTest: false }));
+    this._postureBarBg = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x111111, transparent: true, opacity: 0.6, depthTest: false }));
+    this._postureBar.scale.set(0.9, 0.05, 1); this._postureBarBg.scale.set(0.94, 0.09, 1);
+    this._postureBar.position.y = 2.75; this._postureBarBg.position.y = 2.75;
+    this._postureBar.renderOrder = 1005; this._postureBarBg.renderOrder = 1004;
     // 锁定标记
     this._lockMark = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffd070, transparent: true, opacity: 0, depthTest: false }));
     this._lockMark.scale.set(0.5, 0.5, 1); this._lockMark.position.y = 2.9; this._lockMark.renderOrder = 1001;
@@ -170,7 +175,7 @@ export class Character {
     );
     this._teamMark.position.y = 3.15; this._teamMark.renderOrder = 1002; this._teamMark.visible = false;
     const showBar = !this.isLocal;
-    this._hpBar.visible = showBar; this._hpBarBg.visible = showBar;
+    this._hpBar.visible = showBar; this._hpBarBg.visible = showBar; this._postureBar.visible = showBar; this._postureBarBg.visible = showBar;
     this.skeleton = new Skeleton(this.root);
     this.skeleton.bindParts({
       rLeg: this.rLeg, lLeg: this.lLeg, torso: this.torso, belt,
@@ -178,7 +183,7 @@ export class Character {
       head: this.head, helm, visor, cape: this.cape, weaponPivot: this.weaponPivot,
       rPauldron, lPauldron, rKneeguard, lKneeguard, chestplate, emblem, factionFlag
     });
-    this.root.add(this._hpBar, this._hpBarBg, this._lockMark, this._teamMark);
+    this.root.add(this._hpBar, this._hpBarBg, this._postureBar, this._postureBarBg, this._lockMark, this._teamMark);
   }
 
   spawn(pos) {
@@ -365,7 +370,7 @@ export class Character {
     this.alive = false;
     this._deadTimer = 1.2;
     this.lastAttacker = attacker;
-    this._hpBar.visible = false; this._hpBarBg.visible = false; this._lockMark.material.opacity = 0;
+    this._hpBar.visible = false; this._hpBarBg.visible = false; this._postureBar.visible = false; this._postureBarBg.visible = false; this._lockMark.material.opacity = 0;
   }
 
   setBus(b) { this._bus = b; }
@@ -616,6 +621,12 @@ export class Character {
     const r = Math.max(0, this.health.ratio);
     this._hpBar.scale.x = r * 0.9;
     this._hpBar.position.x = -(1 - r) * 0.45;
+    const pr = Math.min(1, this._posture / POSTURE.MAX);
+    this._postureBar.scale.x = pr * 0.9;
+    this._postureBar.position.x = -(1 - pr) * 0.45;
+    this._postureBar.material.color.setHex(this._postureBroken > 0 ? 0xff0000 : (pr > 0.7 ? 0xff4400 : 0xc8a060));
+    this._postureBar.material.opacity = (pr > 0 || this._postureBroken > 0) ? 0.9 : 0;
+    this._postureBarBg.material.opacity = (pr > 0 || this._postureBroken > 0) ? 0.6 : 0;
   }
 
   setCameraRef(cam) { this._cam = cam.cam || cam; }
