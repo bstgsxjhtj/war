@@ -9,7 +9,7 @@ import { Camera } from './engine/Camera.js';
 import { Terrain } from './world/Terrain.js';
 import { Environment } from './world/Environment.js';
 import { Water } from './world/Water.js';
-import { CombatSystem, COUNTER_MATRIX } from './gameplay/CombatSystem.js';
+import { CombatSystem } from './gameplay/CombatSystem.js';
 import { ComboSystem } from './gameplay/ComboSystem.js';
 import { WeaponSkills } from './gameplay/WeaponSkills.js';
 import { AIManager } from './gameplay/AIManager.js';
@@ -38,7 +38,7 @@ import { SkillTree } from './gameplay/SkillTree.js';
 import { SkillTreeUI } from './ui/SkillTreeUI.js';
 import { TrainingMode } from './gameplay/TrainingMode.js';
 import { Tutorial } from './ui/Tutorial.js';
-import { DeathFeedback, killerLabel } from './ui/DeathFeedback.js';
+import { DeathFeedback } from './ui/DeathFeedback.js';
 import { AudioEngine } from './audio/AudioEngine.js';
 import { WeatherSystem } from './world/WeatherSystem.js';
 import { EnvironmentHazards } from './gameplay/EnvironmentHazards.js';
@@ -69,6 +69,7 @@ import { KeyBindings } from './core/input/KeyBindings.js';
 import { LODManager } from './render/LODManager.js';
 import { Spawner } from './gameplay/Spawner.js';
 import { wireAchievements } from './app/AchievementWiring.js';
+import { wireCoreHandlers } from './app/EventWiring.js';
 import { InputRouter } from './app/InputRouter.js';
 import { GameClock } from './app/GameClock.js';
 import { installUIStackEscape } from './ui/UIStack.js';
@@ -160,39 +161,8 @@ async function bootstrap() {
   const horses = new Horse(scene.scene);
   const formations = new FormationController();
   bus.emit(EV.DAILY_UPDATE, daily.challenges);
-  bus.on(EV.FX_PERFECTBLOCK, () => { if (daily.track('perfect')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_PERFECTBLOCK, {}); audio.playSound('perfectblock'); hitStop.trigger(0.15, 0.3); bus.emit(EV.FX_SHAKE, { amount: 0.6 }); });
-  bus.on(EV.FX_BLOCK, () => { audio.playSound('block'); });
-  bus.on(EV.FX_PERFECTDODGE, () => { if (daily.track('dodge')) bus.emit(EV.DAILY_UPDATE, daily.challenges); bus.emit(EV.COMBAT_DODGE, {}); audio.playSound('dodge'); });
   const progressUI = new ProgressionUI(progression, bus);
   bus.emit(EV.MINIMAP_SUPPLY, (supply.points || []).map(p => ({ x: p.pos.x, z: p.pos.z })));
-  bus.on(EV.COMBAT_HIT, ({ attacker, victim, damage, combo, heavy, backstab, crit }) => {
-    if (victim && victim.isLocal && attacker) {
-      const angle = Math.atan2(attacker.position.x - victim.position.x, attacker.position.z - victim.position.z);
-      hitDirection.show(angle, camera.yaw || 0);
-      camera.addShake(0.18);
-    }
-    if (attacker && attacker.isLocal) {
-      hitStop.trigger(heavy ? 0.12 : 0.06, 0.05);
-      weaponTrail.activate(attacker._weaponMesh);
-      match.playerDamage += damage || 0;
-    }
-    if (victim && victim.isLocal) match.playerTaken += damage || 0;
-    if (backstab) { daily.track('backstab'); if (attacker && attacker.isLocal) bus.emit(EV.COMBAT_BACKSTAB, { attacker, victim }); }
-    bus.emit(EV.DAILY_UPDATE, daily.challenges);
-    audio.playSound('swing');
-    audio.playSound('hit', { heavy, combo });
-    if (crit) audio.playSound('crit');
-  });
-  bus.on(EV.COMBAT_KILL, ({ victim, killer }) => {
-    if (killer && killer.isLocal) {
-      progression.recordKill();
-      if (victim && victim._isBoss) { hitStop.trigger(0.3, 0.15); bus.emit(EV.FX_SHAKE, { amount: 1.0 }); }
-      else { hitStop.trigger(0.15, 0.2); bus.emit(EV.FX_SHAKE, { amount: 0.5 }); }
-    }
-    if (victim && victim.isLocal) progression.recordDeath();
-    progressUI.refresh();
-    audio.playSound('ultimate');
-  });
   const siege = new SiegeStructure(scene.scene, bus);
   const trajectory = new TrajectoryPreview(scene.scene);
   const skills = new SkillTree();
@@ -207,15 +177,6 @@ async function bootstrap() {
   envHazards.setTerrain(terrain);
   envHazards.setHazardZones(currentHazards);
   const assist = new DifficultyAssist(aiManager, (msg) => { hud.flash(msg); setTimeout(() => hud.clearHint(), 2500); }, AI_DIFFICULTY);
-  bus.on(EV.COMBAT_KILL, ({ victim }) => { if (victim && victim.isLocal && !victim.alive) assist.onPlayerDeath(); });
-  bus.on(EV.COMBAT_EXECUTE, ({ char } = {}) => { if (char && char.isLocal) { audio.playSound('execute'); hitStop.trigger(0.18, 0.1); bus.emit(EV.FX_SHAKE, { amount: 0.4 }); } });
-  bus.on(EV.COMBAT_KILL, ({ victim, killer }) => {
-    if (!(victim && victim.isLocal) || !killer) return;
-    const angle = Math.atan2(killer.position.x - victim.position.x, killer.position.z - victim.position.z);
-    const mul = COUNTER_MATRIX[killer.weapon?.weaponClass]?.[victim.weapon?.weaponClass] ?? 1;
-    deathFeedback.show({ label: killerLabel(killer), countered: mul > 1.2, angle, camYaw: camera.yaw || 0 });
-  });
-  bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => assist.setBaseLevel(difficulty));
   weather.onLightning((pos) => envHazards.onLightningStrike(pos));
   for (const box of siege.collisionBoxes) envHazards.addWallBox(box);
   const settings = new SettingsMenu(bus, audio, keyBindings);
@@ -233,20 +194,12 @@ async function bootstrap() {
   applyQuality(settings.quality || 'high');
   qualityGovernor.setQuality(_quality);
   bus.on(EV.SETTINGS_SENSITIVITY, ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
-  bus.on(EV.SETTINGS_DIFFICULTY, ({ difficulty }) => { if (aiManager) aiManager.setDifficulty(difficulty); });
   // 无障碍：色弱形状区分 / 减少动效（关脉冲+震动+顿帧）/ 屏幕震动强度
   let _colorblind = false;
   let _reducedMotion = false;
   bus.on(EV.SETTINGS_COLORBLIND, ({ colorblind }) => { _colorblind = !!colorblind; miniMap.setColorblind(_colorblind); for (const c of enemies) if (c.setColorblind) c.setColorblind(_colorblind); });
   bus.on(EV.SETTINGS_REDUCED_MOTION, ({ reducedMotion }) => { _reducedMotion = !!reducedMotion; camera.setReducedMotion(_reducedMotion); hud.setReducedMotion(_reducedMotion); });
-  bus.on(EV.SETTINGS_SHAKE_INTENSITY, ({ shakeIntensity }) => { camera.setShakeIntensity(shakeIntensity); });
   // 启动应用延后到 player/aiManager 赋值后避免 TDZ
-  bus.on(EV.HUD_BOSSPHASE, () => { audio.playSound('bossRoar'); audio.playSound('bgmIntensity', { intensity: 2 }); });
-  bus.on(EV.FX_BOSSROAR, () => audio.playSound('bossRoar'));
-  bus.on(EV.FX_DODGE, (p) => { if (p && p.char && p.char.isLocal) dodgeGhosts.begin(p.char); });
-  bus.on(EV.COMBAT_ULTIMATE, () => audio.playSound('ultimate'));
-  bus.on(EV.COMBAT_COUNTER, () => audio.playSound('counter'));
-  bus.on(EV.COMBO_TIER, (p) => audio.playSound('comboTier', { tier: p.tier || 0 }));
 
   let player, ais = [], enemies = [];
   let remotes = [];
@@ -303,6 +256,8 @@ async function bootstrap() {
     getMode: () => mode
   });
   const saveUI = new SaveUI(bus, saveManager, () => saveOrch.capture(), () => saveOrch.reset());
+  // P3-1 事件接线下沉：17 个纯处理器（无 mutable-local 依赖）移至 app/EventWiring.js
+  wireCoreHandlers(bus, { audio, hitStop, hitDirection, weaponTrail, daily, progression, progressUI, deathFeedback, assist, aiManager, camera, dodgeGhosts, match });
   bus.on(EV.SKINS_CHANGED, ({ weaponIdx }) => { if (player && player._weaponMesh) skins.applyToWeapon(player._weaponMesh, weaponIdx); });
   // 启动加载应用存档 + 定时/卸载自动存档
   saveOrch.applyOnBoot();
