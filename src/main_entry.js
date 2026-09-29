@@ -363,6 +363,7 @@ async function bootstrap() {
   let _bgmCombatSet = true;
   let _bgmLastIntensity = 0;
   let _bossBarShown = false;
+  let _hbOn = false;
   let _bossPhaseShown = 0;
   let _execHintShown = false;
   let _wavePending = false;
@@ -397,6 +398,10 @@ async function bootstrap() {
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
         const _freeze = (!_reducedMotion && combat.hitstop > 0 && !hitStop.active) || deathFeedback.paused;
         const ldt = _freeze ? 0 : ((!_reducedMotion && hitStop.active) ? hitStop.timeScale * dt : dt);
+
+        const _lowHP = player.alive && player.health.hp / player.health.maxHp < 0.3;
+        if (_lowHP && !_hbOn) { audio.playSound('heartbeatStart'); _hbOn = true; }
+        else if (!_lowHP && _hbOn) { audio.playSound('heartbeatStop'); _hbOn = false; }
 
         let _bgmTarget = 0;
         let _bossRef = null;

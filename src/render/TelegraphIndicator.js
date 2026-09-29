@@ -16,10 +16,11 @@ export class TelegraphIndicator {
     if (parent) parent.add(this.mesh);
   }
 
-  show(duration = 0.45) {
+  show(duration = 0.45, type = 'blockable') {
     this._active = true;
     this._dur = Math.max(0.05, duration);
     this._t = 0;
+    this._mat.color.setHex(type === 'unblockable' ? 0xff3322 : type === 'aoe' ? 0xeef2ff : 0xffcc44);
     this.mesh.visible = true;
     this.mesh.scale.set(0.7, 0.7, 0.7);
   }

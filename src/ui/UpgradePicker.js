@@ -29,12 +29,12 @@ export class UpgradePicker {
       ? `<button id="upgrade-reroll" style="margin-top:18px;padding:8px 22px;background:#3a4a6a;border:1px solid #6a8aaa;border-radius:8px;color:#cde;font-family:inherit;font-size:14px;cursor:pointer;">重选（剩 ${rerolls}）</button>`
       : `<div style="margin-top:18px;font-size:12px;color:#888;">本局重选已用完</div>`;
     this.el.innerHTML = '<div style="color:#e0d090;font-size:26px;margin-bottom:20px;text-shadow:0 2px 8px rgba(0,0,0,0.8);">选择升级</div><div style="display:flex;gap:18px;">' +
-      picks.map(p => '<div class="upgrade-card" data-id="' + p.id + '" style="width:190px;height:240px;background:linear-gradient(135deg,#1a2a3a,#2a3a5a);border:2px solid #4a6a8a;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s,border-color 0.15s;"><div style="font-size:22px;color:#e0d090;margin-bottom:12px;">' + p.name + '</div><div style="font-size:13px;color:#a0b0c0;text-align:center;padding:0 12px;">' + p.desc + '</div></div>').join('') +
+      picks.map(p => '<div class="upgrade-card" data-id="' + p.id + '" data-color="' + (p.color || '#4a6a8a') + '" style="width:190px;height:240px;background:linear-gradient(135deg,#1a2a3a,#2a3a5a);border:2px solid ' + (p.color || '#4a6a8a') + ';border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s,border-color 0.15s;box-shadow:0 0 14px ' + (p.color || '#4a6a8a') + '33;"><div style="font-size:10px;color:' + (p.color || '#9a9a9a') + ';margin-bottom:8px;letter-spacing:2px;text-transform:uppercase;">' + (p.rarity || 'common') + '</div><div style="font-size:22px;color:#e0d090;margin-bottom:12px;">' + p.name + '</div><div style="font-size:13px;color:#a0b0c0;text-align:center;padding:0 12px;">' + p.desc + '</div></div>').join('') +
       '</div>' + rerollBtn;
     const cards = this.el.querySelectorAll('.upgrade-card');
     cards.forEach(card => {
-      card.addEventListener('mouseenter', () => { card.style.transform = 'scale(1.06)'; card.style.borderColor = '#e0d090'; });
-      card.addEventListener('mouseleave', () => { card.style.transform = 'scale(1)'; card.style.borderColor = '#4a6a8a'; });
+      card.addEventListener('mouseenter', () => { card.style.transform = 'scale(1.06)'; card.style.borderColor = '#fff'; });
+      card.addEventListener('mouseleave', () => { card.style.transform = 'scale(1)'; card.style.borderColor = card.dataset.color || '#4a6a8a'; });
       card.addEventListener('click', () => {
         const id = card.getAttribute('data-id');
         const picked = picks.find(p => p.id === id);

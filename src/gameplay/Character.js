@@ -265,7 +265,7 @@ export class Character {
 
   tryDodge(dir) {
     if (!this.alive || this._dodgeTimer > 0) return false;
-    if (this._attacking && this._anim < this._animDur * 0.5) return false;
+    if (this._attacking && this._anim >= this._animDur * 0.5) return false;
     this._attacking = false; this._hitResolved = true; this._blocking = false;
     // 完美闪避：闪避后0.12s内被攻击时触发(在takeDamage检测)
     this._dodgeTimer = 0.32; this._dodgeIFrame = 0.25; this._dodgeOverride = 0.18;

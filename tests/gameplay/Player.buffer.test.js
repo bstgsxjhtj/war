@@ -33,7 +33,7 @@ describe('Player 输入缓冲（闪避/处决）', () => {
   });
 
   it('攻击前半段闪避被拒时进入缓冲，攻击结束后 update 自动补闪避', () => {
-    p._attacking = true; p._anim = 0; p._animDur = 1; // 前半段拒绝
+    p._attacking = true; p._anim = 0.8; p._animDur = 1; // 前半段拒绝
     expect(p.requestDodge(new THREE.Vector3(0, 0, -1))).toBe(false);
     expect(p._dodgeBuf).toBeTruthy();
     p._attacking = false;
@@ -43,7 +43,7 @@ describe('Player 输入缓冲（闪避/处决）', () => {
   });
 
   it('闪避缓冲 0.25s 后过期失效', () => {
-    p._attacking = true; p._anim = 0; p._animDur = 1;
+    p._attacking = true; p._anim = 0.8; p._animDur = 1;
     p.requestDodge(new THREE.Vector3(0, 0, -1));
     p._attacking = false;
     p.update(0.3, terrain, combat, 0);

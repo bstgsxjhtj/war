@@ -95,9 +95,23 @@ export class Player extends Character {
   _toggleLock() {
     if (!this._pendingCombat) return;
     if (this.lockTarget && this.lockTarget.alive) {
-      this.lockTarget.setLockMark(false);
-      this.lockTarget = null;
-      this.camera.lockTarget = null;
+      const cur = this.lockTarget;
+      let best = null, minD = 25;
+      for (const c of this._pendingCombat.characters) {
+        if (!c.alive || c.team === this.team || c === cur) continue;
+        const d = c.position.distanceTo(this.position);
+        if (d < minD) { minD = d; best = c; }
+      }
+      if (best) {
+        cur.setLockMark(false);
+        this.lockTarget = best;
+        best.setLockMark(true);
+        this.camera.lockTarget = best;
+      } else {
+        cur.setLockMark(false);
+        this.lockTarget = null;
+        this.camera.lockTarget = null;
+      }
       return;
     }
     let best = null, minD = 25;

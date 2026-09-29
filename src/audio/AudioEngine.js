@@ -1,6 +1,6 @@
 import { LS } from '../core/constants/storage-keys.js';
 export class AudioEngine {
-  constructor() { this.ctx = null; this._vol = 0.7; this._sfxVol = 0.8; this._bgmVol = 0.5; this._envVol = 0.4; this._envSource = null; this._bgmNodes = null; this._bgmBeatTimer = null; this._bgmIntensity = 0; this._init(); this._loadVolume(); }
+  constructor() { this.ctx = null; this._vol = 0.7; this._sfxVol = 0.8; this._bgmVol = 0.5; this._envVol = 0.4; this._envSource = null; this._bgmNodes = null; this._bgmBeatTimer = null; this._bgmIntensity = 0; this._hbTimer = null; this._init(); this._loadVolume(); }
   _init() { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { this.ctx = null; } }
   resume() { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); }
   setVolume(type, v) { v = Math.max(0, Math.min(1, v)); if (type === 'master') this._vol = v; else if (type === 'sfx') this._sfxVol = v; else if (type === 'bgm') this._bgmVol = v; else if (type === 'env') this._envVol = v; this._saveVolume(); }
@@ -29,6 +29,8 @@ export class AudioEngine {
     else if (type === 'levelup') this.levelup();
     else if (type === 'buffSelect') this.buffSelect();
     else if (type === 'stageStart') this.stageStart();
+    else if (type === 'heartbeatStart') this.heartbeatStart();
+    else if (type === 'heartbeatStop') this.heartbeatStop();
   }
   swing() { this._tone(200, 0.09, 'sine', this._volOf('sfx') * 0.18, 80); }
   hit(heavy = false, combo = 0) { const f = Math.min(800, 250 + combo * 50); this._noise(heavy ? 0.28 : 0.14, heavy ? 500 : f, this._volOf('sfx') * (heavy ? 0.4 : 0.3)); }
@@ -90,6 +92,15 @@ export class AudioEngine {
       const vol = this._volOf('bgm');
       this._bgmNodes[1].gain.gain.linearRampToValueAtTime(vol * (level === 0 ? 0.08 : 0.15), t + 0.5);
     }
+  }
+  heartbeatStart() {
+    if (this._hbTimer || !this.ctx) return;
+    const self = this;
+    const loop = () => { self._tone(55, 0.2, 'sine', self._volOf('sfx') * 0.3, 33); self._hbTimer = setTimeout(loop, 1100); };
+    setTimeout(loop, 600);
+  }
+  heartbeatStop() {
+    if (this._hbTimer) { clearTimeout(this._hbTimer); this._hbTimer = null; }
   }
   stopMusic() {
     if (this._bgmBeatTimer) { clearTimeout(this._bgmBeatTimer); this._bgmBeatTimer = null; }
