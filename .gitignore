@@ -16,3 +16,13 @@ vlog.txt
 plog.txt
 hb.txt
 cmt.txt
+
+# 部署/SSH/Git 敏感配置（本地保存，不上传 GitHub）
+.deploy/
+.ssh-config/
+.env
+.env.local
+*.pem
+*.key
+id_ed25519*
+id_rsa*
