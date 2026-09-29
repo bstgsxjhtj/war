@@ -163,4 +163,4 @@
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
-| 2026-09-29 | (pending) | 鼠标移动画面消失根因修复——Player 构造未初始化 lookSensitivity，`0.0025 * undefined = NaN` 污染相机 yaw/pitch，WebGL 投影矩阵 NaN 导致只剩底色。修复：Player 构造函数 `this.lookSensitivity = 1`（默认值=1，`0.0025*1=SENSITIVITY_DEFAULT`）。SettingsMenu._applyAll 只在 show() 时 emit，用户首次进入从不开设置面板时 lookSensitivity 永为 undefined。新增 3 个 NaN 根因防护测试。 |
+| 2026-09-29 | 903fefe | 鼠标移动画面消失根因修复——Player 构造未初始化 lookSensitivity，`0.0025 * undefined = NaN` 污染相机 yaw/pitch，WebGL 投影矩阵 NaN 导致只剩底色。修复：Player 构造函数 `this.lookSensitivity = 1`（默认值=1，`0.0025*1=SENSITIVITY_DEFAULT`）。SettingsMenu._applyAll 只在 show() 时 emit，用户首次进入从不开设置面板时 lookSensitivity 永为 undefined。新增 3 个 NaN 根因防护测试。 |
