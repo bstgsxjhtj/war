@@ -395,7 +395,7 @@ async function bootstrap() {
         if (upgradePicker.visible) { env.update(dt, now); return; }
 
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
-        const _freeze = (!_reducedMotion && combat.hitstop > 0) || deathFeedback.paused;
+        const _freeze = (!_reducedMotion && combat.hitstop > 0 && !hitStop.active) || deathFeedback.paused;
         const ldt = _freeze ? 0 : ((!_reducedMotion && hitStop.active) ? hitStop.timeScale * dt : dt);
 
         let _bgmTarget = 0;
