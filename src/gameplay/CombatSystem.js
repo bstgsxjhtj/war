@@ -11,6 +11,8 @@ export const COUNTER_MATRIX = {
   SWORD: { HEAVY: 1.2 }
 };
 
+const ARROW_POOL_MAX = 64;
+
 // 战斗判定 + 池化特效 + hitstop + 克制矩阵 + AOE + 方向推力
 export class CombatSystem {
   constructor(scene, bus, comboSys = null) {
@@ -68,7 +70,21 @@ export class CombatSystem {
   }
 
   register(c) { this.characters.push(c); if (c.setBus) c.setBus(this.bus); }
-  _releaseArrow(a) { if (a && a.mesh) this.scene.remove(a.mesh); }
+  // 池化：复用 arrow 对象（mesh + pos/vel 向量），避免每次发射重复分配
+  _acquireArrow() {
+    const a = this._arrowPool.pop() || { mesh: null, pos: new THREE.Vector3(), vel: new THREE.Vector3() };
+    if (!a.mesh) {
+      a.mesh = new THREE.Mesh(this._arrowGeo, this._arrowMat);
+      a.mesh.castShadow = true;
+    }
+    this.scene.add(a.mesh);
+    return a;
+  }
+  _releaseArrow(a) {
+    if (!a || !a.mesh) return;
+    this.scene.remove(a.mesh);
+    if (this._arrowPool.length < ARROW_POOL_MAX) this._arrowPool.push(a);
+  }
   clear() {
     for (const a of this.arrows) this.scene.remove(a.mesh);
     this.arrows.length = 0;
@@ -265,37 +281,49 @@ export class CombatSystem {
   }
 
   spawnArrow(attacker, weapon, charge) {
-    const mesh = new THREE.Mesh(this._arrowGeo, this._arrowMat);
-    mesh.castShadow = true;
+    const a = this._acquireArrow();
     this._tmpOrigin.copy(attacker.position).add(this._tmpTo.set(0, 1.5, 0)).addScaledVector(attacker.forward, 0.7);
-    const vel = attacker.forward.clone().multiplyScalar(weapon.speedFor(charge));
-    vel.y += 1.8;
+    a.pos.copy(this._tmpOrigin);
+    a.vel.copy(attacker.forward).multiplyScalar(weapon.speedFor(charge));
+    a.vel.y += 1.8;
     const weatherFx = this._weatherEffects || { bowAccuracy: 1.0 };
     const accuracy = weatherFx.bowAccuracy;
     if (accuracy < 1.0) {
       const spread = (1 - accuracy) * COMBAT.BOW_SPREAD_FACTOR;
-      vel.x += (Math.random() - 0.5) * spread * 10;
-      vel.y += (Math.random() - 0.5) * spread * 10;
-      vel.z += (Math.random() - 0.5) * spread * 10;
+      a.vel.x += (Math.random() - 0.5) * spread * 10;
+      a.vel.y += (Math.random() - 0.5) * spread * 10;
+      a.vel.z += (Math.random() - 0.5) * spread * 10;
     }
-    mesh.position.copy(this._tmpOrigin);
-    this.scene.add(mesh);
-    this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage: weapon.damageFor(charge), life: COMBAT.ARROW_LIFE, attacker, charge });
+    a.mesh.position.copy(this._tmpOrigin);
+    a.team = attacker.team;
+    a.damage = weapon.damageFor(charge);
+    a.life = COMBAT.ARROW_LIFE;
+    a.attacker = attacker;
+    a.charge = charge;
+    a.pierce = 0;
+    a.hitSet = null;
+    this.arrows.push(a);
   }
 
   spawnPierceArrow(attacker, weapon, charge, opts = {}) {
-    const mesh = new THREE.Mesh(this._arrowGeo, this._arrowMat);
-    mesh.castShadow = true;
+    const a = this._acquireArrow();
     const origin = opts.origin || attacker.position;
     const dir = opts.dir || attacker.forward;
     this._tmpOrigin.copy(origin).add(this._tmpTo.set(0, 1.5, 0)).addScaledVector(dir, 0.7);
     const speed = opts.speed || (weapon ? weapon.speedFor(charge) * 1.2 : 45);
-    const vel = dir.clone().multiplyScalar(speed);
-    vel.y += 1.0;
+    a.pos.copy(this._tmpOrigin);
+    a.vel.copy(dir).multiplyScalar(speed);
+    a.vel.y += 1.0;
     const damage = opts.damage ?? (weapon ? weapon.damageFor(charge) * 1.5 : 30);
-    mesh.position.copy(this._tmpOrigin);
-    this.scene.add(mesh);
-    this.arrows.push({ mesh, pos: this._tmpOrigin.clone(), vel, team: attacker.team, damage, life: COMBAT.PIERCE_ARROW_LIFE, attacker, charge, pierce: COMBAT.PIERCE_ARROW_PIERCE, hitSet: new Set() });
+    a.mesh.position.copy(this._tmpOrigin);
+    a.team = attacker.team;
+    a.damage = damage;
+    a.life = COMBAT.PIERCE_ARROW_LIFE;
+    a.attacker = attacker;
+    a.charge = charge;
+    a.pierce = COMBAT.PIERCE_ARROW_PIERCE;
+    a.hitSet = new Set();
+    this.arrows.push(a);
   }
 
   // 全向大招：360° 范围多段伤害

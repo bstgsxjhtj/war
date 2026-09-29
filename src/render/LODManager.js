@@ -8,6 +8,7 @@ const PROXY_GOLD = 0xffd070;
 const ELITE_SCALE = 1.3;
 const DECORATIVE = ['cape', 'emblem', 'factionFlag', 'rKneeguard', 'lKneeguard'];
 const MID_EXTRA = ['rPauldron', 'lPauldron', 'visor', 'belt', 'chestplate'];
+const TICK_INTERVAL = 0.25;
 
 export class LODManager {
   constructor({ camera, scene, thresholds = { mid: 25, far: 55, hidden: 110 } } = {}) {
@@ -29,6 +30,8 @@ export class LODManager {
     this._tmpQuat = new THREE.Quaternion();
     this._tmpScale = new THREE.Vector3(1, 1, 1);
     this._tmpPos = new THREE.Vector3();
+    this._tickInterval = TICK_INTERVAL;
+    this._accumDt = 0;
     if (scene && scene.add) scene.add(this._proxyMesh);
   }
 
@@ -117,6 +120,12 @@ export class LODManager {
 
   tick(dt) {
     if (!this._enabled) return;
+    // 降频：内部累积 dt，未达间隔时直接返回；无参调用（旧行为）立即执行
+    if (dt !== undefined) {
+      this._accumDt += dt;
+      if (this._accumDt < this._tickInterval) return;
+      this._accumDt -= this._tickInterval;
+    }
     let proxyIdx = 0;
     for (const char of this._chars) {
       if (!char.alive || !char.root || !char.position) continue;

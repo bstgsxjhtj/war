@@ -51,3 +51,12 @@ ESM 依赖图必须保持无环（DAG）。
 
 - **远距隐形威胁**：`_isThreat(char)` 判定角色是否正在 `char._attacking`（攻击中）/ `char._windupTimer > 0`（AI telegraph 前摇）/ `char._chargeState ∈ {'windup','charge'}`（骑兵冲锋）。命中任一即把 `effectiveLevel = min(level, 1)`——root 保持可见，telegraph/武器动画不再被代理胶囊吞掉，玩家可看到远距来袭；威胁解除后恢复按距离降级到 proxy。
 - **精英代理区分**：proxy 基础材质改为白色（`0xffffff`）以承载 `instanceColor`——普通敌人 `setColorAt(灰 0x888888)`、精英（`char._isElite`，含 Boss）`setColorAt(金 0xffd070)` 且矩阵缩放 `1.3×`，远距一眼可辨威胁等级。每帧 `instanceColor.needsUpdate` 与 `instanceMatrix.needsUpdate` 同步。
+- **tick 降频（P2-6）**：`tick(dt)` 内部累积 dt 到 `_accumDt`，未达 0.25s 间隔直接返回，达到后才执行一次完整距离/降级/proxy 写入，减少每帧全量遍历开销。无参 `tick()`（旧调用约定）跳过节流立即执行，保持向后兼容。
+
+## 7. 箭矢对象池（P2-6，2026-09-29）
+
+`CombatSystem` 发射箭矢（`spawnArrow` / `spawnPierceArrow`）原每次 `new THREE.Mesh` + `Vector3.clone()` 分配，高频战斗下产生 GC 压力。改为池化：
+
+- `_acquireArrow()`：从 `_arrowPool`（上限 64）弹出复用对象，池空时新建；mesh 为空时才创建并设 `castShadow`；`scene.add(mesh)` 后返回。每个池对象自带 `pos`/`vel` 两个 `Vector3`，发射时 `pos.copy(_tmpOrigin)`、`vel.copy(forward)`，不再 `.clone()`。
+- `_releaseArrow(a)`：`scene.remove(mesh)` 后压回池（超上限则丢弃，让 GC 回收）。
+- 复用时重置状态字段：普通箭 `pierce=0 / hitSet=null`；穿刺箭 `pierce=PIERCE_ARROW_PIERCE / hitSet=new Set()`，避免上一支箭的穿透命中集合残留。

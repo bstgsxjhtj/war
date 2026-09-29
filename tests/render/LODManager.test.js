@@ -220,4 +220,32 @@ describe('LODManager', () => {
     m.decompose(new THREE.Vector3(), new THREE.Quaternion(), sc);
     expect(sc.x).toBeCloseTo(1.0);
   });
+
+  it('tick(dt) 内部累积 dt，未达 0.25s 间隔不执行降级（P2-6）', () => {
+    const c = makeChar(1, 0, 60);
+    lod.register(c);
+    lod.tick(0.1);
+    lod.tick(0.1);
+    expect(c._lodLevel).toBe(0);
+    expect(c.root.visible).toBe(true);
+    expect(lod.proxyCount).toBe(0);
+  });
+
+  it('累积 dt 达到 0.25s 时执行一次降级（P2-6）', () => {
+    const c = makeChar(1, 0, 60);
+    lod.register(c);
+    lod.tick(0.1);
+    lod.tick(0.1);
+    lod.tick(0.05);
+    expect(c._lodLevel).toBe(2);
+    expect(c.root.visible).toBe(false);
+    expect(lod.proxyCount).toBe(1);
+  });
+
+  it('tick() 无参时立即执行（跳过节流，保持旧行为）（P2-6）', () => {
+    const c = makeChar(1, 0, 60);
+    lod.register(c);
+    lod.tick();
+    expect(c._lodLevel).toBe(2);
+  });
 });
