@@ -76,6 +76,7 @@ export class Environment {
       g.position.set(x, y, z); g.rotation.y = Math.random() * Math.PI;
       g.scale.setScalar(0.85 + Math.random() * 0.5);
       this.group.add(g);
+      (this._collidables ||= []).push({ x, z, r: 0.6 * g.scale.x });
     }
   }
 
@@ -90,7 +91,16 @@ export class Environment {
       rock.rotation.set(Math.random(), Math.random(), Math.random());
       rock.castShadow = true; rock.receiveShadow = true;
       this.group.add(rock);
+      if (s > 0.8) (this._collidables ||= []).push({ x, z, r: s });
     }
+  }
+
+  get collisionBoxes() {
+    const boxes = [];
+    for (const c of (this._collidables || [])) {
+      boxes.push({ minX: c.x - c.r, maxX: c.x + c.r, minZ: c.z - c.r, maxZ: c.z + c.r });
+    }
+    return boxes;
   }
 
   _grass(n) {

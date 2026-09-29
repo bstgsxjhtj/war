@@ -9,10 +9,10 @@ export class Camera {
     this.cam.position.set(0, 6, 12);
     this.yaw = 0;
     this.pitch = 0.22;
-    this.distance = 6.5;
+    this.distance = 7.5;
     this.height = 2.4;
     this.aimMode = false;
-    this._curDist = 6.5;
+    this._curDist = 7.5;
     this._curHgt = 2.4;
     this._curFov = CAMERA.FOV_DEFAULT;
     this.target = new THREE.Vector3();
@@ -46,7 +46,7 @@ export class Camera {
 
   look(dx, dy, sensitivity = CAMERA.SENSITIVITY_DEFAULT) {
     this.yaw -= dx * sensitivity;
-    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * sensitivity, CAMERA.PITCH_MIN, CAMERA.PITCH_MAX);
+    this.pitch = THREE.MathUtils.clamp(this.pitch + dy * sensitivity, CAMERA.PITCH_MIN, CAMERA.PITCH_MAX);
   }
 
   setKillCam(target) { this._killCamTarget = target; this._killTimer = 1.4; }
@@ -54,7 +54,9 @@ export class Camera {
   follow(targetPos) {
     const target = this._killCamTarget && this._killTimer > 0 ? this._killCamTarget.position : targetPos;
     this._killTimer = Math.max(0, (this._killTimer || 0) - 1 / 60);
-    this.target.copy(target);
+    this.target.x = target.x;
+    this.target.z = target.z;
+    this.target.y += (target.y - this.target.y) * 0.25;
     // 锁定时相机 yaw 缓动朝向目标
     if (this.lockTarget && this.lockTarget.alive) {
       const ty = Math.atan2(this.lockTarget.position.x - target.x, this.lockTarget.position.z - target.z);

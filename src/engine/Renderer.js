@@ -71,11 +71,11 @@ export class Renderer {
     this._quality = q;
     const low = q === 'low';
     // 低画质关闭后处理开销大户：SSAO + Bloom
-    if (this._ssao) this._ssao.enabled = !low;
+    if (this._ssao) this._ssao.enabled = q === 'high';
     if (this._bloom) this._bloom.enabled = !low;
     if (low) { this.webgl.shadowMap.enabled = false; this.webgl.setPixelRatio(0.7); }
     else if (q === 'mid') { this.webgl.shadowMap.enabled = true; this.webgl.setPixelRatio(1); }
-    else { this.webgl.shadowMap.enabled = true; this.webgl.setPixelRatio(Math.min(window.devicePixelRatio, 2)); }
+    else { this.webgl.shadowMap.enabled = true; this.webgl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); }
   }
 
   render() { this.composer.render(); }

@@ -179,6 +179,7 @@ async function bootstrap() {
   const assist = new DifficultyAssist(aiManager, (msg) => { hud.flash(msg); setTimeout(() => hud.clearHint(), 2500); }, AI_DIFFICULTY);
   weather.onLightning((pos) => envHazards.onLightningStrike(pos));
   for (const box of siege.collisionBoxes) envHazards.addWallBox(box);
+  for (const box of env.collisionBoxes) envHazards.addWallBox(box);
   const settings = new SettingsMenu(bus, audio, keyBindings);
   // P2-5 画质档位：统一应用到渲染器/环境粒子/天气粒子；低端机自适应降帧
   const qualityGovernor = new QualityGovernor({ quality: 'high' });
@@ -192,7 +193,7 @@ async function bootstrap() {
     lod.setQuality(q);
   }
   bus.on(EV.SETTINGS_QUALITY, ({ quality }) => { qualityGovernor.setQuality(quality); applyQuality(quality); });
-  applyQuality(settings.quality || 'high');
+  applyQuality(settings.quality || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4 ? 'mid' : 'high'));
   qualityGovernor.setQuality(_quality);
   bus.on(EV.SETTINGS_SENSITIVITY, ({ sensitivity }) => { if (player) player.lookSensitivity = sensitivity; });
   // 无障碍：色弱形状区分 / 减少动效（关脉冲+震动+顿帧）/ 屏幕震动强度

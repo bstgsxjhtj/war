@@ -10,6 +10,7 @@ vi.mock('../../src/render/TextureFactory.js', () => ({
 }));
 
 import { Player } from '../../src/gameplay/Player.js';
+import { CAMERA } from '../../src/core/constants/balance.js';
 
 function makeCamera() {
   return {
@@ -71,6 +72,6 @@ describe('Player 鼠标灵敏度初始化（NaN 根因防护）', () => {
     lockPointer();
     moveMouse(100, 0);
     const sens = cam.look.mock.calls[0][2];
-    expect(sens).toBeCloseTo(0.0025, 10);
+    expect(sens).toBeCloseTo(CAMERA.SENSITIVITY_DEFAULT, 10);
   });
 });

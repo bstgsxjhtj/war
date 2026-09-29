@@ -49,7 +49,7 @@ export const CAMERA = {
   PERFECT_DODGE_TIME_SCALE: 0.5,
   PITCH_MIN: 0.08,
   PITCH_MAX: 0.95,
-  SENSITIVITY_DEFAULT: 0.0025
+  SENSITIVITY_DEFAULT: 0.0018
 };
 
 // 处决：血量阈值/伤害/范围/持续时间

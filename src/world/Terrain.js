@@ -84,7 +84,7 @@ export class Terrain {
     if (this._extHeight) return this._extHeight(x, z, this);
     const r = Math.sqrt(x * x + z * z);
     const flatness = THREE.MathUtils.clamp((r - 16) / 40, 0, 1);
-    const microR = r < 16 ? (fbm(x * 0.4, z * 0.4) - 0.5) * 0.5 : 0;
+    const microR = r < 16 ? (fbm(x * 0.25, z * 0.25) - 0.5) * 0.5 : 0;
     let h = (fbm(x * 0.06, z * 0.06) - 0.5) * 10 * flatness + microR;
     for (const p of this._plateaus) {
       const d = Math.hypot(x - p.cx, z - p.cz);

@@ -52,7 +52,7 @@ export class Water {
   }
 
   setQuality(q) {
-    if (this.reflector) this.reflector.visible = q !== 'low';
+    if (this.reflector) this.reflector.visible = q === 'high';
   }
 
   update(dt, now) {

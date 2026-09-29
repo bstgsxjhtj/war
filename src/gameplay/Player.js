@@ -39,7 +39,7 @@ export class Player extends Character {
     };
     const onMouseMove = (e) => {
       if (!this._locked) return;
-      this.camera.look(e.movementX, e.movementY, 0.0025 * this.lookSensitivity);
+      this.camera.look(e.movementX, e.movementY, 0.0018 * this.lookSensitivity);
     };
     const onMouseDown = (e) => {
       if (!this._locked) return;

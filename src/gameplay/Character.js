@@ -493,8 +493,11 @@ export class Character {
       if (this._bus) this._bus.emit(EV.FX_SHAKE, { amount: 0.3 });
       this._launchRot = 0;
     }
-    if (this.position.y <= ground) { this.position.y = ground; this.vy = 0; this.onGround = true; this._launchRot = 0; }
-    else this.onGround = false;
+    if (this.position.y <= ground) {
+      const k = this.onGround ? Math.min(1, dt * 20) : 1;
+      this.position.y += (ground - this.position.y) * k;
+      this.vy = 0; this.onGround = true; this._launchRot = 0;
+    } else this.onGround = false;
     // 深水溺水
     if (this._inWater && terrain.waterDepth(this.position.x, this.position.z) > 1.2) {
       this.health.damage(2 * dt); this._updateHpBar();
