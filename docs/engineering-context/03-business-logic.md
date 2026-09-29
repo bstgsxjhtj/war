@@ -61,6 +61,7 @@
 - **游戏时钟延迟设施**（P2-5，2026-09-28）：`app/GameClock` 提供 `schedule(delay, fn)` → 返回取消函数；`update(dt)` 以 `dt*timeScale` 递减剩余时间，到期触发；`clear()` 清空全部待执行。main_entry 游戏循环每帧 `gameClock.update(ldt)`（ldt 已含 hitStop.timeScale 缩放），spawnAll 时 `gameClock.clear()`。Boss quake 已使用 spawnAoE 的 _pendingStrikes 机制（dt 倒计时，自带 timeScale 缩放），无需额外迁移。
 - **箭矢对象池 + LOD tick 降频**（P2-6，2026-09-29）：CombatSystem `spawnArrow`/`spawnPierceArrow` 改用 `_acquireArrow()` 从池（上限 64）复用 `{mesh, pos, vel}` 对象，`_releaseArrow()` 回收入池，消除每发箭的 Mesh/Vector3 分配；复用时按箭型重置 `pierce`/`hitSet`，避免穿透命中集合残留。LODManager `tick(dt)` 内部累积 dt 到 `_accumDt`，未达 0.25s 直接返回，达阈值才执行一次全量距离/降级/proxy 写入；无参 `tick()` 跳过节流（向后兼容现有测试与一次性调用）。
 - **e2e 覆盖新系统 + UpgradePicker 回调修复**（P2-7，2026-09-29）：新增三组 e2e 覆盖——①键位重绑流程（`KeyBindings._load` 损坏 JSON 静默回退默认、冲突检测归还旧动作默认并持久化重载恢复、自身默认键码短路保存）；②存档损坏恢复（合法 JSON 缺字段时 `{...defaults, ...migrated}` 合并补齐、旧键逐项 try/catch 容错使单键损坏不阻断其他迁移）；③战役 3 选 1 升级（`UpgradePicker` show 渲染 3 卡片 + 重选按钮、点击 apply+buffSelect+hide+回调、重选消耗 reroll 重新渲染、重选用完隐藏按钮）。覆盖过程中发现并修复 `UpgradePicker` 真实 bug：点击卡片后 `hide()` 先于 `_callback` 检查执行，导致回调被 null 吞掉、下一关 spawnLayout 永不触发；修复为先捕获 `cb = this._callback` 再 `hide()` 再 `cb()`。
+- **AI 涌现行为：连续被完美格挡后变招**（P3-2，2026-09-29）：`Character.takeDamage` 完美格挡分支新增 `attacker._wasPerfectBlocked = true` 标记（与既有 `attacker._hurt` 弹刀并列，无 bus 监听器、无生命周期泄漏）。`AIController.update` 每帧消费该标记：`_perfectBlockCount` 累加，达 2 次即触发变招——立即 `bus.emit(AI_CALLREINFORCE)` 叫援军 + 进入 `_adaptRetreat=2.5s` 适应撤退（远离最近敌人、state='retreat'、不攻击）；计数 4 秒无新增则衰减归零（避免单次格挡后永不重置）。低血量逃窜（`health.ratio<0.3`）优先于适应撤退（HP retreat 分支先执行）。
 
 ## 4. 成就事件契约
 

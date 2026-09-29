@@ -280,6 +280,7 @@ export class Character {
         if (fwdDot > 0.5) { // 攻击者在前方±60°
           if (this._perfectWindow > 0) {
             attacker._hurt = Math.max(attacker._hurt, 0.4); // 弹刀
+            attacker._wasPerfectBlocked = true; // P3-2：标记攻击者被完美格挡，供 AIController 涌现变招消费
             this._perfectRebound = true; // 弹反标记：下次反击触发连击 perfect 加成
             this.stamina.consume(0);
             this.addRage(15);

@@ -11,6 +11,7 @@ vi.mock('../../src/render/TextureFactory.js', () => ({
 import * as THREE from 'three';
 import { AIController } from '../../src/gameplay/AIController.js';
 import { Character } from '../../src/gameplay/Character.js';
+import { EV } from '../../src/core/constants/events.js';
 
 const terrain = { heightAt: () => 0, slopeAt: () => 0 };
 const combat = {};
@@ -394,5 +395,63 @@ describe('AIController 闪避 i 帧 (P0-2)', () => {
     const lost = ai.takeDamage(100, false, attacker, 0);
     expect(lost).toBe(0);
     expect(superTakeDamage).not.toHaveBeenCalled();
+  });
+});
+
+describe('AIController 涌现行为（P3-2：连续被完美格挡后变招）', () => {
+  let ai, superUpdate, bus;
+  beforeEach(() => {
+    superUpdate = vi.spyOn(Character.prototype, 'update').mockImplementation(() => {});
+    ai = new AIController({ team: 1 });
+    ai.setWeapons([mkWeapon()]);
+    ai.tryAttack = vi.fn();
+    bus = { emit: vi.fn() };
+    ai._bus = bus;
+  });
+  afterEach(() => superUpdate.mockRestore());
+
+  it('_wasPerfectBlocked 标记被消费时计数 +1', () => {
+    ai._wasPerfectBlocked = true;
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn();
+    ai.update(0.016, terrain, combat, [mkEnemy(0, 3, 0)], NOW);
+    expect(ai._perfectBlockCount).toBe(1);
+    expect(ai._wasPerfectBlocked).toBe(false);
+  });
+
+  it('连续 2 次被完美格挡后触发变招：进入适应撤退 + 立即叫援军', () => {
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn(); ai.setLook = vi.fn();
+    ai._wasPerfectBlocked = true;
+    ai.update(0.016, terrain, combat, [mkEnemy(0, 3, 0)], NOW);
+    ai._wasPerfectBlocked = true;
+    ai.update(0.016, terrain, combat, [mkEnemy(0, 3, 0)], NOW);
+    expect(ai._adaptRetreat).toBeGreaterThan(0);
+    expect(bus.emit).toHaveBeenCalledWith(EV.AI_CALLREINFORCE, expect.objectContaining({ team: 1 }));
+    expect(ai._perfectBlockCount).toBe(0);
+  });
+
+  it('适应撤退期间 AI 远离目标而非攻击（state=retreat，setMove 朝远离方向）', () => {
+    ai._adaptRetreat = 1.0;
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn(); ai.setLook = vi.fn();
+    const enemy = mkEnemy(0, 2, 0);
+    ai.update(0.016, terrain, combat, [enemy], NOW);
+    expect(ai._state).toBe('retreat');
+    expect(ai._adaptRetreat).toBeCloseTo(1.0 - 0.016, 4);
+    expect(ai.tryAttack).not.toHaveBeenCalled();
+  });
+
+  it('完美格挡计数 4 秒无新增则衰减归零', () => {
+    ai._perfectBlockCount = 1;
+    ai._perfectBlockDecay = 4;
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn();
+    ai.update(4.01, terrain, combat, [mkEnemy(0, 3, 0)], NOW);
+    expect(ai._perfectBlockCount).toBe(0);
+  });
+
+  it('低血量逃窜优先于适应撤退（HP retreat 分支先于 adapt retreat 执行）', () => {
+    ai._adaptRetreat = 2.0;
+    ai.health.hp = ai.health.maxHp * 0.2;
+    ai.setMove = vi.fn(); ai.setSprint = vi.fn(); ai.setLook = vi.fn();
+    ai.update(0.016, terrain, combat, [mkEnemy(0, 3, 0)], NOW);
+    expect(ai._state).toBe('retreat');
   });
 });

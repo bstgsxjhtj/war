@@ -40,6 +40,9 @@ export class AIController extends Character {
     this._telegraph = new TelegraphIndicator(this.root);
     this._enemyMods = null;
     this._reflecting = false;
+    this._perfectBlockCount = 0;
+    this._perfectBlockDecay = 0;
+    this._adaptRetreat = 0;
     this._pickPatrol();
   }
 
@@ -129,6 +132,22 @@ export class AIController extends Character {
     if (this._telegraph) this._telegraph.update(dt);
     if (this._counterTimer > 0) { this._counterTimer -= dt; if (this._swordReactTimer <= 0 && this.weapon && this.weapon.ready) { this.tryAttack(combat, 1); this._swordReactTimer = 0.5; } }
 
+    // P3-2 涌现：连续被完美格挡后变招（拉开距离 + 叫援军）
+    if (this._wasPerfectBlocked) {
+      this._wasPerfectBlocked = false;
+      this._perfectBlockCount++;
+      this._perfectBlockDecay = 4;
+      if (this._perfectBlockCount >= 2) {
+        this._perfectBlockCount = 0;
+        this._adaptRetreat = 2.5;
+        if (this._bus) this._bus.emit(EV.AI_CALLREINFORCE, { pos: this.position.clone(), team: this.team, id: this });
+      }
+    }
+    if (this._perfectBlockDecay > 0) {
+      this._perfectBlockDecay -= dt;
+      if (this._perfectBlockDecay <= 0) { this._perfectBlockDecay = 0; this._perfectBlockCount = 0; }
+    }
+
     if (this._isElite && this._eliteSkill === 'enrage' && this.health.ratio < 0.5) {
       this._swordReactTimer *= 0.5;
       this._eliteSkill = null;
@@ -145,6 +164,27 @@ export class AIController extends Character {
     }
 
     if (this.health.ratio < 0.3) {
+      this._state = 'retreat';
+      if (this._windupTimer > 0) { this._windupTimer = 0; if (this._telegraph) this._telegraph.hide(); }
+      let nearest = null, minD = Infinity;
+      for (const e of enemies) {
+        if (!e.alive || e.team === this.team) continue;
+        const d = e.position.distanceTo(this.position);
+        if (d < minD) { minD = d; nearest = e; }
+      }
+      if (nearest) {
+        this._vDir.subVectors(this.position, nearest.position).setY(0).normalize();
+        this.setLook(Math.atan2(this._vDir.x, this._vDir.z));
+        this.setMove(1, 0);
+        this.setSprint(true);
+        super.update(dt, terrain, combat, now);
+        return;
+      }
+    }
+
+    // P3-2 涌现变招：适应撤退（被连续完美格挡后拉开距离，不攻击）
+    if (this._adaptRetreat > 0) {
+      this._adaptRetreat -= dt;
       this._state = 'retreat';
       if (this._windupTimer > 0) { this._windupTimer = 0; if (this._telegraph) this._telegraph.hide(); }
       let nearest = null, minD = Infinity;
