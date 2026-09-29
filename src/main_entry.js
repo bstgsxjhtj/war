@@ -65,7 +65,7 @@ import { SaveUI } from './ui/SaveUI.js';
 import { MatchController } from './app/MatchController.js';
 import { SaveOrchestrator } from './app/SaveOrchestrator.js';
 import { QualityGovernor } from './app/QualityGovernor.js';
-import { KeyBindings } from './core/input/KeyBindings.js';
+import { KeyBindings, keyLabel } from './core/input/KeyBindings.js';
 import { LODManager } from './render/LODManager.js';
 import { Spawner } from './gameplay/Spawner.js';
 import { wireAchievements } from './app/AchievementWiring.js';
@@ -282,6 +282,7 @@ async function bootstrap() {
     formations.clear();
     deathFeedback.hide();
     lod.clear();
+    weaponTrail.clear();
     if (player) { if (player.dispose) player.dispose(); scene.remove(player.root); }
     for (const a of ais) { if (a.dispose) a.dispose(); scene.remove(a.root); }
     ais = [];
@@ -524,6 +525,16 @@ async function bootstrap() {
           runBuffs.resetRerolls();
           upgradePicker.show(() => {
             _wavePending = false;
+            // 清理上一波尸体：dispose + 移出 scene + 从 ais 移除，防止无界增长
+            for (let i = ais.length - 1; i >= 0; i--) {
+              const a = ais[i];
+              if (!a.alive) { if (a.dispose) a.dispose(); scene.remove(a.root); ais.splice(i, 1); }
+            }
+            // 同步从 combat.characters 移除尸体（保留 player 与仍存活 AI）
+            for (let i = combat.characters.length - 1; i >= 0; i--) {
+              const c = combat.characters[i];
+              if (c !== player && !c.alive) combat.characters.splice(i, 1);
+            }
             const lay = mode.spawnLayout();
             spawnRed(lay.red, { bossWave: lay.isBoss, modifier: lay.modifier });
             enemies = [player, ...ais];

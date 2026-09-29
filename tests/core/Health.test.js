@@ -43,4 +43,32 @@ describe('Health', () => {
     expect(h.alive).toBe(true);
     expect(h.hp).toBe(100);
   });
+
+  // P0 修复：跨模块字段名混用（health.cur/health.max）需通过别名访问到真实 hp/maxHp
+  it('cur/max 别名映射到 hp/maxHp', () => {
+    const h = new Health(100);
+    expect(h.cur).toBe(100);
+    expect(h.max).toBe(100);
+    h.cur = 70;
+    expect(h.hp).toBe(70);
+    h.max = 150;
+    expect(h.maxHp).toBe(150);
+    expect(h.ratio).toBeCloseTo(70 / 150);
+  });
+
+  it('SupplyPoint 风格回血通过别名生效', () => {
+    const h = new Health(100);
+    h.damage(50);
+    h.cur = Math.min(h.max, h.cur + 4);
+    expect(h.hp).toBe(54);
+    expect(Number.isNaN(h.hp)).toBe(false);
+  });
+
+  it('Spawner 风格强化（maxHp*mul 后回满）通过别名生效', () => {
+    const h = new Health(90);
+    h.maxHp = Math.round(h.maxHp * 1.5);
+    h.cur = h.maxHp;
+    expect(h.hp).toBe(135);
+    expect(h.ratio).toBe(1);
+  });
 });

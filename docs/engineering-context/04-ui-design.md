@@ -15,7 +15,13 @@
 
 ## 2. 按键映射（全局唯一，新增按键前必须查此表）
 
-已占用：Q F R M , K C D N I J V H Escape。
+**KeyBindings 可重绑（20 动作，DEFAULT_BINDINGS）**：W/A/S/D（移动）、Shift（冲刺）、Space（跳跃）、Q（闪避）、F（技能）、T（大招）、E（处决）、Tab（锁定）、1/2/3/4（武器切换）、K（技能树）、I（词条）、M（模式）、N（天气）、Escape（设置）。
+
+**InputRouter 硬编码**：R（重开/下一回合）、`,`（切图）、C（战役信息）、D（每日挑战进度）。
+
+**面板自监听**：J（成就 AchievementsUI）、V（皮肤 WeaponSkinsUI）、H（存档 SaveUI）。
+
+已占用合计 27 个按键：W A S D Shift Space Q F T E Tab 1 2 3 4 K I M N Escape R , C D J V H。
 面板开关键（I/J/V/H/K）由**面板组件在 document 自监听**，main_entry 不重复绑定。
 **新手引导（Tutorial）读 KeyBindings**（P0-3，2026-09-28）：步骤匹配与文案由 `kb.get(action)` 反查当前键码（dodge/ultimate/execute/lock/weapon1-4/移动），重绑后不再卡死；`kb=null` 回退 DEFAULT_BINDINGS。
 **UI 快捷键纳入 KeyBindings**（P2-2，2026-09-28）：新增 skilltree(K)/affix(I)/mode(M)/weather(N)/settings(Esc) 5 个可重绑动作（共 20 项）。InputRouter 读 `kb.get('mode'/'weather'/'settings')` 替代硬编码 KeyM/KeyN/Escape；UIPanel 接受可选 `kb+action` 参数、AffixesUI 透传；SkillTreeUI 接受 `kb` 读 skilltree 键；Tutorial ⑪⑫步改 `actions` 驱动、_renderFinal 全键位动态化。无 kb 时回退默认键码（向后兼容）。

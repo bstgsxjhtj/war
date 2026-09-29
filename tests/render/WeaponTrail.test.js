@@ -95,6 +95,36 @@ describe('WeaponTrail', () => {
     expect(w1.userData._trail.count).toBe(0);
     expect(w2.userData._trail.count).toBe(2);
   });
+
+  // P1 修复：spawnAll 切换回合时清理所有 trail，防止 LineSegments 泄漏
+  it('clear 移除所有 line、dispose 资源并解除 weaponMesh 引用', () => {
+    const scene = new THREE.Scene();
+    const wt = new WeaponTrail(scene);
+    const w1 = new THREE.Object3D(); scene.add(w1);
+    const w2 = new THREE.Object3D(); scene.add(w2);
+    const t1 = wt.attach(w1);
+    const t2 = wt.attach(w2);
+    const line1 = t1.line, line2 = t2.line;
+    expect(scene.children).toContain(line1);
+    expect(scene.children).toContain(line2);
+    wt.clear();
+    expect(wt._trails.length).toBe(0);
+    expect(scene.children).not.toContain(line1);
+    expect(scene.children).not.toContain(line2);
+    expect(w1.userData._trail).toBeUndefined();
+    expect(w2.userData._trail).toBeUndefined();
+  });
+
+  it('clear 后可重新 attach（幂等）', () => {
+    const scene = new THREE.Scene();
+    const wt = new WeaponTrail(scene);
+    const w = new THREE.Object3D(); scene.add(w);
+    wt.attach(w);
+    wt.clear();
+    const t = wt.attach(w);
+    expect(t).toBeTruthy();
+    expect(wt._trails.length).toBe(1);
+  });
 });
 
 describe('HitStop', () => {

@@ -29,7 +29,8 @@ describe('Camera 完美格挡慢动作', () => {
     bus.emit(EV.FX_PERFECTDODGE, {});
     expect(cam.addShake).toHaveBeenCalledWith(0.5);
     expect(cam._curFov).toBe(52);
-    expect(cam.timeScale).toBe(0.5);
+    // timeScale 死代码已移除：子弹时间改由 EventWiring 的 hitStop.trigger(0.4, 0.5) 提供
+    expect(cam.timeScale).toBeUndefined();
   });
 
   it('Camera 构造时注册了 FX_PERFECTBLOCK 监听', () => {

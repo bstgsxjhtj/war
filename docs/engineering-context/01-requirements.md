@@ -8,7 +8,7 @@
 | 据点 | 占领积分先到 500 | 对方先到 | |
 | 攻城 | 攻方摧毁目标 / 守方撑到结束 | 反之 | SiegeMode |
 | 波次 | 存活通过第 10 波 | 玩家死亡 | WaveMode，wave 逐波推进 |
-| 战役 | 逐关推进，共 maxStages 关 | 玩家死亡 | 每关有 objective：歼灭/生存/Boss/护送等；第 5、10 关为 Boss 关（须有 bossType） |
+| 战役 | 逐关推进，共 10 关 | 玩家死亡 | 每关有 objective：歼灭/生存/Boss/护送/防御/Boss限时 等；第 5 关（Boss warlord）、第 8 关（mini boss mage，生存 90s）、第 10 关（Boss限时 behemoth）为 Boss 关 |
 
 ## 2. 元进度系统
 

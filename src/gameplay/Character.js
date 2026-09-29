@@ -210,12 +210,13 @@ export class Character {
     if (idx < 0 || idx >= this.weapons.length || idx === this.weaponIdx) return;
     this.weaponIdx = idx;
     this.weaponPivot.remove(this._weaponMesh);
+    deepDispose(this._weaponMesh);
     this._weaponMesh = this.weapon.createMesh();
     this.weaponPivot.add(this._weaponMesh);
     this._comboCount = 0; this._attacking = false; this._blocking = false;
   }
 
-  setWeapons(arr) { this.weapons = arr; this.weaponIdx = 0; this.weaponPivot.remove(this._weaponMesh); this._weaponMesh = this.weapon.createMesh(); this.weaponPivot.add(this._weaponMesh); }
+  setWeapons(arr) { this.weapons = arr; this.weaponIdx = 0; this.weaponPivot.remove(this._weaponMesh); deepDispose(this._weaponMesh); this._weaponMesh = this.weapon.createMesh(); this.weaponPivot.add(this._weaponMesh); }
 
   tickCombo(dt) {
     if (this._comboTimer > 0) { this._comboTimer -= dt; if (this._comboTimer <= 0) this._comboCount = 0; }

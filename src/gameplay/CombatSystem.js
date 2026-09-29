@@ -382,12 +382,14 @@ export class CombatSystem {
       if (a.pos.y <= terrain.heightAt(a.pos.x, a.pos.z) - 0.2) { this.spawnHitFX(a.pos, 0xccaa66); hit = true; }
       for (const c of this.characters) {
         if (!c.alive || c.team === a.team) continue;
+        if (a.hitSet && a.hitSet.has(c)) continue;
         const cap = c.capsule;
         if (a.pos.distanceTo(cap.center) < cap.radius + cap.halfHeight * 0.5) {
           const heavy = (a.charge ?? 0) >= 0.8;
           const lost = c.takeDamage(this._affixApply(a.attacker, a.attacker.weapon, a.damage), heavy, a.attacker, now);
           if (lost > 0) { this._emitHit(a.attacker, c, lost, '弓', 0xff5522, 0, heavy, now, false, this._lastAffixCrit); this._affixLeech(a.attacker, lost); }
           if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: a.attacker });
+          if (a.pierce > 0) { a.pierce -= 1; a.hitSet.add(c); continue; }
           hit = true; break;
         }
       }

@@ -4,17 +4,19 @@
 
 格式 `域.动作`：`combat.hit`、`combat.kill`、`fx.shake`、`settings.quality`、`hud.flash`、`daily.update`、`skins.changed`、`campaign.nightmare_clear`……
 禁止发射无监听者的事件；新增事件需在本文件登记 payload 契约。
-**事件名常量化**：全部 bus 事件名收敛于 `src/core/constants/events.js`（`EV.XXX`），代码中禁止再写事件名字符串字面量。
+**事件名常量化**：全部 bus 事件名收敛于 `src/core/constants/events.js`（`EV.XXX`，当前 50 个事件），代码中禁止再写事件名字符串字面量。
 
 ## 2. localStorage 键登记
 
-**键名常量化**：全部 localStorage 键收敛于 `src/core/constants/storage-keys.js`（`LS.XXX`），代码中禁止再写键名字符串字面量。
+**键名常量化**：全部 localStorage 键收敛于 `src/core/constants/storage-keys.js`（`LS.XXX`，当前 14 个键），代码中禁止再写键名字符串字面量。
 
 | 键 | 属主 |
 |---|---|
 | savegame_v1 | SaveManager（游戏进度唯一事实来源：mode/stage/campaignCleared/progressionFull/score/kills/bestGrade/affixSlots/affixInventory/skillPoints/skillTree/achievements/daily/skins/playTime） |
+| savegame_v1_bak | SaveManager（损坏备份恢复） |
 | ~~progression_v1 / skilltree_v1 / campaign_cleared / achievements / affixes / daily_challenge / weapon_skins~~ | 旧键，仅启动时一次性迁移到 savegame_v1 后删除 |
 | settings | SettingsMenu（UI 偏好，独立保留） |
+| keybindings | KeyBindings（键位重绑，独立保留） |
 | audio_volume | AudioEngine（音量，独立保留，05 §5 "音量只留 AudioEngine 一处"） |
 | tutorial_done | Tutorial（一次性引导标志，独立保留） |
 | skilltree_profile_* | SkillTree（多档位技能方案，独立保留） |

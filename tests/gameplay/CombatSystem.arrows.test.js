@@ -103,3 +103,82 @@ describe('CombatSystem 箭矢对象池复用 (P2-6)', () => {
     expect(a1.pos).not.toBe(cs._tmpOrigin);
   });
 });
+
+describe('CombatSystem 穿透箭命中链 (P1 修复)', () => {
+  let cs, scene, bus, attacker;
+  function makeVictim(id) {
+    return {
+      _id: id, alive: true, team: 1,
+      position: new THREE.Vector3(0, 0, 0),
+      capsule: { center: new THREE.Vector3(0, 0, 0), radius: 1, halfHeight: 1 },
+      takeDamage: vi.fn(() => 10),
+      health: { alive: true }
+    };
+  }
+  beforeEach(() => {
+    bus = { emit: vi.fn() };
+    scene = { add: vi.fn(), remove: vi.fn() };
+    cs = new CombatSystem(scene, bus);
+    cs.spawnHitFX = vi.fn();
+    cs._emitHit = vi.fn();
+    cs._affixApply = vi.fn(() => 10);
+    cs._affixLeech = vi.fn();
+    attacker = {
+      team: 0,
+      position: new THREE.Vector3(0, 0, 0),
+      forward: new THREE.Vector3(0, 0, 1),
+      weapon: { speedFor: () => 30, damageFor: () => 10 }
+    };
+  });
+
+  it('穿透箭命中首个目标后仍存活并继续飞行', () => {
+    const v1 = makeVictim(1);
+    cs.characters = [v1];
+    cs.spawnPierceArrow(attacker, attacker.weapon, 0);
+    const arrow = cs.arrows[0];
+    arrow.pos.set(0, 0.5, 0); arrow.vel.set(0, 0, 0);
+    const terrain = { heightAt: () => -10 };
+    cs.update(0.001, terrain, 0);
+    expect(v1.takeDamage).toHaveBeenCalled();
+    expect(arrow.pierce).toBe(COMBAT.PIERCE_ARROW_PIERCE - 1);
+    expect(arrow.hitSet.has(v1)).toBe(true);
+    expect(cs.arrows.length).toBe(1); // 未释放
+  });
+
+  it('穿透箭跳过已命中的目标（hitSet 防重复伤害）', () => {
+    const v1 = makeVictim(1);
+    cs.characters = [v1];
+    cs.spawnPierceArrow(attacker, attacker.weapon, 0);
+    const arrow = cs.arrows[0];
+    arrow.pos.set(0, 0.5, 0); arrow.vel.set(0, 0, 0);
+    const terrain = { heightAt: () => -10 };
+    cs.update(0.001, terrain, 0);
+    cs.update(0.001, terrain, 0);
+    expect(v1.takeDamage).toHaveBeenCalledTimes(1);
+  });
+
+  it('穿透次数耗尽后命中即释放', () => {
+    const victims = [makeVictim(1), makeVictim(2), makeVictim(3), makeVictim(4)];
+    cs.characters = victims;
+    cs.spawnPierceArrow(attacker, attacker.weapon, 0);
+    const arrow = cs.arrows[0];
+    arrow.pos.set(0, 0.5, 0); arrow.vel.set(0, 0, 0);
+    const terrain = { heightAt: () => -10 };
+    cs.update(0.001, terrain, 0);
+    // 同一帧命中所有目标：前 PIERCE-1 个穿透，最后一个使 pierce 归 0 后 hit=true
+    expect(cs.arrows.length).toBe(0);
+    expect(victims[0].takeDamage).toHaveBeenCalled();
+  });
+
+  it('普通箭（pierce=0）命中即释放，不影响现有行为', () => {
+    const v1 = makeVictim(1);
+    cs.characters = [v1];
+    cs.spawnArrow(attacker, attacker.weapon, 0);
+    const arrow = cs.arrows[0];
+    arrow.pos.set(0, 0.5, 0); arrow.vel.set(0, 0, 0);
+    const terrain = { heightAt: () => -10 };
+    cs.update(0.001, terrain, 0);
+    expect(cs.arrows.length).toBe(0);
+    expect(v1.takeDamage).toHaveBeenCalled();
+  });
+});

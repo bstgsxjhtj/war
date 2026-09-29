@@ -36,6 +36,17 @@ export class WeaponTrail {
     if (trail) trail.active = false;
   }
 
+  // 清理全部 trail（回合/关卡切换时调用，防止 LineSegments 泄漏与悬挂武器引用）
+  clear() {
+    for (const trail of this._trails) {
+      if (trail.line.parent) trail.line.parent.remove(trail.line);
+      trail.line.geometry.dispose();
+      trail.line.material.dispose();
+      if (trail.weaponMesh && trail.weaponMesh.userData) delete trail.weaponMesh.userData._trail;
+    }
+    this._trails.length = 0;
+  }
+
   update(dt, now) {
     const tmpT = this._tmpT || (this._tmpT = new THREE.Vector3());
     const tmpP = this._tmpP || (this._tmpP = new THREE.Vector3());

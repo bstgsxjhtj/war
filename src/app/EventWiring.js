@@ -21,6 +21,7 @@ export function wireCoreHandlers(bus, deps) {
     if (daily.track('dodge')) bus.emit(EV.DAILY_UPDATE, daily.challenges);
     bus.emit(EV.COMBAT_DODGE, {});
     audio.playSound('dodge');
+    hitStop.trigger(0.4, 0.5);
   });
   bus.on(EV.COMBAT_HIT, ({ attacker, victim, damage, combo, heavy, backstab, crit }) => {
     if (victim && victim.isLocal && attacker) {

@@ -163,9 +163,31 @@
 | 2026-09-29 | d1cfb14 | 击杀 2s 卡顿修复：TextureFactory canvas 静态缓存(根因)+hitstop 双重冻结去重(hitStop active 时不叠加 combat.hitstop) |
 | 2026-09-29 | 3bead8e | UX 轮：预警环分级(黄/红/白)+攻击收招取消(tryDodge 反向 bug)+锁定切目标+低血心跳+升级卡稀有度(加权抽取) |
 | 2026-09-29 | — | 架势条系统：POSTURE 常量+Character._addPosture(格挡/受击/攻击累积)+崩防可处决+regen(0.6s 延迟)+AIController posture>70 后撤+HUD setPosture 架势条 |
+| 2026-09-29 | 1bd6188 | 架势条系统正式提交：Sekiro-style guard break + execute window |
+| 2026-09-29 | 7b304cc | 敌人头顶架势条显示：3D Sprite billboard 琥珀色（>0.7 橙红/崩防纯红闪烁），posture=0 时隐藏，与血条同显隐规则 |
 
 ## 部署后修复（2026-09-29）
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
 | 2026-09-29 | 903fefe | 鼠标移动画面消失根因修复——Player 构造未初始化 lookSensitivity，`0.0025 * undefined = NaN` 污染相机 yaw/pitch，WebGL 投影矩阵 NaN 导致只剩底色。修复：Player 构造函数 `this.lookSensitivity = 1`（默认值=1，`0.0025*1=SENSITIVITY_DEFAULT`）。SettingsMenu._applyAll 只在 show() 时 emit，用户首次进入从不开设置面板时 lookSensitivity 永为 undefined。新增 3 个 NaN 根因防护测试。 |
+| 2026-09-29 | 10ea72b | docs 补登 903fefe commit hash 至台账 |
+| 2026-09-29 | adcab61 | gitignore 排除 .deploy/、.ssh-config/、.env、*.pem、*.key、id_ed25519*/id_rsa*（部署/SSH/git 项目配置本地化，不上 GitHub） |
+| 2026-09-29 | cefb4a9 | 视觉重塑：琥珀黄昏调色、smoothshade+Fresnel 金边、SSAO/Reflector 静态 import 修 dist 404 |
+
+## 设计问题深度评审修复（2026-09-29 第七轮）
+
+> 来源：5 专家圆桌评审（架构/游戏设计/性能/代码质量/测试），10 个候选问题中 7 个确认真实并修复，3 个 P2 留待下轮。
+
+| # | 问题 | 严重级 | 状态 |
+|---|---|---|---|
+| D1 | Health.cur/max 字段名混用 6 处跨 5 文件（SupplyPoint 回血写 NaN、Spawner Boss 强化失败、net.sendState undefined、setSkill clamp 失效） | P0 | ✅已修：Health 加 cur/max 别名 getter/setter 映射到 hp/maxHp |
+| D2 | main_entry.js keyLabel 未导入，处决提示 ReferenceError（Time.tick catch 降级为 console 洪水） | P1 | ✅已修：import 补 keyLabel |
+| D3 | 穿透箭机制失效（pierce/hitSet 定义但 update 命中循环无消费分支） | P1 | ✅已修：命中循环加 pierce>0 分支，扣次数+记 hitSet+继续穿透 |
+| D4 | 波次/无尽模式 ais 与 combat.characters 无界增长（尸体不 dispose） | P1 | ✅已修：upgradePicker 回调 spawnRed 前倒序清理尸体 |
+| D5 | WeaponTrail 无 detach（每回合泄漏 LineSegments + 幽灵拖尾） | P1 | ✅已修：加 clear() 方法（remove+dispose+解除 userData 引用），spawnAll 调用 |
+| D6 | switchWeapon/setWeapons 泄漏旧武器 mesh（remove 但不 dispose） | P1 | ✅已修：remove 后调 deepDispose |
+| D7 | 完美闪避 timeScale 死代码（Camera 私设字段无消费者） | P1 | ✅已修：Camera 移除 timeScale 字段，EventWiring FX_PERFECTDODGE 改走 hitStop.trigger(0.4, 0.5) |
+| D8 | 高速箭矢穿隧（tunneling，60m/s 单帧 1m 可越过判定球） | P2 | ⬜留待下轮（需线段-胶囊扫掠） |
+| D9 | 锁定解除瞬间角色朝向跳变（两个缓动系统不同步） | P2 | ⬜留待下轮 |
+| D10 | 召唤/增援单位不进 enemies 快照，AI 协同失效 | P2 | ⬜留待下轮（enemies 改派生视图） |

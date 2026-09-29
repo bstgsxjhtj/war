@@ -16,15 +16,17 @@ ESM 依赖图必须保持无环（DAG）。
 
 ## 2. 模块职责
 
-- **core**：EventBus（on 返回 off 函数）、GameState 状态机、Time 主循环、input/KeyBindings（20 动作可重绑 + 冲突检测 + localStorage 持久化，纯数据输入基础设施）。ECS.js 当前未被使用（保留待决）。
+- **core**：EventBus（on 返回 off 函数）、GameState 状态机、Time 主循环、input/KeyBindings（20 动作可重绑 + 冲突检测 + localStorage 持久化，纯数据输入基础设施）、constants/events（EV，50 个 bus 事件）、constants/storage-keys（LS，14 个键）、constants/balance（WEAPON_STATS/COMBAT/CAMERA/EXECUTE/POSTURE/ENEMY_MODS）。ECS.js 当前未被使用（保留待决）。
 - **engine**：Renderer（后期管线：SSAO+Reflector 静态 import 修 dist 404、UnrealBloom+暗角 Vignette、low 画质降级关 SSAO/Bloom/Reflector）、Scene（黄昏琥珀调色、远山顶点扰动、Fresnel rim 替固定方向光）、Camera、AssetLoader。
 - **world**：Terrain、Environment、Water、WeatherSystem、MapGenerator、SiegeStructure、SupplyPoint。
-- **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/CavalryEnemy）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、weapons/*；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；SaveManager；战斗辅助（EnvironmentHazards 环境伤害、DifficultyAssist 动态难度、AffixBehavior 敌人词条行为统一接口）。
-- **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI。
+- **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/Cavalry）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、Weapon、weapons/*（Sword/Spear/SwordShield/Warhammer/Bow）；AI 辅助（AIManager、UnitFormation、AffixBehavior）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge、RunBuffs）；SaveManager；战斗辅助（EnvironmentHazards、DifficultyAssist、TrajectoryPreview、EscortTarget、DefensePoint）；Spawner（红队生成）。
+- **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI、ProgressionUI、WeaponSkinsUI、UIPanel（面板基类）、UIStack（Escape 栈）、UpgradePicker（3 选 1 升级）、DeathFeedback（死亡反馈）。
+- **render**：TextureFactory（程序纹理 canvas 缓存）、disposeUtils、WeaponTrail、DodgeGhosts、EnvMap、LODManager、ParticleFX、TelegraphIndicator。
+- **app**：MatchController（比分/回合/胜负）、SaveOrchestrator（存档编排）、InputRouter（全局按键）、GameClock（随 timeScale 缩放的延迟任务）、EventWiring（17 个纯事件处理器下沉）、AchievementWiring（成就接线）、QualityGovernor（自适应画质）。
 
 ## 3. 运行期解耦
 
-模块间通过字符串事件（`域.动作`，如 `combat.hit`、`fx.shake`）在 EventBus 上通信，约 25 个事件名。事件契约见 05-conventions.md。
+模块间通过字符串事件（`域.动作`，如 `combat.hit`、`fx.shake`）在 EventBus 上通信，约 50 个事件名（全部常量化于 `core/constants/events.js`）。事件契约见 05-conventions.md。
 
 ## 4. 已知架构债（按优先级）
 
@@ -39,7 +41,7 @@ ESM 依赖图必须保持无环（DAG）。
 4. ~~**依赖注入不统一**~~（✅2026-09-21 偿还）：约定落地到 05 §6——必选依赖（bus）走构造、可选依赖（audio/affixes）走 setter、总线属性统一 `_bus`；DailyChallenge/Achievements 改为构造注入 bus（顺带修复 DailyChallenge 未传 bus 导致 `daily.completed` 事件死掉的 bug），Player 4 处 emit 统一 `_bus`。Character 群"注册时注入"为显式例外。
 5. ~~**监听器生命周期**~~（✅2026-09-21 偿还）：bus.on 返回 off、跨回合监听集中 bootstrap 顶层、spawnAll/spawnRed 内禁注册常驻监听——三条款经查均已满足（Player.dispose #8、死事件 #12 先前已修）；本轮落地 05 §7 约定 + 回归守卫（tests/core/listener-lifecycle.test.js 大括号匹配提取 spawnAll/spawnRed 函数体断言无 bus.on）。调查中发现并修复一无关次要缺陷：combat.kill 的 ultimate 音效在 main_entry 与 MatchController 各播一次，已去重（保留 main_entry 进度处理器一处，MatchController 移除 audio 依赖）。
 6. ~~**gameplay/ui→app 反向依赖（KeyBindings 错位）**~~（✅2026-09-28 偿还，Round 6 P1-2）：KeyBindings 原放 `app/` 层，导致 `gameplay/Player.js`、`ui/SettingsMenu.js`、`ui/Tutorial.js` 被迫向上反向依赖 app 层。已下沉至 `core/input/KeyBindings.js`（与 events.js / storage-keys.js 同级，"纯数据 + localStorage" 输入基础设施归 core）；main_entry / Player / SettingsMenu / Tutorial 同步改 import；导出与行为不变。新增架构守卫 `tests/core/input/KeyBindings.architecture.test.js` 锁定 gameplay 层与 ui 层不再 import 任何 `app/` 模块（扫描 src/gameplay 与 src/ui 全树）。
-7. **main_entry 拆分（P3-1，2026-09-29）**：沿用 `wireAchievements` 模式新增 `app/EventWiring.js` 的 `wireCoreHandlers(bus, deps)`，将 17 个无 mutable-local 依赖的纯事件处理器（FX_PERFECTBLOCK/FX_BLOCK/FX_PERFECTDODGE/COMBAT_HIT/COMBAT_KILL×3/COMBAT_EXECUTE/SETTINGS_DIFFICULTY×2/SETTINGS_SHAKE_INTENSITY/HUD_BOSSPHASE/FX_BOSSROAR/FX_DODGE/COMBAT_ULTIMATE/COMBAT_COUNTER/COMBO_TIER）从 main_entry 下沉；main_entry 从 594 行降至 549 行。余下 7 个引用 mutable let 绑定（player/ais/enemies/terrain/_colorblind/_reducedMotion）或位于条件块（net）的处理器（BOSS_SUMMON/SETTINGS_QUALITY/SETTINGS_SENSITIVITY/SETTINGS_COLORBLIND/SETTINGS_REDUCED_MOTION/COMBAT_HIT-net/SKINS_CHANGED）仍留在 main_entry，待引入 getter/setter 统一后再全量下沉。GameLoop（主循环）与 SpawnFlow（spawnAll 链路）因与每帧/每局 mutable 状态深度耦合，本轮暂不提取。P3-4（2026-09-29）扩展 HUD_BOSSPHASE 处理器，新增 `weather` 依赖（按 phase 调 `weather.setMode` 切环境光照）；Camera 同期新增自订阅 `bus.on(HUD_BOSSPHASE)` 收缩 FOV（balance.js `FOV_BOSS_PHASE2/3`）。
+7. **main_entry 拆分（P3-1，2026-09-29）**：沿用 `wireAchievements` 模式新增 `app/EventWiring.js` 的 `wireCoreHandlers(bus, deps)`，将 17 个无 mutable-local 依赖的纯事件处理器（FX_PERFECTBLOCK/FX_BLOCK/FX_PERFECTDODGE/COMBAT_HIT/COMBAT_KILL×3/COMBAT_EXECUTE/SETTINGS_DIFFICULTY×2/SETTINGS_SHAKE_INTENSITY/HUD_BOSSPHASE/FX_BOSSROAR/FX_DODGE/COMBAT_ULTIMATE/COMBAT_COUNTER/COMBO_TIER）从 main_entry 下沉；main_entry 从 594 行降至 538 行。余下 7 个引用 mutable let 绑定（player/ais/enemies/terrain/_colorblind/_reducedMotion）或位于条件块（net）的处理器（BOSS_SUMMON/SETTINGS_QUALITY/SETTINGS_SENSITIVITY/SETTINGS_COLORBLIND/SETTINGS_REDUCED_MOTION/COMBAT_HIT-net/SKINS_CHANGED）仍留在 main_entry，待引入 getter/setter 统一后再全量下沉。GameLoop（主循环）与 SpawnFlow（spawnAll 链路）因与每帧/每局 mutable 状态深度耦合，本轮暂不提取。P3-4（2026-09-29）扩展 HUD_BOSSPHASE 处理器，新增 `weather` 依赖（按 phase 调 `weather.setMode` 切环境光照）；Camera 同期新增自订阅 `bus.on(HUD_BOSSPHASE)` 收缩 FOV（balance.js `FOV_BOSS_PHASE2/3`）。
 
 ## 5. 组合根规则
 

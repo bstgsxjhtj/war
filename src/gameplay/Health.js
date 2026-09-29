@@ -6,6 +6,12 @@ export class Health {
     this.alive = true;
   }
 
+  // 别名：兼容 Stamina 风格的 cur/max 访问（修复跨模块字段名混用）
+  get cur() { return this.hp; }
+  set cur(v) { this.hp = v; }
+  get max() { return this.maxHp; }
+  set max(v) { this.maxHp = v; }
+
   damage(amount) {
     if (!this.alive) return 0;
     const before = this.hp;
