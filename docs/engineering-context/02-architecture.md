@@ -19,7 +19,7 @@ ESM 依赖图必须保持无环（DAG）。
 - **core**：EventBus（on 返回 off 函数）、GameState 状态机、Time 主循环、input/KeyBindings（20 动作可重绑 + 冲突检测 + localStorage 持久化，纯数据输入基础设施）。ECS.js 当前未被使用（保留待决）。
 - **engine**：Renderer（three 后期管线）、Scene、Camera、AssetLoader。
 - **world**：Terrain、Environment、Water、WeatherSystem、MapGenerator、SiegeStructure、SupplyPoint。
-- **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/CavalryEnemy）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、weapons/*；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；SaveManager；战斗辅助（EnvironmentHazards 环境伤害、DifficultyAssist 动态难度）。
+- **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/CavalryEnemy）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、weapons/*；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；SaveManager；战斗辅助（EnvironmentHazards 环境伤害、DifficultyAssist 动态难度、AffixBehavior 敌人词条行为统一接口）。
 - **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI。
 
 ## 3. 运行期解耦

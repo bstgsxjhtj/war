@@ -7,6 +7,7 @@ import { SwordShield } from './weapons/SwordShield.js';
 import { Warhammer } from './weapons/Warhammer.js';
 import { Bow } from './weapons/Bow.js';
 import { ENEMY_MODS } from '../core/constants/balance.js';
+import { applyEnemyBehaviors } from './AffixBehavior.js';
 
 const AI_WEAPON_MAKERS = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];
 const ELITE_SKILLS = ['blockCounter', 'dodgeStrike', 'enrage'];
@@ -35,7 +36,7 @@ export class Spawner {
     if (!mods || !mods.length) return;
     if (ai._isBoss) return;
     if (ai.setEnemyMods) ai.setEnemyMods(mods);
-    if (mods.includes('swift') && ai.speed) ai.speed *= ENEMY_MODS.SWIFT_SPEED_MUL;
+    applyEnemyBehaviors.onSpawn(ai, { swiftMul: ENEMY_MODS.SWIFT_SPEED_MUL });
   }
 
   _finalize(ai, x, z, ais, eliteChanceMul = 1) {

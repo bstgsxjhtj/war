@@ -3,6 +3,7 @@ import { Character } from './Character.js';
 import { EV } from '../core/constants/events.js';
 import { ENEMY_MODS } from '../core/constants/balance.js';
 import { TelegraphIndicator } from '../render/TelegraphIndicator.js';
+import { applyEnemyBehaviors } from './AffixBehavior.js';
 
 export class AIController extends Character {
   constructor({ team = 1, passive = false, maxHp = 90 } = {}) {
@@ -83,13 +84,9 @@ export class AIController extends Character {
   takeDamage(amount, heavy, attacker, now) {
     if (this._dodgeTimer > 0) return 0;
     if (this._blockTimer > 0) amount *= 0.3;
-    if (this._enemyMods && this._enemyMods.includes('ironhide')) amount *= ENEMY_MODS.IRONHIDE_DMG_TAKEN_MUL;
+    amount = applyEnemyBehaviors.modifyIncoming(this, amount, { ironhideMul: ENEMY_MODS.IRONHIDE_DMG_TAKEN_MUL });
     const lost = super.takeDamage(amount, heavy, attacker, now);
-    if (this._enemyMods && this._enemyMods.includes('reflect') && !this._reflecting && attacker && attacker.alive && lost > 0) {
-      attacker._reflecting = true;
-      attacker.takeDamage(lost * ENEMY_MODS.REFLECT_FRACTION, false, this, now);
-      attacker._reflecting = false;
-    }
+    applyEnemyBehaviors.onTakeDamage(this, attacker, lost, { reflectFraction: ENEMY_MODS.REFLECT_FRACTION, now });
     if (this._blockTimer > 0 && this.alive) {
       const counterChance = (this._isElite && this._eliteSkill === 'blockCounter') ? 1.0 : 0.5;
       if (Math.random() < counterChance) {

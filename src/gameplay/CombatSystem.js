@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ParticleFX } from '../render/ParticleFX.js';
 import { EV } from '../core/constants/events.js';
 import { COMBAT, ENEMY_MODS } from '../core/constants/balance.js';
+import { applyEnemyBehaviors } from './AffixBehavior.js';
 
 // 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率（导出供单测引用，构造时复用同一引用）
 export const COUNTER_MATRIX = {
@@ -194,8 +195,8 @@ export class CombatSystem {
     if (this._affixes && attacker.weapon) {
       leech += this._affixes.affixBonus(attacker.weapon, '吸血') + this._affixes.synergyBonus(attacker.weapon, 'lifesteal');
     }
-    if (attacker._enemyMods && attacker._enemyMods.includes('vampire')) leech += ENEMY_MODS.VAMPIRE_LIFESTEAL;
     if (leech > 0) attacker.health.hp = Math.min(attacker.health.maxHp, attacker.health.hp + lost * leech);
+    applyEnemyBehaviors.onDealDamage(attacker, null, lost, { vampireFraction: ENEMY_MODS.VAMPIRE_LIFESTEAL });
   }
 
   resolveMelee(attacker, weapon, combo, now = 0) {
