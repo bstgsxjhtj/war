@@ -438,7 +438,7 @@ export class Character {
       this._comboCount = (this._comboCount + 1) % 3;
       this._comboTimer = this._comboWindow;
     }
-    if (this._audio) this._audio.swing();
+    if (this._audio) this._audio.swing(this.weapon?.weaponClass);
     this._addPosture(this.weapon.armorPierce ? POSTURE.ATTACK_HEAVY : POSTURE.ATTACK_LIGHT);
     return true;
   }

@@ -63,8 +63,8 @@ describe('AudioEngine', () => {
       click: vi.spyOn(a, 'click'),
       achievement: vi.spyOn(a, 'achievement'),
     };
-    a.playSound('swing'); expect(spies.swing).toHaveBeenCalled();
-    a.playSound('hit', { heavy: true, combo: 3 }); expect(spies.hit).toHaveBeenCalledWith(true, 3);
+    a.playSound('swing'); expect(spies.swing).toHaveBeenCalledWith(undefined);
+    a.playSound('hit', { heavy: true, combo: 3 }); expect(spies.hit).toHaveBeenCalledWith(true, 3, undefined);
     a.playSound('block'); expect(spies.block).toHaveBeenCalled();
     a.playSound('dodge'); expect(spies.dodge).toHaveBeenCalled();
     a.playSound('ultimate'); expect(spies.ultimate).toHaveBeenCalledTimes(1);

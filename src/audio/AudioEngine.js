@@ -7,8 +7,8 @@ export class AudioEngine {
   getVolume(type) { if (type === 'master') return this._vol; if (type === 'sfx') return this._sfxVol; if (type === 'bgm') return this._bgmVol; if (type === 'env') return this._envVol; return this._vol; }
   _volOf(type) { const m = this._vol; if (type === 'sfx') return m * this._sfxVol; if (type === 'bgm') return m * this._bgmVol; if (type === 'env') return m * this._envVol; return m; }
   playSound(type, opts = {}) {
-    if (type === 'swing') this.swing();
-    else if (type === 'hit') this.hit(opts.heavy, opts.combo);
+    if (type === 'swing') this.swing(opts.weaponClass);
+    else if (type === 'hit') this.hit(opts.heavy, opts.combo, opts.weaponClass);
     else if (type === 'block') this.block();
     else if (type === 'perfectblock') this.perfectBlock();
     else if (type === 'dodge') this.dodge();
@@ -32,8 +32,23 @@ export class AudioEngine {
     else if (type === 'heartbeatStart') this.heartbeatStart();
     else if (type === 'heartbeatStop') this.heartbeatStop();
   }
-  swing() { this._tone(200, 0.09, 'sine', this._volOf('sfx') * 0.18, 80); }
-  hit(heavy = false, combo = 0) { const f = Math.min(800, 250 + combo * 50); this._noise(heavy ? 0.28 : 0.14, heavy ? 500 : f, this._volOf('sfx') * (heavy ? 0.4 : 0.3)); }
+  swing(weaponClass) {
+    const v = this._volOf('sfx') * 0.18;
+    if (weaponClass === 'STAFF') { this._tone(400, 0.12, 'sine', v, 600); this._tone(800, 0.08, 'sine', v * 0.5, 1200); }
+    else if (weaponClass === 'BOW') { this._tone(500, 0.06, 'triangle', v * 0.8, 300); }
+    else if (weaponClass === 'HEAVY') { this._tone(120, 0.14, 'sine', v * 1.3, 60); this._noise(0.08, 300, v * 0.3); }
+    else if (weaponClass === 'DAGGER') { this._tone(350, 0.06, 'sine', v * 0.7, 200); }
+    else if (weaponClass === 'SPEAR') { this._tone(300, 0.1, 'sine', v, 150); }
+    else { this._tone(200, 0.09, 'sine', v, 80); }
+  }
+  hit(heavy = false, combo = 0, weaponClass) {
+    const f = Math.min(800, 250 + combo * 50);
+    const v = this._volOf('sfx') * (heavy ? 0.4 : 0.3);
+    if (weaponClass === 'STAFF') { this._tone(800, 0.15, 'sine', v, 1200); this._tone(1200, 0.1, 'sine', v * 0.5, 1600); }
+    else if (weaponClass === 'BOW') { this._noise(heavy ? 0.2 : 0.1, 600, v); this._tone(400, 0.08, 'triangle', v * 0.3, 200); }
+    else if (weaponClass === 'HEAVY') { this._noise(heavy ? 0.35 : 0.2, 400, v); this._tone(800, 0.1, 'square', v * 0.3, 400); }
+    else { this._noise(heavy ? 0.28 : 0.14, heavy ? 500 : f, v); }
+  }
   footstep() { this._noise(0.05, 90, this._volOf('sfx') * 0.12); }
   block() { this._tone(700, 0.12, 'square', this._volOf('sfx') * 0.22, 400); }
   perfectBlock() { this._tone(80, 0.25, 'sine', this._volOf('sfx') * 0.35, 40); this._noise(0.15, 200, this._volOf('sfx') * 0.2); }

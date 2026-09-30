@@ -37,8 +37,9 @@ export function wireCoreHandlers(bus, deps) {
     if (victim && victim.isLocal) match.playerTaken += damage || 0;
     if (backstab) { daily.track('backstab'); if (attacker && attacker.isLocal) bus.emit(EV.COMBAT_BACKSTAB, { attacker, victim }); }
     bus.emit(EV.DAILY_UPDATE, daily.challenges);
-    audio.playSound('swing');
-    audio.playSound('hit', { heavy, combo });
+    const _wc = attacker?.weapon?.weaponClass;
+    audio.playSound('swing', { weaponClass: _wc });
+    audio.playSound('hit', { heavy, combo, weaponClass: _wc });
     if (crit) audio.playSound('crit');
   });
   bus.on(EV.COMBAT_KILL, ({ victim, killer }) => {
