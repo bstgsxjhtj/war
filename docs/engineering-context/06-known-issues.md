@@ -224,3 +224,29 @@
 | E12 | Water.test.js（新建） | 3（setSize 重建/no-op/dispose 旧几何体） |
 
 测试总量：988 → 1011（+23 个回归测试），100 个测试文件全绿。
+
+## 设计问题深度评审修复（2026-09-30 第十轮）
+
+> 来源：5 专家圆桌评审（架构/游戏设计/性能/代码质量/测试），7 个候选问题全部确认真实并修复（F1-F7）。
+
+| # | 问题 | 严重级 | 状态 |
+|---|---|---|---|
+| F1 | BossEnemy._skillRapidshot 传错参数给 spawnPierceArrow（Vector3 当 attacker）→ 必崩 | P0 | ✅已修：改为正确签名 `(this, this.weapon, 1, { origin, dir, damage })` |
+| F2 | RunBuffs 7 个升级字段（regen/atkspd/dodgecd/armor/crit/execdmg/counterdmg）设了从不读——玩家花选了 no-op | P1 | ✅已修：全部接入消费端（Character.update/takeDamage/tryDodge/_tickAttackPose/canBeExecuted + CombatSystem._affixApply/_counterMul） |
+| F3 | 投石（isSiege）混入箭矢池——后续普通箭渲染为球体且 isSiege 残留误触发城门伤害 + 几何体内存泄漏 | P1 | ✅已修：_releaseArrow 对 isSiege 箭 dispose 几何体/材质不入池；spawnArrow/spawnPierceArrow 重置 isSiege=false |
+| F4 | EscortTarget.takeDamage 从未被调用——护送目标无敌，护送任务不可失败 | P1 | ✅已修：EscortTarget 加 position/team/forward/weapon/_curVel/vy 字段；main_entry 注册到 combat |
+| F5 | EnvironmentHazards 用 Date.now()——暂停/卡帧时仍造成伤害，且与 performance.now 时间基不同步 | P1 | ✅已修：改为 performance.now()*0.001 |
+| F6 | DefensePoint 导入但从未实例化——死代码增加包体积 | P2 | ✅已修：移除 main_entry.js 中的导入 |
+| F7 | AIController 每帧每 AI 调 filter() 分配数组——O(N²) + N 次 GC 压力 | P2 | ✅已修：改用 _allyBuf 可复用缓冲区 |
+
+### 回归测试
+
+| 修复 | 测试文件 | 新增用例 |
+|---|---|---|
+| F1 | BossEnemy.test.js | 1（rapidshot 正确调用签名） |
+| F2 | RunBuffs.test.js | 7（7 个升级字段设值验证） |
+| F3 | CombatSystem.arrows.test.js | 3（isSiege 不入池/dispose、spawnArrow/spawnPierceArrow 重置） |
+| F4 | EscortTarget.test.js（新建） | 6（combat 字段、takeDamage 扣减/致死/死后、update 移动/无 player） |
+| F5 | EnvironmentHazards.test.js | 1（now 值为秒级小数非 epoch） |
+
+测试总量：1011 → 1029（+18 个回归测试），101 个测试文件全绿。
