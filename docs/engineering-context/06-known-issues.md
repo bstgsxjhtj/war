@@ -250,3 +250,26 @@
 | F5 | EnvironmentHazards.test.js | 1（now 值为秒级小数非 epoch） |
 
 测试总量：1011 → 1029（+18 个回归测试），101 个测试文件全绿。
+
+## 设计问题深度评审修复（2026-09-30 第十一轮）
+
+> 来源：5 专家圆桌评审，7 个候选问题全部确认真实并修复（G1-G7）；G8 为测试覆盖建议。
+
+| # | 问题 | 严重级 | 状态 |
+|---|---|---|---|
+| G1 | F2 修复中 5 个 RunBuffs 字段未持久化（_runRegen/_runDodgeCdMul/_runArmorMul/_runExecBonus/_runCounterMul）——升级仍为 no-op | P1 | ✅已修：PowerShell 直接写入 Character.js + CombatSystem.js，全部 5 个字段接入消费端 |
+| G2 | SkillTree 3 个 getter 死代码（dodgeIFrameBonus/branchRegen/branchDodgeChance）——玩家投资技能树无回报 | P1 | ✅已修：tryDodge 加 dodgeIFrameBonus，update 加 branchRegen 回血，takeDamage 加 branchDodgeChance 被动闪避 |
+| G3 | switchWeapon 不转移 weaponTrail——拖尾引用已销毁 mesh，切换武器后拖尾永久失效 | P1 | ✅已修：Character 加 setWeaponTrail 方法，switchWeapon 中 detach 旧 mesh + attach 新 mesh |
+| G4 | WaveMode.onKill 从未被调用——alive 恒为 0，waveInfo 暴露错误数据 | P2 | ✅已修：MatchController COMBAT_KILL 处理器调 mode.onKill，spawnLayout 设置 alive=red.length |
+| G5 | 坚韧词缀 max-HP 在加载存档后不生效——_applyAffixMaxHp 在词缀加载前执行 | P1 | ✅已修：_applyAffixMaxHp 重构含 skill bonus，setSkill 改调 _applyAffixMaxHp，switchWeapon 也调用 |
+| G6 | HUD 回复 buff 显示硬编码 +2/s 而非实际 branchRegen 值 | P2 | ✅已修：改为动态 `回复 +${branchRegen}/s` |
+| G7 | NetClient.connect 超时不关闭 WebSocket——慢连接后 socket 泄漏 + 竞态 | P2 | ✅已修：超时回调加 `try { this.ws.close(); } catch (e) {}` |
+| G8 | RunBuffs 测试只验证字段设值不验证消费——假阳性覆盖 | P2 | ⬜已登记：需补集成测试实例化 Character 验证升级效果 |
+
+### 回归测试
+
+| 修复 | 测试文件 | 新增用例 |
+|---|---|---|
+| G4 | WaveMode.test.js | 2（spawnLayout 设 alive、waveInfo 联动） |
+
+测试总量：1029 → 1031（+2 个回归测试），101 个测试文件全绿。
