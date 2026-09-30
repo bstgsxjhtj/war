@@ -18,5 +18,5 @@
 
 - 类型：Web 单机 3D 战斗游戏（three.js）
 - 构建：vite；测试：vitest（node 默认，UI 用 jsdom pragma）+ Playwright 冒烟
-- 规模：src 91 个文件 / ~9100 行；tests 99 个文件
+- 规模：src 91 个文件 / ~9100 行；tests 100 个文件
 - 工作流：brainstorm → spec（docs/superpowers/specs）→ plan（docs/superpowers/plans）→ 子代理驱动执行（TDD，每 Task 独立 commit，pre-commit hook 跑 build + 全量 vitest）

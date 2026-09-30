@@ -191,3 +191,36 @@
 | D8 | 高速箭矢穿隧（tunneling，60m/s 单帧 1m 可越过判定球） | P2 | ✅已修：命中判定改线段-点扫掠（prev→pos 线段到 capsule.center 最近距离），终极箭 pierce:true 改 pierce:99+hitSet |
 | D9 | 锁定解除瞬间角色朝向跳变（两个缓动系统不同步） | P2 | ✅已修：Player 加 _wasLocked/_lockReleaseT/_lockReleaseFrom，解除锁定时 0.2s 角度插值过渡到 camera.yaw |
 | D10 | 召唤/增援单位不进 enemies 快照，AI 协同失效 | P2 | ✅已修：enemies 快照数组改 getEnemies() 派生视图，始终反映 player+ais+remotes 当前状态 |
+
+## 设计问题深度评审修复（2026-09-30 第九轮）
+
+> 来源：5 专家圆桌评审（架构/游戏设计/性能/代码质量/测试），12 个候选问题全部确认真实并修复（E1-E12）。
+
+| # | 问题 | 严重级 | 状态 |
+|---|---|---|---|
+| E1 | Boss hp/maxHp 实例字段遮蔽 health 对象——Boss 阶段机制 hpPct 恒为 1，阶段 2/3 永不进入（summon/quake/meteor/clone 全死代码） | P0 | ✅已修：Character 加 hp/maxHp getter/setter 转发到 health，消除 BossEnemy/EliteEnemy 实例字段双真相 |
+| E2 | 投石（attacker=null）命中角色时 CombatSystem 箭矢分支 TypeError 崩溃 | P0 | ✅已修：命中分支对 null attacker 做 null-safe 处理（跳过词缀/吸血/命中事件） |
+| E3 | damageGate/onSiegeHit 零调用者——攻城模式不可获胜（城门无敌） | P1 | ✅已修：CombatSystem 加 siege 引用，投石落地调 onSiegeHit，近战 resolveMelee 末尾加砍城门逻辑 |
+| E4 | WeaponTrail 无 detach 方法——波次清理 clear() 误清玩家 trail | P1 | ✅已修：新增 detach(weaponMesh) 按 mesh 移除单条 trail，波次清理回调调用 |
+| E5 | LODManager 死亡角色 skip 但不注销——_chars 无限持有已销毁对象阻止 GC | P1 | ✅已修：tick 改倒序遍历，死亡/失效角色直接 splice 注销 |
+| E6 | AIController._dodgeTimer 遮蔽 Character._dodgeTimer——同帧双重递减 | P1 | ✅已修：改名 _aiDodgeTimer 消除遮蔽 |
+| E7 | WeatherSystem 闪电 3 个 setTimeout——回调在 dispose/天气切换后残留 | P2 | ✅已修：改 dt 状态机驱动闪光序列（亮→灭→二次闪→灭），apply() 复位 |
+| E8 | getEnemies() 每 AI 每帧调用——main_entry 循环内重复分配 | P2 | ✅已修：hoist 到循环外，AI 和 siege 共享 _all 快照 |
+| E9 | 投石机占领逻辑用 _prevT 快照——占领状态切换延迟 | P2 | ✅已修：改为实时 trebuchet.team 比较，删除快照 |
+| E10 | Camera killcam 计时用固定 1/60 步长——帧率相关 | P2 | ✅已修：follow() 加 dt 参数，killTimer 用 dt 递减；Player 两处调用传 dt |
+| E11 | 波次结算未检查 player.alive——玩家死亡后仍可触发结算 | P2 | ✅已修：波次结算条件加 player.alive 前置检查 |
+| E12 | Water 几何体不随地图切换重建——bridge 图水面过窄 | P2 | ✅已修：新增 setSize(width) 重建主几何体与反射面，loadMap 内调用 |
+
+### 回归测试
+
+| 修复 | 测试文件 | 新增用例 |
+|---|---|---|
+| E1 | BossEnemy.test.js | 4（hp/health 同源、takeDamage 联动、阶段 2 触发、Elite 联动） |
+| E2/E3 | CombatSystem.arrows.test.js | 3（投石 null attacker 不崩、onSiegeHit 调用、近战砍城门） |
+| E4 | WeaponTrail.test.js | 3（detach 移除/重 attach/未知 mesh 不崩） |
+| E5 | LODManager.test.js | 3（死亡注销、部分死亡只移除死亡的、root 失效注销） |
+| E7 | WeatherSystem.forecast.test.js | 3（四阶段状态机、apply 终止、dt 递减不残留） |
+| E10 | Camera.bossPhase.test.js | 4（dt 递减、killTarget 位置、归零回退、默认 1/60 兼容） |
+| E12 | Water.test.js（新建） | 3（setSize 重建/no-op/dispose 旧几何体） |
+
+测试总量：988 → 1011（+23 个回归测试），100 个测试文件全绿。
