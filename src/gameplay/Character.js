@@ -137,10 +137,18 @@ export class Character {
     const pupilL = new THREE.Mesh(eyeGeoP, matEyeP); pupilL.position.set(-0.16, 0.06, 0.41);
     const eyeR = new THREE.Mesh(eyeGeoW, matEyeW); eyeR.position.set(0.16, 0.06, 0.35);
     const pupilR = new THREE.Mesh(eyeGeoP, matEyeP); pupilR.position.set(0.16, 0.06, 0.41);
-    this.head.add(eyeL, pupilL, eyeR, pupilR);
+    const browGeo = new THREE.BoxGeometry(0.13, 0.03, 0.02);
+    const browMat = new THREE.MeshBasicMaterial({ color: 0x2a1a08 });
+    const browL = new THREE.Mesh(browGeo, browMat); browL.position.set(-0.16, 0.16, 0.38); browL.rotation.z = -0.15;
+    const browR = new THREE.Mesh(browGeo, browMat); browR.position.set(0.16, 0.16, 0.38); browR.rotation.z = 0.15;
+    this.head.add(eyeL, pupilL, eyeR, pupilR, browL, browR);
     const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.02), new THREE.MeshBasicMaterial({ color: 0x3a2010 }));
     mouth.position.set(0, -0.14, 0.38);
     this.head.add(mouth);
+    this._face = { eyeL, eyeR, pupilL, pupilR, mouth, browL, browR, mouthMat: mouth.material };
+    this._blinkTimer = 2 + Math.random() * 3;
+    this._blinkPhase = 0;
+    this._faceState = "idle";
     const helmPoints = [
       new THREE.Vector2(0.46, 0), new THREE.Vector2(0.44, 0.05),
       new THREE.Vector2(0.40, 0.12), new THREE.Vector2(0.34, 0.25),
@@ -648,6 +656,52 @@ export class Character {
     }
   }
 
+  _tickFace(dt, skelState) {
+    if (!this._face) return;
+    const f = this._face;
+    // Blink: periodic eye close
+    this._blinkTimer -= dt;
+    if (this._blinkPhase === 0 && this._blinkTimer <= 0) { this._blinkPhase = 1; this._blinkTimer = 0.08; }
+    if (this._blinkPhase > 0) {
+      if (this._blinkPhase === 1) {
+        const s = Math.max(0.1, this._blinkTimer / 0.04);
+        f.eyeL.scale.y = s; f.eyeR.scale.y = s; f.pupilL.scale.y = s; f.pupilR.scale.y = s;
+        if (this._blinkTimer <= 0) { this._blinkPhase = 2; this._blinkTimer = 0.04; }
+      } else {
+        const s = Math.max(0.1, 1 - this._blinkTimer / 0.04);
+        f.eyeL.scale.y = s; f.eyeR.scale.y = s; f.pupilL.scale.y = s; f.pupilR.scale.y = s;
+        if (this._blinkTimer <= 0) { this._blinkPhase = 0; this._blinkTimer = 2 + Math.random() * 3; f.eyeL.scale.y = 1; f.eyeR.scale.y = 1; f.pupilL.scale.y = 1; f.pupilR.scale.y = 1; }
+      }
+    }
+    // Mouth expression
+    const st = skelState || 'idle';
+    if (st !== this._faceState) {
+      this._faceState = st;
+      if (st === 'attack1' || st === 'attack2' || st === 'attack3') { f.mouth.scale.set(1.5, 2.5, 1); f.mouthMat.color.setHex(0x2a1010); }
+      else if (st === 'hurt') { f.mouth.scale.set(1.8, 0.4, 1); f.mouthMat.color.setHex(0x5a2010); }
+      else if (st === 'death') { f.mouth.scale.set(1.2, 3.0, 1); f.mouthMat.color.setHex(0x2a1010); }
+      else if (st === 'run' || st === 'charge') { f.mouth.scale.set(1.3, 1.8, 1); f.mouthMat.color.setHex(0x3a2010); }
+      else if (st === 'block') { f.mouth.scale.set(0.8, 0.5, 1); f.mouthMat.color.setHex(0x4a2010); }
+      else { f.mouth.scale.set(1, 1, 1); f.mouthMat.color.setHex(0x3a2010); }
+    }
+    // Eyebrow expression
+    if (st === 'attack1' || st === 'attack2' || st === 'attack3' || st === 'charge') {
+      f.browL.rotation.z = -0.35; f.browR.rotation.z = 0.35; f.browL.position.y = 0.14; f.browR.position.y = 0.14;
+    } else if (st === 'hurt' || st === 'death') {
+      f.browL.rotation.z = 0.20; f.browR.rotation.z = -0.20; f.browL.position.y = 0.19; f.browR.position.y = 0.19;
+    } else if (st === 'block' || st === 'dodge') {
+      f.browL.rotation.z = -0.25; f.browR.rotation.z = 0.25; f.browL.position.y = 0.15; f.browR.position.y = 0.15;
+    } else {
+      f.browL.rotation.z = -0.15; f.browR.rotation.z = 0.15; f.browL.position.y = 0.16; f.browR.position.y = 0.16;
+    }
+    // Pupil tracking: look toward forward direction
+    if (this.forward) {
+      const lx = THREE.MathUtils.clamp(this.forward.x * 0.03, -0.03, 0.03);
+      const ly = THREE.MathUtils.clamp(this.forward.y * 0.02 - 0.01, -0.02, 0.03);
+      f.pupilL.position.x = -0.16 + lx; f.pupilL.position.y = 0.06 + ly;
+      f.pupilR.position.x = 0.16 + lx; f.pupilR.position.y = 0.06 + ly;
+    }
+  }
   _tickAnimState(dt, now, moving) {
     let skelState = 'idle';
     let skelT = 0;
@@ -666,6 +720,7 @@ export class Character {
     }
     this.skeleton.applyState(skelState, skelT, { speed: moving, sprint: this._sprint, now: now * 0.001 });
     this.skeleton.update(dt);
+    this._tickFace(dt, skelState);
   }
 
   _tickHurtFlash(dt) {
