@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { SettingsMenu } from '../../src/ui/SettingsMenu.js';
+import { UIStack } from '../../src/ui/UIStack.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('SettingsMenu', () => {
@@ -73,6 +74,27 @@ describe('SettingsMenu', () => {
     expect(m._sens.value).toBe('150');
     expect(m._volEl.value).toBe('70');
     expect(audio.getVolume).toHaveBeenCalled();
+  });
+
+  it('show 显示面板并压入 UIStack，hide 收起并移除（UIStack 未导入会抛 ReferenceError）', () => {
+    UIStack._stack.length = 0;
+    expect(() => menu.show()).not.toThrow();
+    expect(menu.el.style.display).toBe('flex');
+    expect(menu.open).toBe(true);
+    expect(UIStack.top).toBe(menu);
+    expect(() => menu.hide()).not.toThrow();
+    expect(menu.el.style.display).toBe('none');
+    expect(menu.open).toBe(false);
+    expect(UIStack.empty).toBe(true);
+  });
+
+  it('toggle 在显示/隐藏间切换', () => {
+    UIStack._stack.length = 0;
+    menu.toggle();
+    expect(menu.open).toBe(true);
+    menu.toggle();
+    expect(menu.open).toBe(false);
+    expect(UIStack.empty).toBe(true);
   });
 });
 

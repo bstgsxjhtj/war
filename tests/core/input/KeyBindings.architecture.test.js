@@ -42,3 +42,21 @@ describe('KeyBindings 分层架构约束（P1-2：下沉 core/input）', () => {
     expect(offendersIn(join(SRC, 'ui'), APP_IMPORT_RE)).toEqual([]);
   });
 });
+
+// 成员访问（UIStack.push 等）；先剔除 import 语句，避免模块路径 'UIStack.js' 被误判为使用
+const UI_STACK_USE_RE = /UIStack\s*\./;
+const UI_STACK_IMPORT_RE = /import\s*\{[^}]*\bUIStack\b[^}]*\}\s*from\s*['"][^'"]*UIStack\.js['"]/;
+const stripImports = (src) => src.replace(/import\b[^;]*;/g, '');
+
+describe('UIStack 显式导入约束（防止面板 show/hide 抛 ReferenceError）', () => {
+  it('凡引用 UIStack 的文件都必须导入它', () => {
+    const offenders = scanJsFiles(SRC)
+      .filter((f) => !f.endsWith(join('ui', 'UIStack.js')))
+      .filter((f) => {
+        const src = readFileSync(f, 'utf8');
+        return UI_STACK_USE_RE.test(stripImports(src)) && !UI_STACK_IMPORT_RE.test(src);
+      })
+      .map((f) => f.replace(SRC + sep, '').replace(/\\/g, '/'));
+    expect(offenders).toEqual([]);
+  });
+});

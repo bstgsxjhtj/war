@@ -1,4 +1,5 @@
 import { EV } from '../core/constants/events.js';
+import { UIStack } from './UIStack.js';
 // 技能树 UI v3：拖拽排序 + localStorage 持久化 + 渐变+图标+进度圆点+Tab+悬停预览+升级动画+重置
 export class SkillTreeUI {
   constructor(bus, skill, kb = null) {
