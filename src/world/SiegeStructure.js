@@ -18,6 +18,16 @@ export class SiegeStructure {
     this._buildWalls();
   }
 
+  // 重置城门与投石机（每回合开局调用，保证新一局城门完好）
+  reset() {
+    this.gate.hp = this.gate.maxHp;
+    this.gate.broken = false;
+    if (this.gate.group) this.gate.group.visible = true;
+    this.trebuchet.team = -1;
+    this.trebuchet.occupied = false;
+    this.trebuchet.timer = 0;
+  }
+
   _buildGate() {
     const g = new THREE.Group();
     const wallMat = new THREE.MeshStandardMaterial({ color: 0x8a8278, map: TextureFactory.brick(), roughness: 0.9 });

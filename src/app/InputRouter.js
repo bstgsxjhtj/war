@@ -4,6 +4,7 @@ import { States } from '../core/GameState.js';
 import { UIStack } from '../ui/UIStack.js';
 import { Deathmatch, Domination, SiegeMode } from '../gameplay/GameMode.js';
 import { WaveMode } from '../gameplay/WaveMode.js';
+import { BattlefieldMode } from '../gameplay/BattlefieldMode.js';
 import { MapGenerator } from '../world/MapGenerator.js';
 
 export class InputRouter {
@@ -35,7 +36,8 @@ export class InputRouter {
       if (mode.name === '死斗') next = new Domination(bus);
       else if (mode.name === '据点') next = new SiegeMode(bus);
       else if (mode.name === '攻城') next = new WaveMode(bus);
-      else if (mode.name === '波次') next = new WaveMode(bus, true);
+      else if (mode.name === '波次') next = new BattlefieldMode(bus);
+      else if (mode.name === '战场') next = new WaveMode(bus, true);
       else if (mode.name === '无尽') next = campaign;
       else if (mode.name === '战役' && !campaign.nightmare && campaign.cleared >= campaign.maxStages) {
         campaign.nightmare = true; campaign.reset(); next = campaign;

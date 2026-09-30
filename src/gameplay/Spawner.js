@@ -53,7 +53,7 @@ export class Spawner {
     ais.push(ai);
   }
 
-  spawnRed(redLayout, ais, { bossWave = false, modeName = '', modifier = null, stageDifficulty = 1 } = {}) {
+  spawnRed(redLayout, ais, { bossWave = false, modeName = '', modifier = null, stageDifficulty = 1, bossType = null } = {}) {
     const unlocks = this.progression.unlocks;
     const isTraining = modeName === '训练场';
     const hpMul = modifier ? (modifier.hpMul || 1) : 1;
@@ -62,7 +62,7 @@ export class Spawner {
     for (let i = 0; i < redLayout.length; i++) {
       let ai;
       if (i === 0 && (this.campaign.currentStage.bossType || bossWave) && !isTraining) {
-        ai = new BossEnemy({ team: 1, type: bossWave ? 'warlord' : (this.campaign.currentStage.bossType || 'warlord'), mini: bossWave ? false : (this.campaign.currentStage.mini || false) });
+        ai = new BossEnemy({ team: 1, type: bossType || (bossWave ? 'warlord' : (this.campaign.currentStage.bossType || 'warlord')), mini: bossWave ? false : (this.campaign.currentStage.mini || false) });
       } else if (i === 1 && unlocks.elite && !isTraining) {
         ai = new EliteEnemy({ team: 1 });
       } else if (i === 2 && !isTraining && this.progression.score >= CAVALRY_SCORE_GATE) {

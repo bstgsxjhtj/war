@@ -286,9 +286,27 @@ async function bootstrap() {
 
   const spawner = new Spawner({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign, lod });
 
-  function spawnRed(redLayout, { bossWave = false, modifier = null, stageDifficulty = 1 } = {}) {
+  function spawnRed(redLayout, { bossWave = false, modifier = null, stageDifficulty = 1, bossType = null } = {}) {
     if (envHazards) envHazards.setHazardBoost((campaign.currentStage && campaign.currentStage.hazardBoost) || 1);
-    spawner.spawnRed(redLayout, ais, { bossWave, modeName: mode.name, modifier, stageDifficulty });
+    spawner.spawnRed(redLayout, ais, { bossWave, modeName: mode.name, modifier, stageDifficulty, bossType });
+  }
+
+  // 清理已阵亡单位：detach 拖尾 + 注销 LOD + dispose + 移出 scene + 从 ais/combat 移除，防止无界增长
+  function clearCorpses() {
+    for (let i = ais.length - 1; i >= 0; i--) {
+      const a = ais[i];
+      if (!a.alive) {
+        if (a._weaponMesh) weaponTrail.detach(a._weaponMesh);
+        if (lod) lod.unregister(a);
+        if (a.dispose) a.dispose();
+        scene.remove(a.root);
+        ais.splice(i, 1);
+      }
+    }
+    for (let i = combat.characters.length - 1; i >= 0; i--) {
+      const c = combat.characters[i];
+      if (c !== player && !c.alive) combat.characters.splice(i, 1);
+    }
   }
 
   function spawnAll() {
@@ -333,7 +351,7 @@ async function bootstrap() {
     if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx);
     let redLayout, bossWave = false, spawnModifier = null, stageDifficulty = 1;
     if (mode.name === '战役') { const lay = campaign.spawnLayout(); redLayout = lay.red; stageDifficulty = lay.difficulty || 1; }
-    else if (mode.name === '波次' || mode.name === '无尽') { const lay = mode.spawnLayout(); redLayout = lay.red; bossWave = lay.isBoss; spawnModifier = lay.modifier; }
+    else if (mode.name === '波次' || mode.name === '无尽' || mode.name === '战场') { const lay = mode.spawnLayout(); redLayout = lay.red; bossWave = lay.isBoss; spawnModifier = lay.modifier; }
     else redLayout = spawns.red;
     spawnRed(redLayout, { bossWave, modifier: spawnModifier, stageDifficulty });
     if (mode.name === '战役') {
@@ -561,30 +579,18 @@ async function bootstrap() {
             setWeather: (w) => weather.setMode(w),
           });
         }
-        if (mode.name === '波次' || mode.name === '无尽') {
-          hud.setWave(mode.wave, WaveMode.loadBest(), mode.endless, { current: mode.modifier, next: mode.nextModifier });
+        if (mode.name === '波次' || mode.name === '无尽' || mode.name === '战场') {
+          hud.setWave(mode.wave, WaveMode.loadBest(), mode.endless, { current: mode.modifier, next: mode.nextModifier }, mode.targetWave);
         }
-        if (!_wavePending && player.alive && (mode.name === '波次' || mode.name === '无尽') && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
+        const _isWaveMode = mode.name === '波次' || mode.name === '无尽';
+        const _isFieldWave = mode.name === '战场' && !mode.isSiege;
+        const _waveCleared = ais.length > 0 && !ais.some(a => a.alive);
+        if (!_wavePending && player.alive && (_isWaveMode || _isFieldWave) && _waveCleared && mode.wave < mode.targetWave) {
           _wavePending = true;
           runBuffs.resetRerolls();
           upgradePicker.show(() => {
             _wavePending = false;
-            // 清理上一波尸体：detach 拖尾 + 注销 LOD + dispose + 移出 scene + 从 ais 移除，防止无界增长
-            for (let i = ais.length - 1; i >= 0; i--) {
-              const a = ais[i];
-              if (!a.alive) {
-                if (a._weaponMesh) weaponTrail.detach(a._weaponMesh);
-                if (lod) lod.unregister(a);
-                if (a.dispose) a.dispose();
-                scene.remove(a.root);
-                ais.splice(i, 1);
-              }
-            }
-            // 同步从 combat.characters 移除尸体（保留 player 与仍存活 AI）
-            for (let i = combat.characters.length - 1; i >= 0; i--) {
-              const c = combat.characters[i];
-              if (c !== player && !c.alive) combat.characters.splice(i, 1);
-            }
+            clearCorpses();
             const lay = mode.spawnLayout();
             spawnRed(lay.red, { bossWave: lay.isBoss, modifier: lay.modifier });
             let msg = '第 ' + mode.wave + ' 波来袭！';
@@ -600,6 +606,19 @@ async function bootstrap() {
             setTimeout(() => hud.clearHint(), 2500);
             if (mode.endless && daily.track('endlessWave')) bus.emit(EV.DAILY_UPDATE, daily.challenges);
             if (lay.modifier && lay.modifier.weather) weather.setMode(lay.modifier.weather);
+          });
+        }
+        // 战场模式：波次防守全清 → 转入攻城阶段（破城门或全歼守军取胜）
+        if (!_wavePending && player.alive && _isFieldWave && _waveCleared && mode.wave >= mode.targetWave) {
+          _wavePending = true;
+          runBuffs.resetRerolls();
+          upgradePicker.show(() => {
+            _wavePending = false;
+            clearCorpses();
+            const lay = mode.advanceToSiege();
+            spawnRed(lay.red, { bossWave: true, bossType: 'behemoth' });
+            hud.flash('守住了 ' + mode.targetWave + ' 波！攻城阶段：破开城门或全歼守军');
+            setTimeout(() => hud.clearHint(), 3200);
           });
         }
         deathFeedback.update(dt);

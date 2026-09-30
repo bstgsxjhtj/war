@@ -373,8 +373,8 @@ export class HUD {
   flashParry() { if (this._reducedMotion) { this._parryTimer = 0; this._parryflash.style.opacity = '0'; this._parryglow.style.opacity = '0'; return; } this._parryTimer = 0.8; this._parryflash.textContent = '🛡 弹反！'; this._parryflash.style.opacity = '1'; this._parryglow.style.opacity = '0.8'; }
   setScore(b, r) { this._score.textContent = `蓝方 ${b}  |  ${r} 红方`; }
   setRound(b, r, target) { this._round.textContent = `局比分 ${b} - ${r}（先到 ${target} 胜）`; }
-  setWave(wave, best, endless, modifierInfo) {
-    let txt = '第 ' + wave + ' 波' + (endless ? '' : ' / 10');
+  setWave(wave, best, endless, modifierInfo, target = 10) {
+    let txt = '第 ' + wave + ' 波' + (endless ? '' : ' / ' + target);
     if (best > 0) txt += '  ·  最高 ' + best + ' 波';
     if (modifierInfo && modifierInfo.current) txt += '  ·  当前：' + modifierInfo.current.name;
     if (modifierInfo && modifierInfo.next) txt += '  ·  下一：' + modifierInfo.next.name;

@@ -168,7 +168,7 @@ export class MapGenerator {
   }
 
   static recommendMap(modeName) {
-    const order = { '攻城': 'fortress', '死斗': 'field', '据点': 'bridge', '波次': 'field', '训练场': 'field' };
+    const order = { '攻城': 'fortress', '死斗': 'field', '据点': 'bridge', '波次': 'field', '战场': 'fortress', '训练场': 'field' };
     return order[modeName] || 'field';
   }
 

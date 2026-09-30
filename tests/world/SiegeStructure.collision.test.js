@@ -37,3 +37,21 @@ describe('SiegeStructure collisionBoxes', () => {
     }
   });
 });
+
+describe('SiegeStructure reset', () => {
+  it('复原城门与投石机（供每回合开局调用）', () => {
+    const scene = { add: vi.fn() };
+    const bus = { on: vi.fn(() => () => {}), emit: vi.fn() };
+    const siege = new SiegeStructure(scene, bus);
+    siege.damageGate(500, null);
+    expect(siege.gate.broken).toBe(true);
+    siege.tryOccupy({ alive: true, team: 0, position: siege.trebuchet.position.clone() });
+    expect(siege.trebuchet.occupied).toBe(true);
+    siege.reset();
+    expect(siege.gate.broken).toBe(false);
+    expect(siege.gate.hp).toBe(siege.gate.maxHp);
+    expect(siege.gate.group.visible).toBe(true);
+    expect(siege.trebuchet.occupied).toBe(false);
+    expect(siege.trebuchet.team).toBe(-1);
+  });
+});

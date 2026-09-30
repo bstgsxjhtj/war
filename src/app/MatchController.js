@@ -87,9 +87,11 @@ export class MatchController {
     this.playerKills = 0; this.playerDamage = 0; this.playerTaken = 0; this.playerDeathCause = null; this.deathCauses = {}; this.deathCount = 0; this.counterDeaths = 0; this.matchStartTime = performance.now();
     this.playerMaxCombo = 0; this.playerPerfectBlocks = 0; this.playerPerfectDodges = 0; this.playerExecutes = 0; this.playerCrits = 0; this.playerHits = 0; this.playerMisses = 0;
     const mode = this.deps.getMode();
-    if (mode.name === '波次' || mode.name === '无尽') {
+    if (this.deps.siege && this.deps.siege.reset) this.deps.siege.reset();
+    if (mode.name === '波次' || mode.name === '无尽' || mode.name === '战场') {
       this.targetWins = 1;
       mode.wave = 0; mode.alive = 0;
+      if (mode.reset) mode.reset();
     } else {
       this.targetWins = 2;
     }
@@ -184,6 +186,8 @@ export class MatchController {
       winner = mode.checkWin();
       if (!ais.some(a => a.alive)) winner = 'blue';
       else if (!player.alive) winner = 'red';
+    } else if (mode.name === '战场') {
+      winner = mode.checkWin(player.alive, ais.some(a => a.alive), siege.gate.broken);
     } else {
       winner = mode.checkWin(player.alive, ais.some(a => a.alive));
     }
