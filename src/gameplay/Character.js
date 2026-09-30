@@ -18,11 +18,9 @@ function applyFresnelRim(mat, rimColor, intensity) {
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uRimColor = { value: c };
     shader.uniforms.uRimIntensity = { value: intensity };
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vViewPosition;')
-      .replace('#include <project_vertex>', '#include <project_vertex>\nvViewPosition = -mvPosition.xyz;');
+    // MeshStandardMaterial 的 vertex/fragment shader 已内置 vViewPosition varying，直接复用，切勿重复声明
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vViewPosition;\nuniform vec3 uRimColor;\nuniform float uRimIntensity;')
+      .replace('#include <common>', '#include <common>\nuniform vec3 uRimColor;\nuniform float uRimIntensity;')
       .replace('#include <lights_fragment_end>', '#include <lights_fragment_end>\nfloat rim=pow(1.0-max(dot(normal,normalize(vViewPosition)),0.0),3.0);\ngl_FragColor.rgb+=rim*uRimColor*uRimIntensity;');
   };
   mat.customProgramCacheKey = () => 'fresnelRim';
