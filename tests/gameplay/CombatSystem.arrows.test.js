@@ -287,3 +287,64 @@ describe('CombatSystem 终极箭穿透链 (D8 相关: pierce=99 + hitSet 修复)
     expect(cs.arrows[0].pierce).toBe(96);
   });
 });
+
+describe('CombatSystem 投石/无 attacker 抛射物 (E2/E3 修复)', () => {
+  let cs, scene, bus;
+  beforeEach(() => {
+    bus = { emit: vi.fn() };
+    scene = { add: vi.fn(), remove: vi.fn() };
+    cs = new CombatSystem(scene, bus);
+    cs.spawnHitFX = vi.fn();
+    cs._emitHit = vi.fn();
+    cs._affixApply = vi.fn();
+    cs._affixLeech = vi.fn();
+  });
+
+  it('E2: 投石命中角色不抛 TypeError（attacker 为 null）', () => {
+    const victim = {
+      alive: true, team: 0,
+      position: new THREE.Vector3(0, 0, 0),
+      capsule: { center: new THREE.Vector3(0, 0, 0), radius: 1, halfHeight: 1 },
+      takeDamage: vi.fn(() => 50),
+      health: { alive: true }
+    };
+    cs.characters = [victim];
+    cs.arrows = [{
+      pos: new THREE.Vector3(0, 1, 0),
+      vel: new THREE.Vector3(0, -1, 0),
+      life: 2, mesh: { position: { copy() {} }, lookAt() {} },
+      team: 1, attacker: null, damage: 80, charge: 1, isSiege: true
+    }];
+    const terrain = { heightAt: () => -10 };
+    expect(() => cs.update(0.016, terrain, 0)).not.toThrow();
+    expect(victim.takeDamage).toHaveBeenCalledWith(80, true, null, 0);
+  });
+
+  it('E3: 投石落地触发 siege.onSiegeHit', () => {
+    const onSiegeHit = vi.fn();
+    cs.siege = { gate: { broken: false, position: new THREE.Vector3(0, 0, 0) }, onSiegeHit };
+    cs.arrows = [{
+      pos: new THREE.Vector3(0, -1, 0),
+      vel: new THREE.Vector3(0, -1, 0),
+      life: 2, mesh: { position: { copy() {} }, lookAt() {} },
+      team: 1, attacker: null, damage: 80, charge: 1, isSiege: true
+    }];
+    const terrain = { heightAt: () => 0 };
+    cs.update(0.1, terrain, 0);
+    expect(onSiegeHit).toHaveBeenCalled();
+  });
+
+  it('E3: 近战攻击可伤害城门', () => {
+    const damageGate = vi.fn();
+    cs.siege = { gate: { broken: false, position: new THREE.Vector3(0, 0, 3) }, damageGate };
+    const attacker = {
+      alive: true, team: 0, position: new THREE.Vector3(0, 0, 0),
+      forward: new THREE.Vector3(0, 0, 1), weapon: { range: 2, arc: 1.5, name: '剑', damage: 30 },
+      addRage: vi.fn(), killstreakBuffs: null
+    };
+    cs.characters = [];
+    cs._comboSys = null;
+    cs.resolveMelee(attacker, attacker.weapon, 0, 0);
+    expect(damageGate).toHaveBeenCalled();
+  });
+});

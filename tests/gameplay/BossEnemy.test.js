@@ -196,3 +196,35 @@ describe('BossEnemy 阶段技能门槛 (P1-7)', () => {
     expect(b._chargeCd).toBeCloseTo(1, 5);
   });
 });
+
+describe('BossEnemy 血量与 health 联动（E1 修复：消除实例字段双真相）', () => {
+  it('构造后 boss.hp 与 boss.health.hp 同源', () => {
+    const b = new BossEnemy({ type: 'warlord' });
+    expect(b.hp).toBe(b.health.hp);
+    expect(b.maxHp).toBe(b.health.maxHp);
+  });
+
+  it('takeDamage 扣减同时反映到 hp 访问器', () => {
+    const b = new BossEnemy({ type: 'warlord' });
+    b.takeDamage(100, false, null, 0);
+    expect(b.hp).toBe(b.health.hp);
+    expect(b.hp).toBeLessThan(b._maxHp);
+  });
+
+  it('hpPct 低于 0.6 触发阶段 2（验证阶段机制不再死代码）', () => {
+    const b = new BossEnemy({ type: 'warlord' });
+    const bus = { emit: vi.fn() };
+    b.setBus(bus);
+    b.takeDamage(200, false, null, 0); // 300 - 200 = 100, pct=0.33 < 0.6
+    b.update(0.016, { heightAt: () => 0 }, { characters: [] }, [], 0);
+    expect(b._phase).toBe(2);
+    expect(bus.emit).toHaveBeenCalledWith(EV.HUD_BOSSPHASE, expect.objectContaining({ phase: 2 }));
+  });
+
+  it('EliteEnemy 血量同样与 health 联动', () => {
+    const e = new (require('../../src/gameplay/BossEnemy.js').EliteEnemy)({ team: 1 });
+    expect(e.hp).toBe(e.health.hp);
+    expect(e.maxHp).toBe(e.health.maxHp);
+    expect(e.maxHp).toBe(140);
+  });
+});

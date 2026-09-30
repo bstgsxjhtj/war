@@ -127,8 +127,10 @@ export class LODManager {
       this._accumDt -= this._tickInterval;
     }
     let proxyIdx = 0;
-    for (const char of this._chars) {
-      if (!char.alive || !char.root || !char.position) continue;
+    // 倒序遍历：死亡/失效角色直接注销，防止 _chars 无限持有已销毁对象阻止 GC
+    for (let i = this._chars.length - 1; i >= 0; i--) {
+      const char = this._chars[i];
+      if (!char.alive || !char.root || !char.position) { this._chars.splice(i, 1); continue; }
       const d = this._distance(char);
       const level = this._levelForDistance(d);
       const effective = this._isThreat(char) ? Math.min(level, 1) : level;

@@ -78,4 +78,41 @@ describe('WeatherSystem forecast', () => {
     weather.update(0.1);
     expect(called).toBe(false);
   });
+
+  it('E7: 闪光序列由 dt 状态机驱动（不使用 setTimeout），经历 亮→灭→二次闪→灭 四阶段', () => {
+    weather.setMode('storm');
+    weather.update(0.01);
+    expect(weather._lightning.intensity).toBe(8);
+    expect(weather._flashPhase).toBe(0);
+    weather.update(0.08);
+    expect(weather._flashPhase).toBe(1);
+    expect(weather._lightning.intensity).toBe(0);
+    weather.update(0.08);
+    expect(weather._flashPhase).toBe(2);
+    expect(weather._lightning.intensity).toBe(5);
+    weather.update(0.08);
+    expect(weather._flashPhase).toBe(3);
+    expect(weather._lightning.intensity).toBe(0);
+    expect(weather._flashTimer).toBe(0);
+  });
+
+  it('E7: 天气切换（apply）终止进行中的闪光序列', () => {
+    weather.setMode('storm');
+    weather.update(0.1);
+    expect(weather._flashTimer).toBeGreaterThan(0);
+    weather.setMode('clear');
+    expect(weather._flashPhase).toBe(0);
+    expect(weather._flashTimer).toBe(0);
+    expect(weather._lightning.intensity).toBe(0);
+  });
+
+  it('E7: 闪光序列中闪电强度通过 update 递减，不残留回调', () => {
+    weather.setMode('storm');
+    weather.update(0.01);
+    expect(weather._lightning.intensity).toBe(8);
+    weather.update(0.04);
+    expect(weather._lightning.intensity).toBe(8);
+    weather.update(0.05);
+    expect(weather._lightning.intensity).toBe(0);
+  });
 });

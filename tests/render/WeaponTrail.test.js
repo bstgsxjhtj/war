@@ -125,6 +125,42 @@ describe('WeaponTrail', () => {
     expect(t).toBeTruthy();
     expect(wt._trails.length).toBe(1);
   });
+
+  // E4 修复：按 mesh detach 单条 trail，波次尸体清理时避免误清玩家 trail
+  it('detach 移除指定 trail 但保留其他', () => {
+    const scene = new THREE.Scene();
+    const wt = new WeaponTrail(scene);
+    const w1 = new THREE.Object3D(); scene.add(w1);
+    const w2 = new THREE.Object3D(); scene.add(w2);
+    const t1 = wt.attach(w1);
+    const t2 = wt.attach(w2);
+    expect(wt._trails.length).toBe(2);
+    wt.detach(w1);
+    expect(wt._trails.length).toBe(1);
+    expect(wt._trails[0]).toBe(t2);
+    expect(scene.children).not.toContain(t1.line);
+    expect(scene.children).toContain(t2.line);
+    expect(w1.userData._trail).toBeUndefined();
+    expect(w2.userData._trail).toBe(t2);
+  });
+
+  it('detach 后该 mesh 可重新 attach', () => {
+    const scene = new THREE.Scene();
+    const wt = new WeaponTrail(scene);
+    const w = new THREE.Object3D(); scene.add(w);
+    wt.attach(w);
+    wt.detach(w);
+    const t = wt.attach(w);
+    expect(t).toBeTruthy();
+    expect(wt._trails.length).toBe(1);
+  });
+
+  it('detach 未知 mesh 不抛错', () => {
+    const scene = new THREE.Scene();
+    const wt = new WeaponTrail(scene);
+    expect(() => wt.detach(new THREE.Object3D())).not.toThrow();
+    expect(() => wt.detach(null)).not.toThrow();
+  });
 });
 
 describe('HitStop', () => {

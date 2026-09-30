@@ -47,6 +47,19 @@ export class WeaponTrail {
     this._trails.length = 0;
   }
 
+  // 按武器 mesh 移除单条 trail（波次尸体清理时调用，避免误清玩家 trail）
+  detach(weaponMesh) {
+    if (!weaponMesh) return;
+    const i = this._trails.findIndex(t => t.weaponMesh === weaponMesh);
+    if (i < 0) return;
+    const trail = this._trails[i];
+    if (trail.line.parent) trail.line.parent.remove(trail.line);
+    trail.line.geometry.dispose();
+    trail.line.material.dispose();
+    if (weaponMesh.userData) delete weaponMesh.userData._trail;
+    this._trails.splice(i, 1);
+  }
+
   update(dt, now) {
     const tmpT = this._tmpT || (this._tmpT = new THREE.Vector3());
     const tmpP = this._tmpP || (this._tmpP = new THREE.Vector3());

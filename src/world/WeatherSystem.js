@@ -14,6 +14,8 @@ export class WeatherSystem {
     this._snow = null;
     this._lightning = null;
     this._lightningTimer = 0;
+    this._flashPhase = 0;
+    this._flashTimer = 0;
     this._quality = 'high';
     this._forecast = null;
     this._autoSchedule = false;
@@ -135,6 +137,9 @@ export class WeatherSystem {
     this._rain.visible = false;
     this._snow.visible = false;
     this._lightning.intensity = 0;
+    // 天气切换时终止进行中的闪光序列，避免残留
+    this._flashPhase = 0;
+    this._flashTimer = 0;
     if (this._mode === 'rain') {
       this._rain.visible = true;
       if (this.scene.fog) this.scene.fog.density = 0.012;
@@ -198,9 +203,18 @@ export class WeatherSystem {
         this._lightning.position.set((Math.random() - 0.5) * 80, 25, (Math.random() - 0.5) * 80);
         if (this._onLightning) this._onLightning({ x: this._lightning.position.x, z: this._lightning.position.z });
         if (this.audio) this.audio.hit(true);
-        setTimeout(() => { this._lightning.intensity = 0; }, 80);
-        setTimeout(() => { this._lightning.intensity = 5; }, 160);
-        setTimeout(() => { this._lightning.intensity = 0; }, 240);
+        // 闪光序列用 dt 状态机驱动（0.08s 灭→0.08s 二次闪→0.08s 灭），替代 setTimeout 避免天气切走/dispose 后残留回调
+        this._flashPhase = 0;
+        this._flashTimer = 0.08;
+      }
+      if (this._flashTimer > 0) {
+        this._flashTimer -= dt;
+        if (this._flashTimer <= 0) {
+          this._flashPhase += 1;
+          if (this._flashPhase === 1) { this._lightning.intensity = 0; this._flashTimer = 0.08; }
+          else if (this._flashPhase === 2) { this._lightning.intensity = 5; this._flashTimer = 0.08; }
+          else { this._lightning.intensity = 0; this._flashTimer = 0; }
+        }
       }
     }
   }

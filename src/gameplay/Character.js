@@ -84,6 +84,11 @@ export class Character {
   }
 
   get weapon() { return this.weapons[this.weaponIdx]; }
+  // hp/maxHp 访问器转发到 health，消除实例字段与 health 的双真相（BossEnemy/EliteEnemy 依赖）
+  get hp() { return this.health.hp; }
+  set hp(v) { this.health.hp = v; }
+  get maxHp() { return this.health.maxHp; }
+  set maxHp(v) { this.health.maxHp = v; }
   get rage() { return this._rage; }
   addRage(amount) { this._rage = Math.min(this.maxRage, this._rage + amount); }
   get killstreak() { return this._killstreak; }

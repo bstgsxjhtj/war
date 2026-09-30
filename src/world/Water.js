@@ -55,6 +55,25 @@ export class Water {
     if (this.reflector) this.reflector.visible = q === 'high';
   }
 
+  // 地图切换时调整水面宽度（bridge 图需要更宽水面）；重建主几何体与反射面
+  setSize(width) {
+    if (width === this.width) return;
+    this.width = width;
+    const oldGeo = this.mesh.geometry;
+    this.mesh.geometry = new THREE.PlaneGeometry(width, this.depth, 40, 8);
+    if (oldGeo) oldGeo.dispose();
+    if (this.reflector) {
+      this.mesh.remove(this.reflector);
+      const rt = this.reflector.getRenderTarget && this.reflector.getRenderTarget();
+      if (rt && typeof rt.dispose === 'function') rt.dispose();
+      if (this.reflector.geometry) this.reflector.geometry.dispose();
+      this.reflector = new Reflector(new THREE.PlaneGeometry(width, this.depth), { clipBias: 0.003, textureWidth: 1024, textureHeight: 1024, color: 0x4a4038 });
+      this.reflector.rotation.x = -Math.PI / 2;
+      this.reflector.position.y = 0.05;
+      this.mesh.add(this.reflector);
+    }
+  }
+
   update(dt, now) {
     this.mesh.material.uniforms.uTime.value = now;
     if (this._splashGeo) {

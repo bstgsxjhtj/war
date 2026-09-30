@@ -51,9 +51,9 @@ export class Camera {
 
   setKillCam(target) { this._killCamTarget = target; this._killTimer = 1.4; }
 
-  follow(targetPos) {
+  follow(targetPos, dt = 1 / 60) {
     const target = this._killCamTarget && this._killTimer > 0 ? this._killCamTarget.position : targetPos;
-    this._killTimer = Math.max(0, (this._killTimer || 0) - 1 / 60);
+    this._killTimer = Math.max(0, (this._killTimer || 0) - dt);
     this.target.x = target.x;
     this.target.z = target.z;
     this.target.y += (target.y - this.target.y) * 0.25;

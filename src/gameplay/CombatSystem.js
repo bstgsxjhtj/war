@@ -71,6 +71,8 @@ export class CombatSystem {
     this._aoeRingGeo = new THREE.RingGeometry(0.85, 1.0, 32);
     this._aoeRingMat = new THREE.MeshBasicMaterial({ color: 0xff5533, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false });
     this._pendingStrikes = [];
+    // 攻城结构引用（可选）：投石落地轰击城门、近战可砍城门
+    this.siege = null;
   }
 
   register(c) { this.characters.push(c); if (c.setBus) c.setBus(this.bus); }
@@ -245,6 +247,20 @@ export class CombatSystem {
         if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: attacker });
       }
     }
+    // 近战攻击城门：攻城方（非防守 team 1）在城门正面范围内可造成伤害
+    if (this.siege && !this.siege.gate.broken && attacker.team !== 1) {
+      const gp = this.siege.gate.position;
+      const gdx = gp.x - attacker.position.x;
+      const gdz = gp.z - attacker.position.z;
+      const gHoriz = Math.sqrt(gdx * gdx + gdz * gdz);
+      if (gHoriz <= weapon.range + 2 && gHoriz > 0.01) {
+        const gDot = (gdx * attacker.forward.x + gdz * attacker.forward.z) / gHoriz;
+        if (gDot > 0.3) {
+          this.siege.damageGate(baseDmg, attacker);
+          this.spawnHitFX(this._tmpOrigin.copy(gp).add(this._tmpTo.set(0, 1, 0)), 0xccaa66);
+        }
+      }
+    }
     // 下劈 AOE
     if (combo === 2 && weapon.comboLaunch && weapon.comboLaunch[2]?.aoe) {
       this.spawnAoE(attacker.position, weapon.comboLaunch[2].aoe, baseDmg * 0.5, attacker, now);
@@ -383,7 +399,11 @@ export class CombatSystem {
       a.mesh.lookAt(this._tmpAim);
       let hit = false;
       if (a.life <= 0) hit = true;
-      if (a.pos.y <= terrain.heightAt(a.pos.x, a.pos.z) - 0.2) { this.spawnHitFX(a.pos, 0xccaa66); hit = true; }
+      if (a.pos.y <= terrain.heightAt(a.pos.x, a.pos.z) - 0.2) {
+        this.spawnHitFX(a.pos, 0xccaa66);
+        if (a.isSiege && this.siege) this.siege.onSiegeHit(a.pos);
+        hit = true;
+      }
       for (const c of this.characters) {
         if (!c.alive || c.team === a.team) continue;
         if (a.hitSet && a.hitSet.has(c)) continue;
@@ -404,8 +424,10 @@ export class CombatSystem {
         }
         if (distSq < hitR * hitR) {
           const heavy = (a.charge ?? 0) >= 0.8;
-          const lost = c.takeDamage(this._affixApply(a.attacker, a.attacker.weapon, a.damage), heavy, a.attacker, now);
-          if (lost > 0) { this._emitHit(a.attacker, c, lost, '弓', 0xff5522, 0, heavy, now, false, this._lastAffixCrit); this._affixLeech(a.attacker, lost); }
+          // 投石等无 attacker 的抛射物：跳过词缀/吸血/命中事件中对 attacker 的依赖
+          const lost = c.takeDamage(a.attacker ? this._affixApply(a.attacker, a.attacker.weapon, a.damage) : a.damage, heavy, a.attacker, now);
+          if (lost > 0 && a.attacker) { this._emitHit(a.attacker, c, lost, '弓', 0xff5522, 0, heavy, now, false, this._lastAffixCrit); this._affixLeech(a.attacker, lost); }
+          else if (lost > 0) this.spawnHitFX(this._tmpOrigin.copy(c.position).add(this._tmpTo.set(0, 1.6, 0)), 0xff5522);
           if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: a.attacker });
           if (a.pierce > 0) { a.pierce -= 1; a.hitSet.add(c); continue; }
           hit = true; break;

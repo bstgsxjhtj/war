@@ -254,6 +254,6 @@ export class Player extends Character {
 
     if (this._weaponSkills) this._weaponSkills.update(dt);
     super.update(dt, terrain, combat, now);
-    this.camera.follow(this.position);
+    this.camera.follow(this.position, dt);
   }
 }

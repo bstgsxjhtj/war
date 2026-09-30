@@ -248,4 +248,40 @@ describe('LODManager', () => {
     lod.tick();
     expect(c._lodLevel).toBe(2);
   });
+
+  it('E5: tick 后死亡角色从 _chars 中自动移除（防止无限持有已销毁对象）', () => {
+    const c = makeChar(1, 0, 60);
+    lod.register(c);
+    expect(lod.chars.length).toBe(1);
+    c.alive = false;
+    lod.tick();
+    expect(lod.chars.length).toBe(0);
+    expect(lod.proxyCount).toBe(0);
+  });
+
+  it('E5: 多角色中仅死亡的被移除，存活角色保留并正常参与 LOD', () => {
+    const alive1 = makeChar(1, 0, 60);
+    const dead = makeChar(1, 0, 70);
+    const alive2 = makeChar(1, 0, 80);
+    lod.register(alive1);
+    lod.register(dead);
+    lod.register(alive2);
+    expect(lod.chars.length).toBe(3);
+    dead.alive = false;
+    lod.tick();
+    expect(lod.chars.length).toBe(2);
+    expect(lod.chars).not.toContain(dead);
+    expect(lod.chars).toContain(alive1);
+    expect(lod.chars).toContain(alive2);
+    expect(lod.proxyCount).toBe(2);
+  });
+
+  it('E5: root 失效的角色同样被移除', () => {
+    const c = makeChar(1, 0, 60);
+    lod.register(c);
+    expect(lod.chars.length).toBe(1);
+    c.root = null;
+    lod.tick();
+    expect(lod.chars.length).toBe(0);
+  });
 });

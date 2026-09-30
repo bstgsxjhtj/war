@@ -23,7 +23,7 @@ export class AIController extends Character {
     this._vFlank = new THREE.Vector3();
     this._vFlankRet = new THREE.Vector3();
     this._vCover = new THREE.Vector3();
-    this._dodgeTimer = 0;
+    this._aiDodgeTimer = 0;
     this._blockTimer = 0;
     this._dodgeCd = 0;
     this._blockCd = 0;
@@ -82,7 +82,7 @@ export class AIController extends Character {
   }
 
   takeDamage(amount, heavy, attacker, now) {
-    if (this._dodgeTimer > 0) return 0;
+    if (this._aiDodgeTimer > 0) return 0;
     if (this._blockTimer > 0) amount *= 0.3;
     amount = applyEnemyBehaviors.modifyIncoming(this, amount, { ironhideMul: ENEMY_MODS.IRONHIDE_DMG_TAKEN_MUL });
     const lost = super.takeDamage(amount, heavy, attacker, now);
@@ -116,7 +116,7 @@ export class AIController extends Character {
     this._strafePhase += dt * 1.2;
     if (this._swordReactTimer > 0) this._swordReactTimer -= dt;
     this._focusTimer -= dt;
-    if (this._dodgeTimer > 0) this._dodgeTimer -= dt;
+    if (this._aiDodgeTimer > 0) this._aiDodgeTimer -= dt;
     if (this._blockTimer > 0) this._blockTimer -= dt;
     if (this._dodgeCd > 0) this._dodgeCd -= dt;
     if (this._blockCd > 0) this._blockCd -= dt;
@@ -228,7 +228,7 @@ export class AIController extends Character {
 
       const diff = this._aiManager ? this._aiManager.difficulty() : null;
       if (this._dodgeCd <= 0 && dist < engageRange && Math.random() < (diff ? diff.dodgeChance : 0)) {
-        this._dodgeTimer = 0.3; this._dodgeCd = 2;
+        this._aiDodgeTimer = 0.3; this._dodgeCd = 2;
         const back = new THREE.Vector3().subVectors(this.position, target.position).setY(0).normalize().multiplyScalar(4);
         this.position.add(back);
         if (this._isElite && this._eliteSkill === 'dodgeStrike') {

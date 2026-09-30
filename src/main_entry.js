@@ -98,6 +98,7 @@ async function bootstrap() {
   let terrain, env;
   let envHazards;
   let currentHazards;
+  let water = null;
   const _terrainTextures = {
     map: TextureFactory.noise(256, 256, '#5a6a3a', 30, 24),
     normalMap: TextureFactory.normal(256, 256, 0.4)
@@ -115,10 +116,12 @@ async function bootstrap() {
     scene.add(env.group);
     currentMapKey = mapKey;
     currentMapName = r.name;
+    // 水面尺寸随地图切换（bridge 图需要 360 宽）
+    if (water && water.setSize) water.setSize(mapKey === 'bridge' ? 360 : 100);
     return r;
   }
   loadMap(currentMapKey);
-  const water = new Water(currentMapKey === 'bridge' ? 360 : 100, 30);
+  water = new Water(currentMapKey === 'bridge' ? 360 : 100, 30);
   water.mesh.position.set(0, 0.2, 0);
   scene.add(water.mesh);
   const supply = new SupplyPoint();
@@ -164,6 +167,7 @@ async function bootstrap() {
   const progressUI = new ProgressionUI(progression, bus);
   bus.emit(EV.MINIMAP_SUPPLY, (supply.points || []).map(p => ({ x: p.pos.x, z: p.pos.z })));
   const siege = new SiegeStructure(scene.scene, bus);
+  combat.siege = siege;
   const trajectory = new TrajectoryPreview(scene.scene);
   const skills = new SkillTree();
   const keyBindings = new KeyBindings();
@@ -430,7 +434,9 @@ async function bootstrap() {
         for (const ai of ais) ai._weatherEffects = weatherFx;
         combat._weatherEffects = weatherFx;
         player.update(ldt, terrain, combat, now);
-        for (const a of ais) a.update(ldt, terrain, combat, getEnemies(), now);
+        // 每帧只构造一次敌人视图，避免 N 个 AI 各自分配数组（E8）
+        const _all = getEnemies();
+        for (const a of ais) a.update(ldt, terrain, combat, _all, now);
         for (const rp of remotes) rp.update(ldt, terrain, combat, now);
         combat.update(ldt, terrain, now);
         gameClock.update(ldt);
@@ -449,12 +455,13 @@ async function bootstrap() {
         water.update(dt, now);
         scene.updateCloud(now);
         supply.update(player, dt, now);
-        siege.update(dt, combat, getEnemies());
-        // 投石机争夺：靠近自动占领/夺占
-        const _prevT = siege.trebuchet.team;
-        if (player.alive && siege.tryOccupy(player) && _prevT !== player.team) hud.flash('已占领投石机！');
+        siege.update(dt, combat, _all);
+        // 投石机争夺：靠近自动占领/夺占（每次判定用实时占领方，避免快照过期）
+        if (player.alive && siege.trebuchet.team !== player.team && siege.tryOccupy(player)) hud.flash('已占领投石机！');
         for (const a of ais) {
-          if (a.alive && a.team !== _prevT && siege.tryOccupy(a) && _prevT === 0) hud.flash('投石机被敌方占领！');
+          if (!a.alive || a.team === siege.trebuchet.team) continue;
+          const _wasHeld = siege.trebuchet.team === 0;
+          if (siege.tryOccupy(a) && _wasHeld) hud.flash('投石机被敌方占领！');
         }
         // AI 决策占领/抢夺投石机：未控方派最近 AI 前往
         if (siege.trebuchet.team !== 1) {
@@ -526,15 +533,21 @@ async function bootstrap() {
         if (mode.name === '波次' || mode.name === '无尽') {
           hud.setWave(mode.wave, WaveMode.loadBest(), mode.endless, { current: mode.modifier, next: mode.nextModifier });
         }
-        if (!_wavePending && (mode.name === '波次' || mode.name === '无尽') && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
+        if (!_wavePending && player.alive && (mode.name === '波次' || mode.name === '无尽') && ais.length > 0 && !ais.some(a => a.alive) && mode.wave < mode.targetWave) {
           _wavePending = true;
           runBuffs.resetRerolls();
           upgradePicker.show(() => {
             _wavePending = false;
-            // 清理上一波尸体：dispose + 移出 scene + 从 ais 移除，防止无界增长
+            // 清理上一波尸体：detach 拖尾 + 注销 LOD + dispose + 移出 scene + 从 ais 移除，防止无界增长
             for (let i = ais.length - 1; i >= 0; i--) {
               const a = ais[i];
-              if (!a.alive) { if (a.dispose) a.dispose(); scene.remove(a.root); ais.splice(i, 1); }
+              if (!a.alive) {
+                if (a._weaponMesh) weaponTrail.detach(a._weaponMesh);
+                if (lod) lod.unregister(a);
+                if (a.dispose) a.dispose();
+                scene.remove(a.root);
+                ais.splice(i, 1);
+              }
             }
             // 同步从 combat.characters 移除尸体（保留 player 与仍存活 AI）
             for (let i = combat.characters.length - 1; i >= 0; i--) {
