@@ -302,7 +302,7 @@ async function bootstrap() {
     for (const a of ais) { if (a.dispose) a.dispose(); scene.remove(a.root); }
     ais = [];
     const _classDef = CLASS_DEFS[selectedClass] || CLASS_DEFS.warrior;
-    player = new Player(camera, bus, keyBindings, _classDef.stats);
+    player = new Player(camera, bus, keyBindings, { ..._classDef.stats, classType: selectedClass, classColor: _classDef.color });
     player.setComboSys(comboSys);
     comboSys.count = 0; comboSys._tier = 0; comboSys._finisher = false;
     player.setWeaponSkills(weaponSkills);

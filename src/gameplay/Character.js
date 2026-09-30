@@ -29,11 +29,13 @@ function applyFresnelRim(mat, rimColor, intensity) {
 
 // 角色：耐力+锁定+格挡+完美闪避+击飞+涉水(第三轮进化)
 export class Character {
-  constructor({ team = 0, isLocal = false, speed = 8.5, sprintMul = 1.7, maxHp = 160, maxStamina = 100 } = {}) {
+  constructor({ team = 0, isLocal = false, speed = 8.5, sprintMul = 1.7, maxHp = 160, maxStamina = 100, classType = null, classColor = null } = {}) {
     this.team = team;
     this.isLocal = isLocal;
     this.speed = speed;
     this.sprintMul = sprintMul;
+    this._classType = classType;
+    this._classColor = classColor;
     this.alive = true;
     this.position = new THREE.Vector3();
     this.forward = new THREE.Vector3(0, 0, 1);
@@ -238,6 +240,7 @@ export class Character {
     });
     if (this._bossType) this._customizeBoss(this._bossType);
     if (this._isElite) this._customizeElite();
+    if (this._classType) this._customizeClass(this._classType);
     this.root.add(this._hpBar, this._hpBarBg, this._postureBar, this._postureBarBg, this._lockMark, this._teamMark);
   }
 
@@ -271,6 +274,84 @@ export class Character {
       const gL = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), glowMat); gL.position.set(-0.16, 0.06, 0.42);
       const gR = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), glowMat); gR.position.set(0.16, 0.06, 0.42);
       this.skeleton.bones.head.add(gL, gR);
+    }
+  }
+
+  _customizeClass(type) {
+    const b = this.skeleton.bones;
+    const accent = this._classColor || 0xcc4422;
+
+    if (type === 'warrior') {
+      const steelMat = new THREE.MeshStandardMaterial({ color: 0x8a8a92, metalness: 0.9, roughness: 0.25 });
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4b25a, metalness: 0.85, roughness: 0.3 });
+
+      const rPaul = new THREE.Mesh(new THREE.IcosahedronGeometry(0.38, 1), steelMat);
+      rPaul.position.y = 0.12; rPaul.castShadow = true; b.shoulderR.add(rPaul);
+      const lPaul = new THREE.Mesh(new THREE.IcosahedronGeometry(0.38, 1), steelMat);
+      lPaul.position.y = 0.12; lPaul.castShadow = true; b.shoulderL.add(lPaul);
+
+      const rSpike = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 6), steelMat);
+      rSpike.position.set(0, 0.35, 0); b.shoulderR.add(rSpike);
+      const lSpike = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 6), steelMat);
+      lSpike.position.set(0, 0.35, 0); b.shoulderL.add(lSpike);
+
+      const emblem = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, 0.04, 6), goldMat);
+      emblem.rotation.x = Math.PI / 2; emblem.position.z = 0.22; b.chest.add(emblem);
+
+      const rGaunt = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.28, 8), steelMat);
+      rGaunt.position.y = -0.22; b.elbowR.add(rGaunt);
+      const lGaunt = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.28, 8), steelMat);
+      lGaunt.position.y = -0.22; b.elbowL.add(lGaunt);
+
+      if (this.cape) this.cape.material.uniforms.uColor.value.setHex(accent);
+    }
+
+    else if (type === 'mage') {
+      const clothMat = new THREE.MeshStandardMaterial({ color: 0x2a2a5a, roughness: 0.8 });
+      const crystalMat = new THREE.MeshStandardMaterial({ color: 0x88ddff, emissive: 0x4488ff, emissiveIntensity: 0.8, roughness: 0.2, metalness: 0.3 });
+
+      const hat = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.6, 12), clothMat);
+      hat.position.set(0, 0.45, 0); hat.castShadow = true;
+      const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 12), clothMat);
+      hatBrim.position.set(0, 0.18, 0);
+      b.head.add(hat, hatBrim);
+
+      const crystal = new THREE.Mesh(new THREE.IcosahedronGeometry(0.12, 0), crystalMat);
+      crystal.position.set(0, 0.08, 0.25); b.chest.add(crystal);
+
+      if (this.cape) {
+        this.cape.scale.set(1.4, 1.6, 1);
+        this.cape.material.uniforms.uColor.value.setHex(accent);
+      }
+
+      const rBracer = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.03, 6, 10), crystalMat);
+      rBracer.position.y = -0.15; rBracer.rotation.x = Math.PI / 2; b.elbowR.add(rBracer);
+      const lBracer = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.03, 6, 10), crystalMat);
+      lBracer.position.y = -0.15; lBracer.rotation.x = Math.PI / 2; b.elbowL.add(lBracer);
+    }
+
+    else if (type === 'archer') {
+      const leatherMat = new THREE.MeshStandardMaterial({ color: 0x4a3a1a, roughness: 0.8 });
+      const greenMat = new THREE.MeshStandardMaterial({ color: 0x2a5a3a, roughness: 0.7 });
+      const boneMat = new THREE.MeshStandardMaterial({ color: 0xddccaa, roughness: 0.6 });
+
+      const hood = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.5, 10, 1, true), greenMat);
+      hood.position.set(0, 0.15, -0.02); b.head.add(hood);
+
+      const quiver = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.4, 8), leatherMat);
+      quiver.position.set(0.25, 0, -0.3); quiver.rotation.z = 0.2; b.spine.add(quiver);
+      const arrow = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.5, 4), boneMat);
+      arrow.position.set(0.25, 0.15, -0.3); b.spine.add(arrow);
+
+      const rGuard = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.22, 8), leatherMat);
+      rGuard.position.y = -0.15; b.elbowR.add(rGuard);
+      const lGuard = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.22, 8), leatherMat);
+      lGuard.position.y = -0.15; b.elbowL.add(lGuard);
+
+      if (this.cape) {
+        this.cape.scale.set(0.9, 1, 1);
+        this.cape.material.uniforms.uColor.value.setHex(accent);
+      }
     }
   }
   spawn(pos) {
