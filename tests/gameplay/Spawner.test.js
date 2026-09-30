@@ -1,9 +1,20 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+vi.mock('../../src/gameplay/ClassDefinition.js', () => ({
+  CLASS_DEFS: { warrior: { color: 0xcc4422, name: '战士' }, mage: { color: 0x4488ff, name: '法师' }, archer: { color: 0x44cc44, name: '弓箭手' } },
+  CLASS_KEYS: ['warrior', 'mage', 'archer'],
+  AI_CLASS_CONFIG: {
+    warrior: { maxHp: 120, speed: 7.0, sprintMul: 1.6, maxStamina: 100, weapons: () => [{ weaponClass: 'SHIELD' }] },
+    mage: { maxHp: 60, speed: 8.5, sprintMul: 1.5, maxStamina: 60, weapons: () => [{ weaponClass: 'STAFF' }] },
+    archer: { maxHp: 80, speed: 9.0, sprintMul: 1.8, maxStamina: 80, weapons: () => [{ weaponClass: 'BOW' }] },
+  },
+  randomAIClass: () => 'warrior',
+}));
+
 vi.mock('../../src/gameplay/AIController.js', () => ({
   AIController: class {
-    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; this.speed = 6.2; this._enemyMods = null; }
+    constructor(o) { this.opts = o; this.team = o.team; this.root = {}; this.alive = true; this.weapons = []; this.speed = o.speed || 6.2; this._enemyMods = null; }
     spawn() {} setWeapons(w) { this.weapons = w; } setCameraRef() {} setAIManager() {} setIsElite(v) { this._isElite = v; } setAudio() {} setBus() {}
     setEnemyMods(m) { this._enemyMods = m ? [...m] : null; }
     hasMod(n) { return !!this._enemyMods && this._enemyMods.includes(n); }
@@ -32,6 +43,9 @@ vi.mock('../../src/gameplay/weapons/Warhammer.js', () => ({ Warhammer: class { c
 vi.mock('../../src/gameplay/weapons/Bow.js', () => ({ Bow: class { constructor() { this.weaponClass = 'BOW'; } } }));
 
 import { Spawner } from '../../src/gameplay/Spawner.js';
+
+const AI_HP = 120;
+const AI_SPD = 7.0;
 
 function mkDeps(overrides = {}) {
   return {
@@ -63,7 +77,7 @@ describe('Spawner', () => {
 
   it('普通兵 maxHp 走难度系数', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗' });
-    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5));
+    expect(ais[0].opts.maxHp).toBe(Math.round(AI_HP * 1.5));
     expect(deps.combat.register).toHaveBeenCalledWith(ais[0]);
   });
 
@@ -110,7 +124,7 @@ describe('Spawner', () => {
     expect(ais.length).toBe(3);
     expect(deps.combat.register).toHaveBeenCalledTimes(3);
     for (const a of ais) {
-      expect(a.weapons[0].weaponClass).toBe('SPEAR');
+      expect(a.weapons[0].weaponClass).toBe('SHIELD');
     }
   });
 });
@@ -125,24 +139,24 @@ describe('Spawner 修饰词应用', () => {
 
   it('modifier hpMul 应用到普通兵 maxHp', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: { hpMul: 1.6 } });
-    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5 * 1.6));
+    expect(ais[0].opts.maxHp).toBe(Math.round(AI_HP * 1.5 * 1.6));
   });
 
   it('modifier speedMul 应用到 ai.speed', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: { speedMul: 1.3 } });
-    expect(ais[0].speed).toBeCloseTo(6.2 * 1.3, 5);
+    expect(ais[0].speed).toBeCloseTo(AI_SPD * 1.3, 5);
   });
 
   it('modifier 为 null 时无效果（默认行为）', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: null });
-    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5));
-    expect(ais[0].speed).toBe(6.2);
+    expect(ais[0].opts.maxHp).toBe(Math.round(AI_HP * 1.5));
+    expect(ais[0].speed).toBe(AI_SPD);
   });
 
   it('modifier 同时应用 hpMul 与 speedMul', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: { hpMul: 1.5, speedMul: 1.2 } });
-    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5 * 1.5));
-    expect(ais[0].speed).toBeCloseTo(6.2 * 1.2, 5);
+    expect(ais[0].opts.maxHp).toBe(Math.round(AI_HP * 1.5 * 1.5));
+    expect(ais[0].speed).toBeCloseTo(AI_SPD * 1.2, 5);
   });
 });
 
@@ -156,17 +170,17 @@ describe('Spawner 关卡难度系数 (P1-2)', () => {
 
   it('stageDifficulty 应用到普通兵 maxHp', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', stageDifficulty: 1.3 });
-    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5 * 1.3));
+    expect(ais[0].opts.maxHp).toBe(Math.round(AI_HP * 1.5 * 1.3));
   });
 
   it('stageDifficulty 与 modifier hpMul 叠加', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗', modifier: { hpMul: 1.6 }, stageDifficulty: 1.3 });
-    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5 * 1.6 * 1.3));
+    expect(ais[0].opts.maxHp).toBe(Math.round(AI_HP * 1.5 * 1.6 * 1.3));
   });
 
   it('stageDifficulty 默认 1 不改变原行为', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗' });
-    expect(ais[0].opts.maxHp).toBe(Math.round(90 * 1.5));
+    expect(ais[0].opts.maxHp).toBe(Math.round(AI_HP * 1.5));
   });
 
   it('stageDifficulty 应用到 Boss health.maxHp', () => {
@@ -206,7 +220,7 @@ describe('Spawner 噩梦词条 (P0-1)', () => {
   it('swift 词条速度 ×1.2', () => {
     deps.campaign.currentStage.enemyMods = ['swift'];
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '战役' });
-    expect(ais[0].speed).toBeCloseTo(6.2 * 1.2, 5);
+    expect(ais[0].speed).toBeCloseTo(AI_SPD * 1.2, 5);
   });
 
   it('Boss 不注入 enemyMods（阶段机制独立）', () => {
@@ -220,7 +234,7 @@ describe('Spawner 噩梦词条 (P0-1)', () => {
   it('无 enemyMods 时不影响 speed 与词条', () => {
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '死斗' });
     expect(ais[0]._enemyMods).toBeNull();
-    expect(ais[0].speed).toBe(6.2);
+    expect(ais[0].speed).toBe(AI_SPD);
   });
 
   it('spawnReinforce 也注入 enemyMods', () => {
@@ -233,6 +247,6 @@ describe('Spawner 噩梦词条 (P0-1)', () => {
   it('普通兵 + 速度修饰词与 swift 叠加', () => {
     deps.campaign.currentStage.enemyMods = ['swift'];
     spawner.spawnRed([{ x: 0, z: 0 }], ais, { modeName: '战役', modifier: { speedMul: 1.3 } });
-    expect(ais[0].speed).toBeCloseTo(6.2 * 1.2 * 1.3, 5);
+    expect(ais[0].speed).toBeCloseTo(AI_SPD * 1.2 * 1.3, 5);
   });
 });

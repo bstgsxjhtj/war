@@ -6,8 +6,8 @@ import { TelegraphIndicator } from '../render/TelegraphIndicator.js';
 import { applyEnemyBehaviors } from './AffixBehavior.js';
 
 export class AIController extends Character {
-  constructor({ team = 1, passive = false, maxHp = 90 } = {}) {
-    super({ team, isLocal: false, speed: 6.2, maxHp });
+  constructor({ team = 1, passive = false, maxHp = 90, classType = null, classColor = null, speed = 6.2, sprintMul = 1.7, maxStamina = 100 } = {}) {
+    super({ team, isLocal: false, speed, sprintMul, maxHp, maxStamina, classType, classColor });
     this._passive = passive;
     this._state = 'patrol';
     this._patrolTarget = new THREE.Vector3();
@@ -215,8 +215,12 @@ export class AIController extends Character {
     }
 
     const w = this.weapon;
-    const isBow = w && w.type === 'projectile';
-    const engageRange = isBow ? 40 : (w ? w.range * 0.9 : 12);
+    const isProjectile = w && w.type === 'projectile';
+    const cls = this._classType;
+    const isMage = cls === 'mage';
+    const isArcher = cls === 'archer';
+    const retreatDist = isMage ? 20 : 14;
+    const engageRange = isMage ? 30 : (isArcher ? 25 : (isProjectile ? 40 : (w ? w.range * 0.9 : 12)));
 
     if (target) {
       this._reactTimer -= dt;
@@ -239,7 +243,7 @@ export class AIController extends Character {
         this._blockTimer = 0.4; this._blockCd = 3;
       }
 
-      if (isBow && dist < 14) {
+      if (isProjectile && dist < retreatDist) {
         this._state = 'retreat';
         this.setMove(-0.8, Math.sin(this._strafePhase) * 0.4);
         this.setSprint(true);
@@ -257,15 +261,17 @@ export class AIController extends Character {
           this._spotCd = 15;
           if (this._bus) this._bus.emit(EV.AI_SPOTPLAYER, { target, team: this.team, id: this });
         }
-        if (isBow) {
-          this.setMove(dist < 18 ? -0.5 : 0, Math.sin(this._strafePhase) * 0.5);
+        if (isProjectile) {
+          const idealDist = isMage ? 25 : 18;
+          this.setMove(dist < idealDist ? -0.5 : (dist > idealDist + 5 ? 0.3 : 0), Math.sin(this._strafePhase) * 0.5);
           this.setSprint(false);
           if (this._reactTimer <= 0 && w.ready) {
             const savedYaw = this._targetYaw;
             this.setLook(savedYaw + (Math.random() - 0.5) * 0.28);
-            this.tryAttack(combat, 0.3);
+            const charge = isMage ? 0.5 : 0.3;
+            this.tryAttack(combat, charge);
             this.setLook(savedYaw);
-            this._reactTimer = (diff ? diff.reactTime : 0.3) + Math.random() * 0.8;
+            this._reactTimer = (diff ? (isMage ? diff.reactTime * 0.7 : diff.reactTime) : 0.3) + Math.random() * 0.8;
           }
         } else {
           if (this._windupTimer > 0) {

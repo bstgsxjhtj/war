@@ -38,3 +38,13 @@ export const CLASS_DEFS = {
 };
 
 export const CLASS_KEYS = ['warrior', 'mage', 'archer'];
+
+export const AI_CLASS_CONFIG = {
+  warrior: { maxHp: 120, speed: 7.0, sprintMul: 1.6, maxStamina: 100, weapons: () => [new SwordShield(), new Spear(), new Warhammer()] },
+  mage: { maxHp: 60, speed: 8.5, sprintMul: 1.5, maxStamina: 60, weapons: () => [new Staff(), new MageDagger()] },
+  archer: { maxHp: 80, speed: 9.0, sprintMul: 1.8, maxStamina: 80, weapons: () => [new Bow(), new HuntDagger()] },
+};
+
+export function randomAIClass() {
+  return CLASS_KEYS[Math.floor(Math.random() * CLASS_KEYS.length)];
+}

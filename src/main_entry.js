@@ -69,7 +69,7 @@ import { SaveOrchestrator } from './app/SaveOrchestrator.js';
 import { QualityGovernor } from './app/QualityGovernor.js';
 import { KeyBindings, keyLabel } from './core/input/KeyBindings.js';
 import { LODManager } from './render/LODManager.js';
-import { Spawner } from './gameplay/Spawner.js';
+import { Spawner, makeAIEnemy } from './gameplay/Spawner.js';
 import { wireAchievements } from './app/AchievementWiring.js';
 import { wireCoreHandlers } from './app/EventWiring.js';
 import { InputRouter } from './app/InputRouter.js';
@@ -144,8 +144,8 @@ async function bootstrap() {
   const lod = new LODManager({ camera: camera.cam, scene: scene.scene });
   bus.on(EV.BOSS_SUMMON, ({ pos, team, count }) => {
     for (let i = 0; i < count; i++) {
-      const e = new AIController({ team, passive: false, maxHp: Math.round(50 * aiManager.difficulty().maxHpMul) });
-      e.setBus(bus); e.setWeapons([new Sword()]); e.setAIManager(aiManager);
+      const e = makeAIEnemy({ team, passive: false, hpMul: 0.5 * aiManager.difficulty().maxHpMul });
+      e.setBus(bus); e.setAIManager(aiManager);
       const px = pos.x + (Math.random()-0.5)*6, pz = pos.z + (Math.random()-0.5)*6;
       e.spawn(new THREE.Vector3(px, terrain.heightAt(px, pz), pz));
       e.setCameraRef(camera); scene.add(e.root); combat.register(e); lod.register(e); ais.push(e);

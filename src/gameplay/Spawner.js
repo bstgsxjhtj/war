@@ -6,6 +6,7 @@ import { Spear } from './weapons/Spear.js';
 import { SwordShield } from './weapons/SwordShield.js';
 import { Warhammer } from './weapons/Warhammer.js';
 import { Bow } from './weapons/Bow.js';
+import { CLASS_DEFS, AI_CLASS_CONFIG, randomAIClass } from './ClassDefinition.js';
 import { ENEMY_MODS } from '../core/constants/balance.js';
 import { applyEnemyBehaviors } from './AffixBehavior.js';
 
@@ -68,10 +69,18 @@ export class Spawner {
         ai = new CavalryEnemy({ team: 1 });
         ai.mount(this.horses.create());
       } else {
-        ai = new AIController({ team: 1, passive: isTraining, maxHp: isTraining ? TRAINING_DUMMY_HP : Math.round(BASE_AI_HP * this.aiManager.difficulty().maxHpMul * hpMul * stageDifficulty) });
+        const cls = randomAIClass();
+        const cfg = AI_CLASS_CONFIG[cls];
+        ai = new AIController({ team: 1, passive: isTraining, classType: cls, classColor: CLASS_DEFS[cls].color, maxHp: isTraining ? TRAINING_DUMMY_HP : Math.round(cfg.maxHp * this.aiManager.difficulty().maxHpMul * hpMul * stageDifficulty), speed: cfg.speed, sprintMul: cfg.sprintMul, maxStamina: cfg.maxStamina });
+        ai._aiClassKey = cls;
       }
       const p = redLayout[i];
-      ai.setWeapons([AI_WEAPON_MAKERS[i % AI_WEAPON_MAKERS.length]()]);
+      if (ai._aiClassKey) {
+        const wList = AI_CLASS_CONFIG[ai._aiClassKey].weapons();
+        ai.setWeapons([wList[Math.floor(Math.random() * wList.length)]]);
+      } else {
+        ai.setWeapons([AI_WEAPON_MAKERS[i % AI_WEAPON_MAKERS.length]()]);
+      }
       this._finalize(ai, p.x, p.z, ais, eliteChanceMul);
       if (speedMul !== 1 && ai.speed) ai.speed *= speedMul;
       if ((hpMul !== 1 || stageDifficulty !== 1) && (ai._isBoss || ai._isElite) && ai.health) { ai.health.maxHp = Math.round(ai.health.maxHp * hpMul * stageDifficulty); ai.health.cur = ai.health.maxHp; }
@@ -80,18 +89,34 @@ export class Spawner {
     if (!isTraining && ais.length >= 3) {
       const shieldUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'SHIELD');
       const bowUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'BOW');
+      const staffUsers = ais.filter(a => a.weapons && a.weapons[0] && a.weapons[0].weaponClass === 'STAFF');
       if (shieldUsers.length >= 2) this.formations.createShieldWall(shieldUsers[0], shieldUsers.slice(1));
       if (bowUsers.length >= 2) this.formations.createArcherLine(bowUsers[0], bowUsers.slice(1));
+      if (staffUsers.length >= 2) this.formations.createArcherLine(staffUsers[0], staffUsers.slice(1));
     }
     for (const ai of ais) ai.setAudio(this.audio);
   }
 
   spawnReinforce(n, ais) {
     for (let i = 0; i < n; i++) {
-      const e = new AIController({ team: 1, passive: false, maxHp: Math.round(BASE_AI_HP * (this.campaign.currentStage.difficulty || 1)) });
+      const cls = randomAIClass();
+      const cfg = AI_CLASS_CONFIG[cls];
+      const wList = cfg.weapons();
+      const e = new AIController({ team: 1, passive: false, classType: cls, classColor: CLASS_DEFS[cls].color, maxHp: Math.round(cfg.maxHp * (this.campaign.currentStage.difficulty || 1)), speed: cfg.speed, sprintMul: cfg.sprintMul, maxStamina: cfg.maxStamina });
+      e._aiClassKey = cls;
       e.setBus(this.bus);
-      e.setWeapons([new Spear()]);
+      e.setWeapons([wList[Math.floor(Math.random() * wList.length)]]);
       this._finalize(e, 160 + (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 120, ais);
     }
   }
+}
+
+export function makeAIEnemy({ team = 1, passive = false, hpMul = 1 } = {}) {
+  const cls = randomAIClass();
+  const cfg = AI_CLASS_CONFIG[cls];
+  const wList = cfg.weapons();
+  const e = new AIController({ team, passive, classType: cls, classColor: CLASS_DEFS[cls].color, maxHp: Math.round(cfg.maxHp * hpMul), speed: cfg.speed, sprintMul: cfg.sprintMul, maxStamina: cfg.maxStamina });
+  e._aiClassKey = cls;
+  e.setWeapons([wList[Math.floor(Math.random() * wList.length)]]);
+  return e;
 }
