@@ -3,10 +3,10 @@ import * as THREE from 'three';
 import { EV } from '../core/constants/events.js';
 
 const BOSS_TYPES = {
-  warlord:  { hp: 300, speed: 5.5, name: '战将', skills: ['charge', 'roar', 'summon'], phase3: null,      weakness: 'backstab', weaknessMul: 1.5, weaknessDesc: '弱点：背刺' },
-  ranger:   { hp: 220, speed: 6.0, name: '游侠', skills: ['rapidshot', 'dodge', 'trap'], phase3: 'clone', weakness: 'melee', weaknessMul: 1.5, weaknessDesc: '弱点：近战' },
-  mage:     { hp: 180, speed: 5.0, name: '法师', skills: ['fireball', 'teleport', 'aoe'], phase3: 'meteor', weakness: 'interrupt', weaknessMul: 2.0, weaknessDesc: '弱点：施法时打断' },
-  behemoth: { hp: 400, speed: 4.5, name: '巨兽', skills: ['slam', 'charge', 'regenerate'], phase3: 'quake', weakness: 'projectile', weaknessMul: 1.5, weaknessDesc: '弱点：远程' },
+  warlord:  { hp: 300, speed: 5.5, name: '战将', skills: ['charge', 'roar', 'summon'], phase3: null,      signature: 'warcry',    weakness: 'backstab', weaknessMul: 1.5, weaknessDesc: '弱点：背刺' },
+  ranger:   { hp: 220, speed: 6.0, name: '游侠', skills: ['rapidshot', 'dodge', 'trap'], phase3: 'clone', signature: 'volley',    weakness: 'melee', weaknessMul: 1.5, weaknessDesc: '弱点：近战' },
+  mage:     { hp: 180, speed: 5.0, name: '法师', skills: ['fireball', 'teleport', 'aoe'], phase3: 'meteor', signature: 'frostnova', weakness: 'interrupt', weaknessMul: 2.0, weaknessDesc: '弱点：施法时打断' },
+  behemoth: { hp: 400, speed: 4.5, name: '巨兽', skills: ['slam', 'charge', 'regenerate'], phase3: 'quake', signature: 'boulder',   weakness: 'projectile', weaknessMul: 1.5, weaknessDesc: '弱点：远程' },
 };
 // 技能阶段门槛：基础技阶段 1 开放，未列出的默认阶段 2，summon 阶段 3
 const PHASE_GATE = { slam: 1, dodge: 1, summon: 3 };
@@ -52,6 +52,8 @@ export class BossEnemy extends AIController {
     this._weakness = cfg.weakness || null;
     this._weaknessMul = cfg.weaknessMul || 1;
     this._weaknessDesc = cfg.weaknessDesc || '';
+    this._signature = cfg.signature || null;
+    this._sigCd = 0;
     this._castingTimer = 0;
     if (this.root) {
       const s = mini ? 1.1 : 1.35;
@@ -211,6 +213,90 @@ export class BossEnemy extends AIController {
     this._cloneCd = 16;
   }
 
+  // 阶段跃迁演出：范围击退 + 双段延迟冲击波预警 + 短暂无敌窗口
+  _phaseBurst(phase, combat, now) {
+    const enemies = (combat && combat.characters) || [];
+    for (const e of enemies) {
+      if (!e.alive || e.team === this.team) continue;
+      if (e.position.distanceTo(this.position) < 8) {
+        const back = new THREE.Vector3().subVectors(e.position, this.position).setY(0).normalize().multiplyScalar(5);
+        e.position.add(back);
+        e.takeDamage && e.takeDamage(phase === 3 ? 25 : 15, true, this, now);
+      }
+    }
+    if (combat && combat.spawnAoE) {
+      combat.spawnAoE(this.root.position, 7, phase === 3 ? 30 : 22, this, now, 0.5);
+      combat.spawnAoE(this.root.position, 10, phase === 3 ? 30 : 22, this, now, 0.9);
+    }
+    this._iFrame = Math.max(this._iFrame || 0, 0.8);
+    this._bus && this._bus.emit(EV.FX_BOSSROAR, { boss: this });
+    this._bus && this._bus.emit(EV.FX_SHAKE, { amount: phase === 3 ? 0.8 : 0.6 });
+  }
+
+  // 战将签名技：战吼震慑 —— 范围震慑（击退 + 眩晕 + 自身狂暴）
+  _skillWarcry(combat, now) {
+    const enemies = (combat && combat.characters) || [];
+    for (const e of enemies) {
+      if (!e.alive || e.team === this.team) continue;
+      if (e.position.distanceTo(this.position) < 9) {
+        const back = new THREE.Vector3().subVectors(e.position, this.position).setY(0).normalize().multiplyScalar(4);
+        e.position.add(back);
+        if (typeof e._stun === 'number') e._stun = Math.max(e._stun, 1.2);
+        e.takeDamage && e.takeDamage(15, true, this, now);
+      }
+    }
+    this._enrageTimer = Math.max(this._enrageTimer, 3);
+    this._sigCd = 14;
+    this._bus && this._bus.emit(EV.FX_BOSSROAR, { boss: this });
+    this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.6 });
+  }
+
+  // 游侠签名技：箭雨 —— 目标点四段延迟落箭
+  _skillVolley(target, combat, now) {
+    if (!target || !combat.spawnAoE) return;
+    const p = target.position;
+    combat.spawnAoE(p, 3, 15, this, now, 0.4);
+    combat.spawnAoE(p, 3, 15, this, now, 0.8);
+    combat.spawnAoE(p, 4, 20, this, now, 1.2);
+    combat.spawnAoE(p, 4, 20, this, now, 1.6);
+    this._sigCd = 13;
+  }
+
+  // 法师签名技：冰霜新星 —— 范围减速 + 冰霜伤害
+  _skillFrostnova(combat, now) {
+    const enemies = (combat && combat.characters) || [];
+    for (const e of enemies) {
+      if (!e.alive || e.team === this.team) continue;
+      if (e.position.distanceTo(this.position) < 8) {
+        e._slowTimer = (e._slowTimer || 0) + 2.5;
+        e.takeDamage && e.takeDamage(20, false, this, now);
+      }
+    }
+    this._castingTimer = 0.7;
+    this._sigCd = 11;
+    this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.35 });
+  }
+
+  // 巨兽签名技：投掷巨石 —— 高伤远程抛射
+  _skillBoulder(target, combat, now) {
+    if (!target || !combat.spawnPierceArrow) return;
+    const dir = new THREE.Vector3().subVectors(target.position, this.root.position).setY(0).normalize();
+    combat.spawnPierceArrow(this, this.weapon, 1, { origin: this.root.position, dir, damage: 45, speed: 22 });
+    this._sigCd = 12;
+    this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.3 });
+  }
+
+  // 签名技调度：阶段 2 起解锁（mini 不携带签名技）
+  _castSignature(combat, now, target) {
+    switch (this._signature) {
+      case 'warcry': this._skillWarcry(combat, now); break;
+      case 'frostnova': this._skillFrostnova(combat, now); break;
+      case 'volley': if (target) this._skillVolley(target, combat, now); break;
+      case 'boulder': if (target) this._skillBoulder(target, combat, now); break;
+      default: break;
+    }
+  }
+
   update(dt, terrain, combat, enemies, now) {
     if (!this._meshScaled && this.root) {
       const s = this._isMini ? 1.1 : 1.35;
@@ -221,10 +307,12 @@ export class BossEnemy extends AIController {
     if (this._phase === 1 && hpPct < 0.6) {
       this._phase = 2; this.speed *= 1.2; this._enrageTimer = 5;
       this._bus && this._bus.emit(EV.HUD_BOSSPHASE, { boss: this, phase: 2 });
+      this._phaseBurst(2, combat, now);
     }
     if (!this._isMini && this._phase === 2 && hpPct < 0.3) {
       this._phase = 3; this.speed *= 1.15; this._enrageTimer = 8;
       this._bus && this._bus.emit(EV.HUD_BOSSPHASE, { boss: this, phase: 3 });
+      this._phaseBurst(3, combat, now);
     }
     if (this._enrageTimer > 0) {
       this._enrageTimer -= dt;
@@ -243,6 +331,7 @@ export class BossEnemy extends AIController {
     this._quakeCd -= dt * cdRate;
     this._meteorCd -= dt * cdRate;
     this._cloneCd -= dt * cdRate;
+    this._sigCd -= dt * cdRate;
     if (this._castingTimer > 0) this._castingTimer -= dt;
     if (this._trapTimer > 0) {
       this._trapTimer -= dt;
@@ -273,6 +362,8 @@ export class BossEnemy extends AIController {
     if (this._phase >= 3 && this._phase3Skill === 'quake' && this._quakeCd <= 0) this._skillQuake(combat, now);
     if (this._phase >= 3 && this._phase3Skill === 'meteor' && this._meteorCd <= 0 && tgt) this._skillMeteor(tgt, combat, now);
     if (this._phase >= 3 && this._phase3Skill === 'clone' && this._cloneCd <= 0) this._skillClone();
+    // 签名技：阶段 2 起解锁（mini 不携带）
+    if (!this._isMini && this._phase >= 2 && this._signature && this._sigCd <= 0) this._castSignature(combat, now, tgt);
     super.update(dt, terrain, combat, enemies, now);
   }
 }

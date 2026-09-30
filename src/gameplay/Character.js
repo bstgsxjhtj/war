@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { Health } from './Health.js';
 import { Stamina } from './Stamina.js';
 import { Sword } from './weapons/Sword.js';
@@ -62,6 +62,7 @@ export class Character {
     this._dodgeTimer = 0; this._dodgeIFrame = 0; this._dodgeOverride = 0;
     this._iFrame = 0;
     this._stun = 0;
+    this._slowTimer = 0;
     this._weaponTrail = null; this._weaponTrailColor = 0;
     this._deadTimer = 0;
     // 第三轮：锁定/格挡/完美闪避/击飞
@@ -679,6 +680,10 @@ export class Character {
       this._hurt = Math.max(this._hurt, 0.4);
       spd *= 0.3;
       if (this._attacking) this._attacking = false;
+    }
+    if (this._slowTimer > 0) {
+      this._slowTimer -= dt;
+      spd *= 0.5;
     }
     return spd;
   }
