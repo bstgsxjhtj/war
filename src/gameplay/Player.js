@@ -42,7 +42,7 @@ export class Player extends Character {
     };
     const onMouseMove = (e) => {
       if (!this._locked) return;
-      this.camera.look(e.movementX, e.movementY, 0.0018 * this.lookSensitivity);
+      this.camera.look(e.movementX, e.movementY, 0.0025 * this.lookSensitivity);
     };
     const onMouseDown = (e) => {
       if (!this._locked) return;
@@ -223,9 +223,8 @@ export class Player extends Character {
     this.setMove(f, r);
     const sc = this._kb.get('sprint');
     const sprinting = this._keys.has(sc) || (sc === 'ShiftLeft' && this._keys.has('ShiftRight')) || (sc === 'ShiftRight' && this._keys.has('ShiftLeft'));
-    if (sprinting && this.stamina.cur > 0) this.setSprint(true);
+    if (sprinting && this.stamina.cur > 0) { this.setSprint(true); this.stamina.consume(12 * dt); }
     else { this.setSprint(false); }
-    if (sprinting) this.stamina.consume(18 * dt);
     if (this._keys.has(this._kb.get('jump'))) this.jump();
 
     if (this._attackQueued) {

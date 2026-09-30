@@ -110,6 +110,7 @@ async function bootstrap() {
     currentHazards = r.hazards;
     if (envHazards) { envHazards.setTerrain(terrain); envHazards.setHazardZones(currentHazards); }
     env = new Environment(terrain, r.layout);
+    terrain.colliders = [...(env._collidables || [])];
     if (env.setQuality) env.setQuality(_quality);
     scene.add(terrain.mesh);
     scene.add(env.group);
@@ -183,6 +184,7 @@ async function bootstrap() {
   weather.onLightning((pos) => envHazards.onLightningStrike(pos));
   for (const box of siege.collisionBoxes) envHazards.addWallBox(box);
   for (const box of env.collisionBoxes) envHazards.addWallBox(box);
+  for (const box of siege.collisionBoxes) terrain.colliders.push({ x: (box.minX + box.maxX) * 0.5, z: (box.minZ + box.maxZ) * 0.5, r: Math.min((box.maxX - box.minX) * 0.5, (box.maxZ - box.minZ) * 0.5) });
   const settings = new SettingsMenu(bus, audio, keyBindings);
   // P2-5 画质档位：统一应用到渲染器/环境粒子/天气粒子；低端机自适应降帧
   const qualityGovernor = new QualityGovernor({ quality: 'high' });
@@ -249,7 +251,7 @@ async function bootstrap() {
   } else {
     hud.flash('单机模式（未连服务器）');
   }
-  let mode = new Deathmatch(bus);
+  let mode = new WaveMode(bus);
   const saveOrch = new SaveOrchestrator({
     bus, state, hud, saveManager, progression, campaign, skills, affixes, daily, skins, achievements,
     getPlayer: () => player,

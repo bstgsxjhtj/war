@@ -8,7 +8,7 @@ export class MiniMap {
     this.canvas.width = 160;
     this.canvas.height = 160;
     Object.assign(this.canvas.style, {
-      position: 'fixed', right: '12px', bottom: '12px', width: '140px', height: '140px',
+      position: 'fixed', right: '12px', top: '12px', width: '140px', height: '140px',
       borderRadius: '50%', border: '2px solid rgba(180,160,80,.7)',
       boxShadow: '0 0 12px rgba(0,0,0,.6)', pointerEvents: 'none', zIndex: 15,
       background: 'radial-gradient(circle, rgba(30,40,30,.9), rgba(10,20,10,.95))'

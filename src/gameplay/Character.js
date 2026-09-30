@@ -613,6 +613,28 @@ export class Character {
 
     this.position.x += this._curVel.x * dt;
     this.position.z += this._curVel.z * dt;
+    // 地图边界：限制在 terrain.size 范围内
+    if (terrain.size) {
+      const bound = terrain.size * 0.48;
+      if (this.position.x > bound) { this.position.x = bound; this._curVel.x = 0; }
+      else if (this.position.x < -bound) { this.position.x = -bound; this._curVel.x = 0; }
+      if (this.position.z > bound) { this.position.z = bound; this._curVel.z = 0; }
+      else if (this.position.z < -bound) { this.position.z = -bound; this._curVel.z = 0; }
+    }
+    // 圆形碰撞体阻挡（岩石/树/城墙）
+    if (terrain.colliders) {
+      for (const c of terrain.colliders) {
+        const dx = this.position.x - c.x;
+        const dz = this.position.z - c.z;
+        const d = Math.hypot(dx, dz);
+        const minD = c.r + 0.5;
+        if (d < minD && d > 0.01) {
+          const push = (minD - d);
+          this.position.x += (dx / d) * push;
+          this.position.z += (dz / d) * push;
+        }
+      }
+    }
     // 涉水流速推移
     if (this._inWater && terrain.flowDir && terrain.flowSpeed) {
       this.position.addScaledVector(terrain.flowDir, terrain.flowSpeed * dt);

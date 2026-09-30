@@ -9,6 +9,8 @@ export class Camera {
     this.cam.position.set(0, 6, 12);
     this.yaw = 0;
     this.pitch = 0.22;
+    this._targetYaw = 0;
+    this._targetPitch = 0.22;
     this.distance = 7.5;
     this.height = 2.4;
     this.aimMode = false;
@@ -45,8 +47,8 @@ export class Camera {
   setReducedMotion(v) { this._reducedMotion = !!v; if (this._reducedMotion) this._shake = 0; }
 
   look(dx, dy, sensitivity = CAMERA.SENSITIVITY_DEFAULT) {
-    this.yaw -= dx * sensitivity;
-    this.pitch = THREE.MathUtils.clamp(this.pitch + dy * sensitivity, CAMERA.PITCH_MIN, CAMERA.PITCH_MAX);
+    this._targetYaw -= dx * sensitivity;
+    this._targetPitch = THREE.MathUtils.clamp(this._targetPitch + dy * sensitivity, CAMERA.PITCH_MIN, CAMERA.PITCH_MAX);
   }
 
   setKillCam(target) { this._killCamTarget = target; this._killTimer = 1.4; }
@@ -57,13 +59,16 @@ export class Camera {
     this.target.x = target.x;
     this.target.z = target.z;
     this.target.y += (target.y - this.target.y) * 0.25;
+    // 鼠标输入平滑：yaw/pitch 缓动到目标值
+    this.yaw += (this._targetYaw - this.yaw) * CAMERA.LERP_LOOK;
+    this.pitch += (this._targetPitch - this.pitch) * CAMERA.LERP_LOOK;
     // 锁定时相机 yaw 缓动朝向目标
     if (this.lockTarget && this.lockTarget.alive) {
       const ty = Math.atan2(this.lockTarget.position.x - target.x, this.lockTarget.position.z - target.z);
-      let dy = ty - this.yaw;
+      let dy = ty - this._targetYaw;
       while (dy > Math.PI) dy -= Math.PI * 2;
       while (dy < -Math.PI) dy += Math.PI * 2;
-      this.yaw += dy * 0.1;
+      this._targetYaw += dy * 0.1;
     }
 
     const wantDist = this.aimMode ? 3.2 : this.distance;

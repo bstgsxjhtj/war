@@ -46,7 +46,7 @@ export class HUD {
       </div>
       <div id="score" style="position:absolute;top:18px;left:50%;transform:translateX(-50%);color:#eee;font-size:18px;text-shadow:0 1px 2px #000;">蓝方 0  |  0 红方</div>
       <div id="round" style="position:absolute;top:42px;left:50%;transform:translateX(-50%);color:#ffd070;font-size:13px;text-shadow:0 1px 2px #000;"></div>
-      <div id="modeName" style="position:absolute;top:62px;left:50%;transform:translateX(-50%);color:#8cf;font-size:12px;text-shadow:0 1px 2px #000;">模式：死斗</div>
+      <div id="modeName" style="position:absolute;top:62px;left:50%;transform:translateX(-50%);color:#8cf;font-size:12px;text-shadow:0 1px 2px #000;">模式：波次</div>
       <div id="dom" style="position:absolute;top:84px;left:50%;transform:translateX(-50%);display:none;color:#fff;font-size:12px;text-shadow:0 1px 2px #000;text-align:center;"></div>
       <div id="wforecast" style="position:absolute;top:106px;left:50%;transform:translateX(-50%);color:#8df;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
       <div id="weapon" style="position:absolute;right:24px;bottom:24px;color:#cde;font-size:14px;text-shadow:0 1px 2px #000;">[1] 刀  [2] 弓</div>
