@@ -15,15 +15,19 @@ export class SkillTree {
     this.skillOrder = ['power', 'vigor', 'agility', 'mastery'];
     this.weaponOrder = [0, 1, 2, 3];
     this.branches = {
-      berserk:   { level: 0, max: 1, name: '狂暴',   desc: '伤害+25%',           cost: 2, req: 'power',   excl: 'guardian' },
-      guardian:  { level: 0, max: 1, name: '守护',   desc: '减伤+25%',           cost: 2, req: 'power',   excl: 'berserk' },
-      regen:     { level: 0, max: 1, name: '回复',   desc: '每秒回血+5',          cost: 2, req: 'vigor',   excl: 'lifesteal' },
-      lifesteal: { level: 0, max: 1, name: '吸血',   desc: '吸血+5%',            cost: 2, req: 'vigor',   excl: 'regen' },
-      swift:     { level: 0, max: 1, name: '疾风',   desc: '移速+10%',           cost: 2, req: 'agility', excl: 'evade' },
-      evade:     { level: 0, max: 1, name: '闪避',   desc: '闪避率+10%',         cost: 2, req: 'agility', excl: 'swift' },
-      frenzy:    { level: 0, max: 1, name: '狂热',   desc: '攻速+15%',           cost: 2, req: 'mastery', excl: 'critical' },
-      critical:  { level: 0, max: 1, name: '暴击',   desc: '暴击率+15%',         cost: 2, req: 'mastery', excl: 'frenzy' },
+      berserk:     { level: 0, max: 1, name: '狂暴',     desc: '伤害+25%',           cost: 2, req: 'power',   excl: 'guardian' },
+      guardian:    { level: 0, max: 1, name: '守护',     desc: '减伤+25%',           cost: 2, req: 'power',   excl: 'berserk' },
+      regen:       { level: 0, max: 1, name: '回复',     desc: '每秒回血+5',          cost: 2, req: 'vigor',   excl: 'lifesteal' },
+      lifesteal:   { level: 0, max: 1, name: '吸血',     desc: '吸血+5%',            cost: 2, req: 'vigor',   excl: 'regen' },
+      swift:       { level: 0, max: 1, name: '疾风',     desc: '移速+10%',           cost: 2, req: 'agility', excl: 'evade' },
+      evade:       { level: 0, max: 1, name: '闪避',     desc: '闪避率+10%',         cost: 2, req: 'agility', excl: 'swift' },
+      frenzy:      { level: 0, max: 1, name: '狂热',     desc: '攻速+15%',           cost: 2, req: 'mastery', excl: 'critical' },
+      critical:    { level: 0, max: 1, name: '暴击',     desc: '暴击率+15%',         cost: 2, req: 'mastery', excl: 'frenzy' },
+      ironwall:    { level: 0, max: 1, name: '铁壁',     desc: '减伤+20%（战士）',    cost: 2, req: 'power',   excl: 'berserk',  reqClass: 'warrior' },
+      spellpower:  { level: 0, max: 1, name: '法力涌动', desc: '伤害+30%（法师）',    cost: 2, req: 'mastery', excl: 'critical', reqClass: 'mage' },
+      precision:   { level: 0, max: 1, name: '鹰眼',     desc: '伤害+25%（弓箭手）',  cost: 2, req: 'agility', excl: 'swift',    reqClass: 'archer' },
     };
+    this._classType = null;
   }
 
   addPoint(n = 1) { this.points += n; }
@@ -42,11 +46,14 @@ export class SkillTree {
   upgradeBranch(key) {
     const b = this.branches[key];
     if (!b || b.level >= b.max || this.points < b.cost) return false;
+    if (b.reqClass && this._classType !== b.reqClass) return false;
     const reqSkill = this.skills[b.req];
     if (!reqSkill || reqSkill.level < 2) return false;
     if (this.branches[b.excl] && this.branches[b.excl].level > 0) return false;
     b.level++; this.points -= b.cost; return true;
   }
+
+  setClassType(type) { this._classType = type; }
 
   reorderSkill(from, to) {
     if (from < 0 || to < 0 || from >= this.skillOrder.length || to >= this.skillOrder.length) return;
@@ -100,6 +107,9 @@ export class SkillTree {
   get branchDodgeChance() { return 0.10 * this.branches.evade.level; }
   get branchAttackSpeedMul() { return 1 - 0.15 * this.branches.frenzy.level; }
   get branchCritChance() { return 0.15 * this.branches.critical.level; }
+  get branchIronwall() { return 1 - 0.20 * this.branches.ironwall.level; }
+  get branchSpellpower() { return 1 + 0.30 * this.branches.spellpower.level; }
+  get branchPrecision() { return 1 + 0.25 * this.branches.precision.level; }
 
   totalMul(weaponIdx) {
     return this.damageMul * this.masteryMul * this.weaponDamageMul(weaponIdx);

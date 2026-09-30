@@ -8,14 +8,17 @@ describe('SkillTree branches', () => {
     st = new SkillTree();
   });
 
-  it('has 8 branch skills with req and excl fields', () => {
+  it('has 11 branch skills (8 base + 3 class-specific) with req and excl fields', () => {
     const keys = Object.keys(st.branches);
-    expect(keys).toHaveLength(8);
+    expect(keys).toHaveLength(11);
     expect(st.branches.berserk.req).toBe('power');
     expect(st.branches.berserk.excl).toBe('guardian');
     expect(st.branches.guardian.excl).toBe('berserk');
     expect(st.branches.regen.req).toBe('vigor');
     expect(st.branches.frenzy.req).toBe('mastery');
+    expect(st.branches.ironwall.reqClass).toBe('warrior');
+    expect(st.branches.spellpower.reqClass).toBe('mage');
+    expect(st.branches.precision.reqClass).toBe('archer');
   });
 
   it('upgradeBranch succeeds when base skill >= 2 and points sufficient', () => {

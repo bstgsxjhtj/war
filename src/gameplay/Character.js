@@ -522,6 +522,7 @@ export class Character {
     if (this.damageReduction) amount *= (1 - this.damageReduction);
     if (this._runArmorMul) amount *= this._runArmorMul;
     if (this._skill && this._skill.branchDefenseMul) amount *= this._skill.branchDefenseMul;
+    if (this._skill && this._skill.branchIronwall && this._skill.branchIronwall < 1) amount *= this._skill.branchIronwall;
     const wMul = this.getWeaknessMul ? this.getWeaknessMul(attacker) : 1;
     if (wMul > 1) {
       amount *= wMul;
@@ -777,7 +778,9 @@ export class Character {
       if (!this._hitResolved && t >= hitT) {
         this._hitResolved = true;
         let dmg = this.weapon.comboDamage ? this.weapon.comboDamage[combo] ?? this.weapon.damage : this.weapon.damage;
-        if (this._perfectBuff > 0) dmg *= 1.5; // 完美闪避后攻击加成
+        if (this._perfectBuff > 0) dmg *= 1.5;
+      if (this._skill && this._skill.branchSpellpower > 1) dmg *= this._skill.branchSpellpower;
+      if (this._skill && this._skill.branchPrecision > 1) dmg *= this._skill.branchPrecision;
         this.weapon._perform(this, this._pendingCombat, { combo: this._pendingCombo, charge: this._pendingCharge, now, dmg });
         this.weapon._timer = this.weapon.cooldown * this.killstreakBuffs().cdMul * (this._skill && this._skill.branchAttackSpeedMul ? this._skill.branchAttackSpeedMul : 1) * (this._runAtkSpdMul || 1);
         if (this.weapon.comboLunge) this._curVel.addScaledVector(this.forward, this.weapon.comboLunge[combo] ?? 3);

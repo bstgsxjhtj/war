@@ -316,6 +316,7 @@ async function bootstrap() {
         if (w && _savedAff.affixSlots[w.weaponClass]) w.affixes = _savedAff.affixSlots[w.weaponClass].map(a => a ? { ...a } : null);
       }
     }
+    skills.setClassType(selectedClass);
     skills.setWeaponSlots(_classDef.weaponNames);
     player.setSkill(skills);
     try { if (runBuffs) runBuffs.reapply(player); } catch (e) {}
