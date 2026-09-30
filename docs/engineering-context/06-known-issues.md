@@ -273,3 +273,22 @@
 | G4 | WaveMode.test.js | 2（spawnLayout 设 alive、waveInfo 联动） |
 
 测试总量：1029 → 1031（+2 个回归测试），101 个测试文件全绿。
+
+## 设计问题深度评审修复（2026-09-30 第十二轮）
+
+> 来源：5 专家圆桌评审，3 个确认问题修复（H1/H2/H5）。
+
+| # | 问题 | 严重级 | 状态 |
+|---|---|---|---|
+| H1 | F4 修复给 EscortTarget 设 team=1（敌方），敌人同队跳过——护送目标无敌，任务不可失败 | P0 | ✅已修：改为 team=0（玩家方），敌人（team=1）可攻击 |
+| H2 | RunBuffs 升级在 spawnAll 重建 player 后丢失——战役模式跨关卡升级消失 | P1 | ✅已修：RunBuffs 加 reapply 方法，spawnAll 中调用 + 更新 upgradePicker.player 引用 |
+| H5 | G2 的 branchDodgeChance 在格挡判定前触发——被动闪避劫持了完美格挡 | P1 | ✅已修：加 `!this._blocking` 前置条件，格挡优先于被动闪避 |
+
+### 回归测试
+
+| 修复 | 测试文件 | 新增/修改用例 |
+|---|---|---|
+| H1 | EscortTarget.test.js | 修正 F4 期望 team=0 |
+| H2 | RunBuffs.test.js | 2（reapply 重应用、reapply 空列表不报错） |
+
+测试总量：1031 → 1033（+2 个回归测试），101 个测试文件全绿。
