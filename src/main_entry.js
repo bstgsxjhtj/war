@@ -50,6 +50,7 @@ import { MapGenerator } from './world/MapGenerator.js';
 import { MiniMap } from './ui/MiniMap.js';
 import { CLASS_DEFS } from './gameplay/ClassDefinition.js';
 import { ClassSelectUI } from './ui/ClassSelectUI.js';
+import { BuildReviewUI } from './ui/BuildReviewUI.js';
 import { WeaponTrail, HitDirection, HitStop } from './render/WeaponTrail.js';
 import { DodgeGhosts } from './render/DodgeGhosts.js';
 import { BossEnemy, EliteEnemy } from './gameplay/BossEnemy.js';
@@ -390,7 +391,7 @@ async function bootstrap() {
   let _wavePending = false;
   hud.setRound(0, 0, match.targetWins);
   hud.setMode(mode.name + ' · ' + currentMapName);
-  hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式 · C切换职业');
+  hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式 · C切换职业 · B查看Build');
   setTimeout(() => hud.clearHint(), 5000);
   const classSelectUI = new ClassSelectUI((key) => {
     selectedClass = key;
@@ -400,11 +401,16 @@ async function bootstrap() {
     setTimeout(() => hud.clearHint(), 3000);
   });
   classSelectUI.show();
+  const buildReviewUI = new BuildReviewUI(() => ({ selectedClass, player, skills, runBuffs }));
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyC' && !e.repeat) {
       const locked = document.pointerLockElement;
       if (locked) document.exitPointerLock();
       classSelectUI.show();
+    }
+    if (e.code === 'KeyB' && !e.repeat) {
+      if (buildReviewUI.visible) { buildReviewUI.hide(); }
+      else { const locked = document.pointerLockElement; if (locked) document.exitPointerLock(); buildReviewUI.show(); }
     }
   });
   let tutorial = null;
