@@ -347,4 +347,48 @@ describe('CombatSystem 投石/无 attacker 抛射物 (E2/E3 修复)', () => {
     cs.resolveMelee(attacker, attacker.weapon, 0, 0);
     expect(damageGate).toHaveBeenCalled();
   });
+
+  it('F3: isSiege=true 的箭矢不被池化，自定义几何体/材质被 dispose', () => {
+    const geoDispose = vi.fn();
+    const matDispose = vi.fn();
+    const mesh = { geometry: { dispose: geoDispose }, material: { dispose: matDispose } };
+    const siegeArrow = { mesh, isSiege: true };
+    cs._releaseArrow(siegeArrow);
+    expect(geoDispose).toHaveBeenCalledOnce();
+    expect(matDispose).toHaveBeenCalledOnce();
+    expect(cs._arrowPool.length).toBe(0);
+    expect(scene.remove).toHaveBeenCalledWith(mesh);
+  });
+
+  it('F3: spawnArrow 重置 isSiege=false（池化箭矢不被投石标记污染）', () => {
+    const a = cs._acquireArrow();
+    a.isSiege = true;
+    cs._arrowPool.length = 0;
+    cs._arrowPool.push(a);
+    cs.arrows.length = 0;
+    const attacker = {
+      position: new THREE.Vector3(0, 0, 0),
+      forward: new THREE.Vector3(0, 0, 1),
+      team: 0,
+      weapon: { speedFor: () => 30, damageFor: () => 20 }
+    };
+    cs.spawnArrow(attacker, attacker.weapon, 0.5);
+    expect(cs.arrows[0].isSiege).toBe(false);
+  });
+
+  it('F3: spawnPierceArrow 重置 isSiege=false', () => {
+    const a = cs._acquireArrow();
+    a.isSiege = true;
+    cs._arrowPool.length = 0;
+    cs._arrowPool.push(a);
+    cs.arrows.length = 0;
+    const attacker = {
+      position: new THREE.Vector3(0, 0, 0),
+      forward: new THREE.Vector3(0, 0, 1),
+      team: 0,
+      weapon: { speedFor: () => 30, damageFor: () => 20 }
+    };
+    cs.spawnPierceArrow(attacker, attacker.weapon, 1, { origin: new THREE.Vector3(0, 1, 0), dir: new THREE.Vector3(0, 0, 1), damage: 30 });
+    expect(cs.arrows[0].isSiege).toBe(false);
+  });
 });

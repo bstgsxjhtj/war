@@ -579,7 +579,7 @@ export class Character {
         let dmg = this.weapon.comboDamage ? this.weapon.comboDamage[combo] ?? this.weapon.damage : this.weapon.damage;
         if (this._perfectBuff > 0) dmg *= 1.5; // 完美闪避后攻击加成
         this.weapon._perform(this, this._pendingCombat, { combo: this._pendingCombo, charge: this._pendingCharge, now, dmg });
-        this.weapon._timer = this.weapon.cooldown * this.killstreakBuffs().cdMul * (this._skill && this._skill.branchAttackSpeedMul ? this._skill.branchAttackSpeedMul : 1);
+        this.weapon._timer = this.weapon.cooldown * this.killstreakBuffs().cdMul * (this._skill && this._skill.branchAttackSpeedMul ? this._skill.branchAttackSpeedMul : 1) * (this._runAtkSpdMul || 1);
         if (this.weapon.comboLunge) this._curVel.addScaledVector(this.forward, this.weapon.comboLunge[combo] ?? 3);
       }
       if (this._anim <= 0) this._attacking = false;

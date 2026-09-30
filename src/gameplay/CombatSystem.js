@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { ParticleFX } from '../render/ParticleFX.js';
 import { EV } from '../core/constants/events.js';
 import { COMBAT, ENEMY_MODS } from '../core/constants/balance.js';
@@ -88,6 +88,7 @@ export class CombatSystem {
   }
   _releaseArrow(a) {
     if (!a || !a.mesh) return;
+    if (a.isSiege) { if (a.mesh.geometry) a.mesh.geometry.dispose(); if (a.mesh.material) a.mesh.material.dispose(); this.scene.remove(a.mesh); return; }
     this.scene.remove(a.mesh);
     if (this._arrowPool.length < ARROW_POOL_MAX) this._arrowPool.push(a);
   }
@@ -186,7 +187,8 @@ export class CombatSystem {
     let out = dmg;
     if (this._affixes && weapon) {
       out = dmg * (1 + this._affixes.affixBonus(weapon, '锋锐') + this._affixes.synergyBonus(weapon, 'damage'));
-      if (Math.random() < this._affixes.affixBonus(weapon, '暴怒') + this._affixes.synergyBonus(weapon, 'crit')) { out *= 2; this._lastAffixCrit = true; }
+      const critChance = (this._affixes ? this._affixes.affixBonus(weapon, '暴怒') + this._affixes.synergyBonus(weapon, 'crit') : 0) + (attacker?._runCritChance || 0);
+      if (Math.random() < critChance) { out *= 2; this._lastAffixCrit = true; }
     }
     if (attacker && attacker._enemyMods && attacker._enemyMods.includes('lucky') && !this._lastAffixCrit && Math.random() < ENEMY_MODS.LUCKY_CRIT_CHANCE) { out *= ENEMY_MODS.LUCKY_CRIT_MUL; this._lastAffixCrit = true; }
     return out;
@@ -322,6 +324,7 @@ export class CombatSystem {
     a.charge = charge;
     a.pierce = 0;
     a.hitSet = null;
+    a.isSiege = false;
     this.arrows.push(a);
   }
 
@@ -343,6 +346,7 @@ export class CombatSystem {
     a.charge = charge;
     a.pierce = COMBAT.PIERCE_ARROW_PIERCE;
     a.hitSet = new Set();
+    a.isSiege = false;
     this.arrows.push(a);
   }
 

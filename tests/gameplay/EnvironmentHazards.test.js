@@ -233,4 +233,11 @@ describe('EnvironmentHazards', () => {
       expect(char.takeDamage).toHaveBeenCalledWith(160, true, null, expect.any(Number));
     });
   });
+
+  it('F5: 使用 performance.now() 而非 Date.now()（now 值为秒级小数，非 epoch 时间）', () => {
+    char.position = { x: 10, z: 0 };
+    env.update(0.5, [char]);
+    const nowArg = char.takeDamage.mock.calls[0][3];
+    expect(nowArg).toBeLessThan(10000);
+  });
 });

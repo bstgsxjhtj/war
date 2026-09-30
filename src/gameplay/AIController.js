@@ -272,8 +272,10 @@ export class AIController extends Character {
             this.setMove(0, 0);
             this.setSprint(false);
           } else {
-            const allies = enemies.filter(e => e.team === this.team);
-            const flank = this._calcFlankDir(target, allies);
+            if (!this._allyBuf) this._allyBuf = [];
+            this._allyBuf.length = 0;
+            for (const e of enemies) { if (e.team === this.team) this._allyBuf.push(e); }
+            const flank = this._calcFlankDir(target, this._allyBuf);
             this.setMove(flank.dot(this.forward) > 0 ? 1 : 0.3, Math.sin(this._strafePhase) * 0.4);
             this.setSprint(false);
             if (this._swordReactTimer <= 0 && w.ready) {

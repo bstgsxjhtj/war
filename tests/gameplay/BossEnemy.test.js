@@ -228,3 +228,22 @@ describe('BossEnemy 血量与 health 联动（E1 修复：消除实例字段双�
     expect(e.maxHp).toBe(140);
   });
 });
+
+describe('F1: BossEnemy._skillRapidshot 调用签名修复', () => {
+  it('rapidshot 使用正确的 spawnPierceArrow 参数（attacker, weapon, charge, opts）', () => {
+    const b = new BossEnemy({ type: 'ranger' });
+    const calls = [];
+    const combat = { spawnPierceArrow: (...args) => calls.push(args) };
+    const target = { position: new THREE.Vector3(10, 0, 5) };
+    b._skillRapidshot(target, combat, 0);
+    expect(calls.length).toBe(3);
+    for (const args of calls) {
+      expect(args[0]).toBe(b);
+      expect(args[1]).toBe(b.weapon);
+      expect(args[2]).toBe(1);
+      expect(args[3].origin).toBeDefined();
+      expect(args[3].dir).toBeDefined();
+      expect(args[3].damage).toBe(30);
+    }
+  });
+});

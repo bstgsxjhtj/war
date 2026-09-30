@@ -108,7 +108,7 @@ export class BossEnemy extends AIController {
     const axis = new THREE.Vector3(0, 1, 0);
     for (let i = -1; i <= 1; i++) {
       const a = dir.clone().applyAxisAngle(axis, i * 0.26);
-      combat.spawnPierceArrow && combat.spawnPierceArrow(this.root.position, a, 30, this, now);
+      combat.spawnPierceArrow && combat.spawnPierceArrow(this, this.weapon, 1, { origin: this.root.position, dir: a, damage: 30 });
     }
     this._rapidCd = 8;
   }

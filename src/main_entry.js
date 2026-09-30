@@ -14,7 +14,6 @@ import { ComboSystem } from './gameplay/ComboSystem.js';
 import { WeaponSkills } from './gameplay/WeaponSkills.js';
 import { AIManager } from './gameplay/AIManager.js';
 import { EscortTarget } from './gameplay/EscortTarget.js';
-import { DefensePoint } from './gameplay/DefensePoint.js';
 import { Affixes } from './gameplay/Affixes.js';
 import { RunBuffs } from './gameplay/RunBuffs.js';
 import { Achievements } from './gameplay/Achievements.js';
@@ -328,7 +327,7 @@ async function bootstrap() {
     if (mode.name === '战役') {
       match.escortTarget = null; match.defenseTimer = 0; match.timeLimit = 0; match.surviveWavesDone = false; match.surviveTimer = 0;
       const s = campaign.currentStage;
-      if (s.objective === '护送') { match.escortTarget = new EscortTarget({ x: -160, z: 0 }, { x: 160, z: 0 }, 80); scene.add(match.escortTarget.root); }
+      if (s.objective === '护送') { match.escortTarget = new EscortTarget({ x: -160, z: 0 }, { x: 160, z: 0 }, 80); scene.add(match.escortTarget.root); combat.register(match.escortTarget); }
       if (s.objective === '防御') { match.defenseTimer = 60; }
       if (s.objective === 'Boss限时') { match.timeLimit = 120; }
       if (s.objective === '生存') { match.surviveTimer = s.surviveTime || 90; }

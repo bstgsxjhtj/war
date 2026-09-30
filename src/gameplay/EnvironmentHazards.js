@@ -35,7 +35,7 @@ export class EnvironmentHazards {
   }
 
   update(dt, characters) {
-    const now = Date.now() / 1000;
+    const now = performance.now() * 0.001;
     const boost = this._boost;
 
     for (const c of characters) {

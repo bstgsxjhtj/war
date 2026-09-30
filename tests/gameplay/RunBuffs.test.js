@@ -70,4 +70,39 @@ describe('RunBuffs', () => {
   it('apply 未知 id 不报错', () => {
     expect(() => rb.apply(player, 'nonexistent')).not.toThrow();
   });
+
+  it('F2: apply regen 设置 _runRegen', () => {
+    rb.apply(player, 'regen');
+    expect(player._runRegen).toBe(3);
+  });
+
+  it('F2: apply atkspd 设置 _runAtkSpdMul', () => {
+    rb.apply(player, 'atkspd');
+    expect(player._runAtkSpdMul).toBeCloseTo(0.88);
+  });
+
+  it('F2: apply dodgecd 设置 _runDodgeCdMul', () => {
+    rb.apply(player, 'dodgecd');
+    expect(player._runDodgeCdMul).toBeCloseTo(0.75);
+  });
+
+  it('F2: apply armor 设置 _runArmorMul', () => {
+    rb.apply(player, 'armor');
+    expect(player._runArmorMul).toBeCloseTo(0.88);
+  });
+
+  it('F2: apply crit 设置 _runCritChance', () => {
+    rb.apply(player, 'crit');
+    expect(player._runCritChance).toBeCloseTo(0.12);
+  });
+
+  it('F2: apply execdmg 设置 _runExecBonus', () => {
+    rb.apply(player, 'execdmg');
+    expect(player._runExecBonus).toBeCloseTo(0.08);
+  });
+
+  it('F2: apply counterdmg 设置 _runCounterMul', () => {
+    rb.apply(player, 'counterdmg');
+    expect(player._runCounterMul).toBeCloseTo(1.20);
+  });
 });

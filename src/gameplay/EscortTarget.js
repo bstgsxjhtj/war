@@ -9,6 +9,12 @@ export class EscortTarget {
     this.goal = new THREE.Vector3(goalPos.x || 0, 0, goalPos.z || 0);
     this.health = new Health(maxHp);
     this.alive = true;
+    this.position = this.root.position;
+    this.team = 1;
+    this.forward = new THREE.Vector3(0, 0, 1);
+    this._curVel = new THREE.Vector3();
+    this.vy = 0;
+    this.weapon = null;
     this._build();
   }
   _build() {
