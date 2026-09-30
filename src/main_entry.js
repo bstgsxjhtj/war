@@ -50,6 +50,7 @@ import { MapGenerator } from './world/MapGenerator.js';
 import { MiniMap } from './ui/MiniMap.js';
 import { CLASS_DEFS } from './gameplay/ClassDefinition.js';
 import { ClassSelectUI } from './ui/ClassSelectUI.js';
+import { GameMenu } from './ui/GameMenu.js';
 import { BuildReviewUI } from './ui/BuildReviewUI.js';
 import { WeaponTrail, HitDirection, HitStop } from './render/WeaponTrail.js';
 import { DodgeGhosts } from './render/DodgeGhosts.js';
@@ -381,6 +382,18 @@ async function bootstrap() {
     player.setAudio(audio); for (const ai of ais) ai.setAudio(audio);
   }
 
+  // 关闭菜单后重新锁定鼠标（由点击菜单按钮这一用户手势触发，浏览器允许）
+  const relockPointer = () => {
+    const el = document.querySelector('#app');
+    if (el && el.requestPointerLock && document.pointerLockElement !== el) { try { el.requestPointerLock(); } catch (e) {} }
+  };
+  let gameMenu = null;
+  const openMenu = () => {
+    const locked = document.pointerLockElement;
+    if (locked) document.exitPointerLock();
+    if (gameMenu) gameMenu.show();
+  };
+
   const inputRouter = new InputRouter({
     bus, state, hud, campaign, daily, weather, settings, audio, match, kb: keyBindings,
     getMode: () => mode,
@@ -388,7 +401,8 @@ async function bootstrap() {
     loadMap: (k) => loadMap(k),
     mapName: () => currentMapName,
     currentMapKey: () => currentMapKey,
-    getPlayer: () => player
+    getPlayer: () => player,
+    openMenu,
   });
   inputRouter.install();
   installUIStackEscape();
@@ -412,7 +426,7 @@ async function bootstrap() {
   let _wavePending = false;
   hud.setRound(0, 0, match.targetWins);
   hud.setMode(mode.name + ' · ' + currentMapName);
-  hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式 · C切换职业 · B查看Build');
+  hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · Esc菜单(换模式/职业) · M切换模式 · C切换职业 · B查看Build');
   setTimeout(() => hud.clearHint(), 5000);
   const classSelectUI = new ClassSelectUI((key) => {
     selectedClass = key;
@@ -420,8 +434,23 @@ async function bootstrap() {
     const def = CLASS_DEFS[key];
     hud.flash('已选择：' + def.name + ' · ' + def.desc);
     setTimeout(() => hud.clearHint(), 3000);
+    relockPointer();
   });
   classSelectUI.show();
+  gameMenu = new GameMenu({
+    getModeName: () => mode.name,
+    onSelectMode: (name) => {
+      inputRouter.applyModeByName(name);
+      gameMenu.hide();
+      hud.flash('已切换到：' + name + ' · 点击画面重新锁定鼠标');
+      setTimeout(() => hud.clearHint(), 3000);
+      relockPointer();
+    },
+    onSelectClass: () => { gameMenu.hide(); classSelectUI.show(); },
+    onOpenSettings: () => settings.show(),
+    onRestart: () => { match.restart(); gameMenu.hide(); relockPointer(); },
+    onResume: () => { gameMenu.hide(); relockPointer(); },
+  });
   const buildReviewUI = new BuildReviewUI(() => ({ selectedClass, player, skills, runBuffs }));
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyC' && !e.repeat) {

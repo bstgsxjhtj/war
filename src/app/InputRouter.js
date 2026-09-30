@@ -2,10 +2,8 @@
 // 注意：面板键 I/J/V/H/K 由面板组件自监听，此处不得绑定（见 04-ui-design 按键表）
 import { States } from '../core/GameState.js';
 import { UIStack } from '../ui/UIStack.js';
-import { Deathmatch, Domination, SiegeMode } from '../gameplay/GameMode.js';
-import { WaveMode } from '../gameplay/WaveMode.js';
-import { BattlefieldMode } from '../gameplay/BattlefieldMode.js';
 import { MapGenerator } from '../world/MapGenerator.js';
+import { createMode, nextModeName } from '../gameplay/gameModes.js';
 
 export class InputRouter {
   constructor(deps) {
@@ -30,32 +28,7 @@ export class InputRouter {
       else if (state.current === States.ROUND_END) { match.roundEndTimer = 0; match.startRound(); }
     }
     if (e.code === (this.deps.kb ? this.deps.kb.get('mode') : 'KeyM') && (state.current === States.ENDED || state.current === States.ROUND_END || state.current === States.PLAYING && !this.deps.getPlayer()?.alive)) {
-      const { bus, getMode, setMode, loadMap, mapName } = this.deps;
-      const mode = getMode();
-      let next;
-      if (mode.name === '死斗') next = new Domination(bus);
-      else if (mode.name === '据点') next = new SiegeMode(bus);
-      else if (mode.name === '攻城') next = new WaveMode(bus);
-      else if (mode.name === '波次') next = new BattlefieldMode(bus);
-      else if (mode.name === '战场') next = new WaveMode(bus, true);
-      else if (mode.name === '无尽') next = campaign;
-      else if (mode.name === '战役' && !campaign.nightmare && campaign.cleared >= campaign.maxStages) {
-        campaign.nightmare = true; campaign.reset(); next = campaign;
-        hud.flash('噩梦战役开启：敌人更强！'); setTimeout(() => hud.clearHint(), 2500);
-      }
-      else next = new Deathmatch(bus);
-      setMode(next);
-      const newMode = getMode();
-      if (newMode.name === '战役') {
-        const layout = campaign.spawnLayout();
-        loadMap(layout.mapKey);
-        if (layout.weather) weather.setMode(layout.weather);
-      } else {
-        const newMapKey = MapGenerator.recommendMap(newMode.name);
-        loadMap(newMapKey);
-      }
-      hud.setMode(newMode.name + ' · ' + mapName());
-      match.restart();
+      this._rotateMode();
     }
     if (e.code === 'Comma' && (state.current === States.ENDED || state.current === States.ROUND_END)) {
       const next = MapGenerator.cycleMap(this.deps.currentMapKey());
@@ -69,6 +42,40 @@ export class InputRouter {
       hud.flash('每日挑战：' + done + '/' + daily.challenges.length + ' 完成');
     }
     if (e.code === (this.deps.kb ? this.deps.kb.get('weather') : 'KeyN')) { weather.toggle(); const wm = { clear: '晴', rain: '雨', night: '夜', snow: '雪', storm: '雷暴' }; hud.flash('天气：' + (wm[weather.mode] || weather.mode)); setTimeout(() => hud.clearHint(), 1500); }
-    if (e.code === (this.deps.kb ? this.deps.kb.get('settings') : 'Escape') && UIStack.empty) settings.show();
+    if (e.code === (this.deps.kb ? this.deps.kb.get('settings') : 'Escape') && UIStack.empty) {
+      // 统一游戏菜单（含玩法模式/职业/设置入口）；未注入时回退到设置面板
+      if (this.deps.openMenu) this.deps.openMenu();
+      else settings.show();
+    }
+  }
+
+  // 切换到名为 name 的玩法模式：换模式实例 → 载入对应地图 → 刷新 HUD → 重开对局
+  applyModeByName(name) {
+    const { bus, campaign, setMode, loadMap, mapName, hud, match, weather } = this.deps;
+    setMode(createMode(name, { bus, campaign }));
+    const newMode = this.deps.getMode();
+    if (newMode.name === '战役') {
+      const layout = campaign.spawnLayout();
+      loadMap(layout.mapKey);
+      if (layout.weather) weather.setMode(layout.weather);
+    } else {
+      loadMap(MapGenerator.recommendMap(newMode.name));
+    }
+    hud.setMode(newMode.name + ' · ' + mapName());
+    match.restart();
+    return newMode;
+  }
+
+  // M 键：按 MODE_ORDER 轮换到下一个模式（战役全通后先触发噩梦）
+  _rotateMode() {
+    const { campaign, hud } = this.deps;
+    const mode = this.deps.getMode();
+    if (mode.name === '战役' && !campaign.nightmare && campaign.cleared >= campaign.maxStages) {
+      campaign.nightmare = true; campaign.reset();
+      hud.flash('噩梦战役开启：敌人更强！'); setTimeout(() => hud.clearHint(), 2500);
+      this.applyModeByName('战役');
+      return;
+    }
+    this.applyModeByName(nextModeName(mode.name));
   }
 }

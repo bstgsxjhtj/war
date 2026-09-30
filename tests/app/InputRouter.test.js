@@ -6,29 +6,30 @@ import { InputRouter } from '../../src/app/InputRouter.js';
 import { KeyBindings } from '../../src/core/input/KeyBindings.js';
 import { UIStack } from '../../src/ui/UIStack.js';
 import { Domination } from '../../src/gameplay/GameMode.js';
+import { BattlefieldMode } from '../../src/gameplay/BattlefieldMode.js';
 
 function makeDeps(overrides = {}) {
   const bus = new EventBus();
   const state = new GameState(bus);
-  const mode = { name: '死斗' };
+  let mode = { name: '死斗' };
   const deps = {
     bus, state,
     hud: { flash: vi.fn(), clearHint: vi.fn(), setMode: vi.fn() },
-    campaign: { stage: 0, currentStage: { name: '破晓' }, spawnLayout: () => ({ mapKey: 'plain', red: [] }) },
+    campaign: { name: '战役', stage: 0, currentStage: { name: '破晓' }, spawnLayout: () => ({ mapKey: 'plain', red: [] }) },
     daily: { challenges: [{ done: true }, { done: false }] },
     weather: { mode: 'clear', toggle: vi.fn(), setMode: vi.fn() },
     settings: { show: vi.fn(), hide: vi.fn() },
     audio: { resume: vi.fn() },
     match: { restart: vi.fn(), startRound: vi.fn(), roundEndTimer: 5 },
     getMode: () => mode,
-    setMode: (m) => { deps._modeSet = m; },
+    setMode: (m) => { mode = m; deps._modeSet = m; },
     loadMap: vi.fn(),
     mapName: () => '平原',
     currentMapKey: () => 'plain',
     getPlayer: () => ({ alive: true }),
     ...overrides
   };
-  return { deps, state, mode };
+  return { deps, state };
 }
 
 function key(code) {
@@ -72,6 +73,34 @@ describe('InputRouter', () => {
     key('Escape');
     expect(deps.settings.show).not.toHaveBeenCalled();
     UIStack._stack.length = 0;
+  });
+
+  it('注入 openMenu 时 Escape 打开统一菜单而非设置面板', () => {
+    const openMenu = vi.fn();
+    const { deps: d, state: s } = makeDeps({ openMenu });
+    const r = new InputRouter(d); r.install();
+    UIStack._stack.length = 0;
+    s.transit(States.PLAYING);
+    key('Escape');
+    expect(openMenu).toHaveBeenCalled();
+    expect(d.settings.show).not.toHaveBeenCalled();
+  });
+
+  it('applyModeByName 直接切换到指定模式（菜单选择）', () => {
+    UIStack._stack.length = 0;
+    state.transit(States.PLAYING);
+    router.applyModeByName('战场');
+    expect(deps._modeSet).toBeInstanceOf(BattlefieldMode);
+    expect(deps.hud.setMode).toHaveBeenCalled();
+    expect(deps.match.restart).toHaveBeenCalled();
+  });
+
+  it('applyModeByName 切到战役时按关卡载入地图与天气', () => {
+    UIStack._stack.length = 0;
+    state.transit(States.PLAYING);
+    router.applyModeByName('战役');
+    expect(deps._modeSet).toBe(deps.campaign);
+    expect(deps.loadMap).toHaveBeenCalledWith('plain');
   });
 
   it('KeyR 在 ENDED 时重开对局', () => {

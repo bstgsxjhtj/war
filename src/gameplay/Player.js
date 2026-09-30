@@ -29,6 +29,10 @@ export class Player extends Character {
     this._wasLocked = false;
     this._lockReleaseT = 0;
     this._lockReleaseFrom = 0;
+    // 构造时同步当前指针锁状态：复活/重开时会新建 Player，若此时锁仍持有则
+    // 不会再有 pointerlockchange 事件，_locked 若不初始化会导致鼠标输入全部失效
+    const _appEl = document.querySelector('#app');
+    this._locked = !!_appEl && document.pointerLockElement === _appEl;
     this._bindInput();
   }
 

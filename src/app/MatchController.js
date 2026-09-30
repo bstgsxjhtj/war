@@ -201,7 +201,7 @@ export class MatchController {
       this.roundB++; hud.setRound(this.roundB, this.roundR, this.targetWins);
       if (this.roundB >= this.targetWins) {
         if (assist) assist.onPlayerWin();
-        hud.flashEnd('蓝方获胜！按 R 重新开始'); camera.setKillCam(player); state.transit(States.ENDED);
+        hud.flashEnd('蓝方获胜！按 R 重开 · Esc 菜单换模式'); camera.setKillCam(player); state.transit(States.ENDED);
         const grade = ResultScreen.gradeOf ? ResultScreen.gradeOf(this.playerKills, this.playerDamage, (performance.now() - this.matchStartTime) / 1000, this._stats()) : 'A';
         progression.recordWin(grade, (performance.now() - this.matchStartTime) / 1000); progressUI.refresh();
         resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: true, deathCause: this.playerDeathCause, wave: _wave, bestWave: _bestWave, deathStats, stats: this._stats() });
@@ -216,7 +216,7 @@ export class MatchController {
     } else if (winner === 'red') {
       this.roundR++; hud.setRound(this.roundB, this.roundR, this.targetWins);
       if (this.roundR >= this.targetWins) {
-        hud.flashEnd('红方获胜！按 R 重新开始');
+        hud.flashEnd('红方获胜！按 R 重开 · Esc 菜单换模式');
         if (player.lastAttacker) camera.setKillCam(player.lastAttacker);
         state.transit(States.ENDED); progression.recordLoss(); progressUI.refresh();
         resultScreen.show({ kills: this.playerKills, damage: this.playerDamage, time: (performance.now() - this.matchStartTime) / 1000, win: false, deathCause: this.playerDeathCause, wave: _wave, bestWave: _bestWave, deathStats, stats: this._stats() });
