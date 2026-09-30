@@ -105,4 +105,19 @@ describe('RunBuffs', () => {
     rb.apply(player, 'counterdmg');
     expect(player._runCounterMul).toBeCloseTo(1.20);
   });
+
+  it('H2: reapply 将已选升级重新应用到新 player 实例', () => {
+    rb.apply(player, 'regen');
+    rb.apply(player, 'armor');
+    const newPlayer = {};
+    rb.reapply(newPlayer);
+    expect(newPlayer._runRegen).toBe(3);
+    expect(newPlayer._runArmorMul).toBeCloseTo(0.88);
+  });
+
+  it('H2: reapply 无已选升级时不报错', () => {
+    const empty = new RunBuffs();
+    const p = {};
+    expect(() => empty.reapply(p)).not.toThrow();
+  });
 });

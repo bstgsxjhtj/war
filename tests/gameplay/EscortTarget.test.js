@@ -8,7 +8,7 @@ describe('F4: EscortTarget 战斗参与', () => {
     const e = new EscortTarget({ x: -10, z: 0 }, { x: 10, z: 0 }, 80);
     expect(e.position).toBeDefined();
     expect(e.position.x).toBe(-10);
-    expect(e.team).toBe(1);
+    expect(e.team).toBe(0);
     expect(e.forward).toBeInstanceOf(THREE.Vector3);
     expect(e.weapon).toBeNull();
     expect(e._curVel).toBeInstanceOf(THREE.Vector3);

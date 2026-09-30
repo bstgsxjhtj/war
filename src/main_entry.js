@@ -311,6 +311,8 @@ async function bootstrap() {
       }
     }
     player.setSkill(skills);
+    try { if (runBuffs) runBuffs.reapply(player); } catch (e) {}
+    try { if (upgradePicker) upgradePicker.player = player; } catch (e) {}
     const spawns = MapGenerator.MAPS[currentMapKey].spawns;
     const lb = spawns.blue[0];
     player.spawn(new THREE.Vector3(lb.x, terrain.heightAt(lb.x, lb.z), lb.z));

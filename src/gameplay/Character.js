@@ -326,7 +326,7 @@ export class Character {
       return 0;
     }
     // 格挡判定
-    if (this._skill && this._skill.branchDodgeChance > 0 && Math.random() < this._skill.branchDodgeChance) return 0;
+    if (!this._blocking && this._skill && this._skill.branchDodgeChance > 0 && Math.random() < this._skill.branchDodgeChance) return 0;
     if (this._blocking && attacker) {
       const dx = attacker.position.x - this.position.x;
       const dz = attacker.position.z - this.position.z;

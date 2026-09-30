@@ -10,7 +10,7 @@ export class EscortTarget {
     this.health = new Health(maxHp);
     this.alive = true;
     this.position = this.root.position;
-    this.team = 1;
+    this.team = 0;
     this.forward = new THREE.Vector3(0, 0, 1);
     this._curVel = new THREE.Vector3();
     this.vy = 0;

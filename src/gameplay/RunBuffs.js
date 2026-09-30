@@ -50,6 +50,12 @@ export class RunBuffs {
     const u = UPGRADES.find(x => x.id === upgradeId);
     if (u) { u.apply(player); this.picked.push(u.id); }
   }
+  reapply(player) {
+    for (const id of this.picked) {
+      const u = UPGRADES.find(x => x.id === id);
+      if (u) u.apply(player);
+    }
+  }
 }
 
 RunBuffs.UPGRADES = UPGRADES;
