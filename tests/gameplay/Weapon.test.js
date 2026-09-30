@@ -1,4 +1,14 @@
 import { Weapon, AttackType } from '../../src/gameplay/Weapon.js';
+import { Sword } from '../../src/gameplay/weapons/Sword.js';
+import { SwordShield } from '../../src/gameplay/weapons/SwordShield.js';
+import { Spear } from '../../src/gameplay/weapons/Spear.js';
+import { Warhammer } from '../../src/gameplay/weapons/Warhammer.js';
+import { Bow } from '../../src/gameplay/weapons/Bow.js';
+import { Dagger } from '../../src/gameplay/weapons/Dagger.js';
+import { HuntDagger } from '../../src/gameplay/weapons/HuntDagger.js';
+import { MageDagger } from '../../src/gameplay/weapons/MageDagger.js';
+import { Staff } from '../../src/gameplay/weapons/Staff.js';
+import * as THREE from 'three';
 import { describe, it, expect } from 'vitest';
 
 describe('Weapon', () => {
@@ -26,5 +36,27 @@ describe('Weapon', () => {
   it('_perform 抛未实现错误', () => {
     const w = new Weapon({ name: 'x', damage: 1, range: 1, cooldown: 1, type: 'melee' });
     expect(() => w._perform({}, {}, {})).toThrow();
+  });
+});
+
+// MageDagger 曾把 PointLight 当几何传给 THREE.Mesh，导致 Mesh 构造期
+// Object.keys(undefined) 抛 TypeError，法师武器建模失败
+const ALL_WEAPONS = [Sword, SwordShield, Spear, Warhammer, Bow, Dagger, HuntDagger, MageDagger, Staff];
+
+describe('武器 createMesh 建模健壮性', () => {
+  for (const W of ALL_WEAPONS) {
+    it(`${W.name} createMesh 返回 Object3D 且不抛错`, () => {
+      const mesh = new W().createMesh();
+      expect(mesh).toBeInstanceOf(THREE.Object3D);
+      expect(mesh.isMesh || mesh.isGroup).toBeTruthy();
+    });
+  }
+
+  it('MageDagger 的剑柄光源是 PointLight 而非 Mesh', () => {
+    const g = new MageDagger().createMesh();
+    const lights = [];
+    g.traverse((o) => { if (o.isLight) lights.push(o); });
+    expect(lights.length).toBe(1);
+    expect(lights[0].isPointLight).toBe(true);
   });
 });

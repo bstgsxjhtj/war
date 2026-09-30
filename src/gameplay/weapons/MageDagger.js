@@ -59,10 +59,10 @@ export class MageDagger extends Weapon {
 
     const pommel = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045, 0), crystalMat);
     pommel.position.z = -0.27;
-    const pommelGlow = new THREE.Mesh(new THREE.PointLight(0xaa44ff, 0.5, 2), null);
+    const pommelGlow = new THREE.PointLight(0xaa44ff, 0.5, 2);
     pommelGlow.position.z = -0.27;
 
-    g.add(blade, edge, guard, runeL, runeR, grip, wrap1, wrap2, pommel);
+    g.add(blade, edge, guard, runeL, runeR, grip, wrap1, wrap2, pommel, pommelGlow);
     return g;
   }
 
