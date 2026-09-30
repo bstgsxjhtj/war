@@ -41,8 +41,8 @@ export class Skeleton {
   }
 
   bindParts(p) {
-    if (p.rLeg) { this.bones.upperLegR.add(p.rLeg); p.rLeg.position.set(0, -0.35, 0); }
-    if (p.lLeg) { this.bones.upperLegL.add(p.lLeg); p.lLeg.position.set(0, -0.35, 0); }
+    if (p.rLeg) { this.bones.upperLegR.add(p.rLeg); p.rLeg.position.set(0, -0.45, 0); }
+    if (p.lLeg) { this.bones.upperLegL.add(p.lLeg); p.lLeg.position.set(0, -0.45, 0); }
     if (p.torso) { this.bones.chest.add(p.torso); p.torso.position.set(0, 0, 0); }
     if (p.belt) { this.bones.hips.add(p.belt); p.belt.position.set(0, 0, 0); }
     if (p.rSho) { this.bones.shoulderR.add(p.rSho); p.rSho.position.set(0, 0, 0); }

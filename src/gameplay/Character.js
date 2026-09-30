@@ -114,33 +114,46 @@ export class Character {
     const matTrim = new THREE.MeshStandardMaterial({ color: trim, roughness: 0.5, metalness: 0.7 });
     applyFresnelRim(matArmor, 0xffb060, 0.5); applyFresnelRim(matTrim, 0xffb060, 0.6);
     const matSkin = new THREE.MeshStandardMaterial({ color: skin, roughness: 0.8 });
+    const matEyeW = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const matEyeP = new THREE.MeshBasicMaterial({ color: 0x111111 });
+    this._eyeMats = [matEyeW, matEyeP];
     this._mats = [matBody, matArmor, matTrim, matSkin];
 
-    const legGeo = new THREE.CapsuleGeometry(0.16, 0.7, 4, 12);
+    const legGeo = new THREE.CapsuleGeometry(0.20, 0.40, 4, 12);
     this.rLeg = new THREE.Mesh(legGeo, matArmor); this.rLeg.position.set(0.2, 0.5, 0); this.rLeg.castShadow = true;
     this.lLeg = new THREE.Mesh(legGeo, matArmor); this.lLeg.position.set(-0.2, 0.5, 0); this.lLeg.castShadow = true;
-    this.torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 0.95, 6, 16), matArmor); this.torso.position.y = 1.35; this.torso.castShadow = true;
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.18, 12), matTrim); belt.position.y = 0.85;
-    const shoGeo = new THREE.IcosahedronGeometry(0.28, 1);
+    this.torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.50, 0.50, 6, 16), matArmor); this.torso.position.y = 1.35; this.torso.castShadow = true;
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.15, 12), matTrim); belt.position.y = 0.85;
+    const shoGeo = new THREE.IcosahedronGeometry(0.32, 1);
     this.rSho = new THREE.Mesh(shoGeo, matArmor); this.rSho.position.set(0.5, 1.65, 0); this.rSho.castShadow = true;
     this.lSho = new THREE.Mesh(shoGeo, matArmor); this.lSho.position.set(-0.5, 1.65, 0); this.lSho.castShadow = true;
-    const armGeo = new THREE.CapsuleGeometry(0.12, 0.5, 4, 12);
+    const armGeo = new THREE.CapsuleGeometry(0.16, 0.30, 4, 12);
     this.rArm = new THREE.Mesh(armGeo, matBody); this.rArm.position.set(0.5, 1.3, 0); this.rArm.castShadow = true;
     this.lArm = new THREE.Mesh(armGeo, matBody); this.lArm.position.set(-0.5, 1.3, 0); this.lArm.castShadow = true;
-    this.head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 1), matSkin); this.head.position.y = 2.1; this.head.castShadow = true;
+    this.head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 2), matSkin); this.head.position.y = 2.1; this.head.castShadow = true;
+    const eyeGeoW = new THREE.SphereGeometry(0.07, 8, 8);
+    const eyeGeoP = new THREE.SphereGeometry(0.04, 6, 6);
+    const eyeL = new THREE.Mesh(eyeGeoW, matEyeW); eyeL.position.set(-0.16, 0.06, 0.35);
+    const pupilL = new THREE.Mesh(eyeGeoP, matEyeP); pupilL.position.set(-0.16, 0.06, 0.41);
+    const eyeR = new THREE.Mesh(eyeGeoW, matEyeW); eyeR.position.set(0.16, 0.06, 0.35);
+    const pupilR = new THREE.Mesh(eyeGeoP, matEyeP); pupilR.position.set(0.16, 0.06, 0.41);
+    this.head.add(eyeL, pupilL, eyeR, pupilR);
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.02), new THREE.MeshBasicMaterial({ color: 0x3a2010 }));
+    mouth.position.set(0, -0.14, 0.38);
+    this.head.add(mouth);
     const helmPoints = [
-      new THREE.Vector2(0.34, 0), new THREE.Vector2(0.32, 0.05),
-      new THREE.Vector2(0.30, 0.12), new THREE.Vector2(0.26, 0.25),
-      new THREE.Vector2(0.18, 0.38), new THREE.Vector2(0.10, 0.46),
+      new THREE.Vector2(0.46, 0), new THREE.Vector2(0.44, 0.05),
+      new THREE.Vector2(0.40, 0.12), new THREE.Vector2(0.34, 0.25),
+      new THREE.Vector2(0.24, 0.38), new THREE.Vector2(0.12, 0.46),
       new THREE.Vector2(0, 0.50),
     ];
     const helm = new THREE.Mesh(new THREE.LatheGeometry(helmPoints, 16), matTrim); helm.position.y = 2.28; helm.castShadow = true;
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.1), matArmor); visor.position.set(0, 2.12, 0.28);
-    const rPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.3, 12), matTrim); rPauldron.position.set(0.5, 1.82, 0); rPauldron.castShadow = true;
-    const lPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.3, 12), matTrim); lPauldron.position.set(-0.5, 1.82, 0); lPauldron.castShadow = true;
-    const rKneeguard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 1), matTrim); rKneeguard.position.set(0.2, 0.28, 0.05); rKneeguard.castShadow = true;
-    const lKneeguard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14, 1), matTrim); lKneeguard.position.set(-0.2, 0.28, 0.05); lKneeguard.castShadow = true;
-    const chestplate = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.35), matArmor); chestplate.position.set(0, 1.45, 0.05); chestplate.castShadow = true;
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.12, 0.12), matArmor); visor.position.set(0, 2.12, 0.28);
+    const rPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.35, 12), matTrim); rPauldron.position.set(0.5, 1.82, 0); rPauldron.castShadow = true;
+    const lPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.35, 12), matTrim); lPauldron.position.set(-0.5, 1.82, 0); lPauldron.castShadow = true;
+    const rKneeguard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 1), matTrim); rKneeguard.position.set(0.2, 0.28, 0.05); rKneeguard.castShadow = true;
+    const lKneeguard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 1), matTrim); lKneeguard.position.set(-0.2, 0.28, 0.05); lKneeguard.castShadow = true;
+    const chestplate = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.50, 0.38), matArmor); chestplate.position.set(0, 1.45, 0.05); chestplate.castShadow = true;
     const emblemGeo = new THREE.CircleGeometry(0.12, 16);
     const emblemMat = new THREE.MeshBasicMaterial({ color: trim, side: THREE.DoubleSide });
     const emblem = new THREE.Mesh(emblemGeo, emblemMat); emblem.position.set(0, 1.5, 0.23);
@@ -163,23 +176,23 @@ export class Character {
     this._hpBar = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xff3030, transparent: true, opacity: 0.9, depthTest: false }));
     this._hpBarBg = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x111111, transparent: true, opacity: 0.7, depthTest: false }));
     this._hpBar.scale.set(0.9, 0.09, 1); this._hpBarBg.scale.set(0.94, 0.13, 1);
-    this._hpBar.position.y = 2.6; this._hpBarBg.position.y = 2.6;
+    this._hpBar.position.y = 2.8; this._hpBarBg.position.y = 2.8;
     this._hpBar.renderOrder = 999; this._hpBarBg.renderOrder = 998;
     this._postureBar = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xc8a060, transparent: true, opacity: 0, depthTest: false }));
     this._postureBarBg = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x111111, transparent: true, opacity: 0.6, depthTest: false }));
     this._postureBar.scale.set(0.9, 0.05, 1); this._postureBarBg.scale.set(0.94, 0.09, 1);
-    this._postureBar.position.y = 2.75; this._postureBarBg.position.y = 2.75;
+    this._postureBar.position.y = 2.95; this._postureBarBg.position.y = 2.95;
     this._postureBar.renderOrder = 1005; this._postureBarBg.renderOrder = 1004;
     // 锁定标记
     this._lockMark = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffd070, transparent: true, opacity: 0, depthTest: false }));
-    this._lockMark.scale.set(0.5, 0.5, 1); this._lockMark.position.y = 2.9; this._lockMark.renderOrder = 1001;
+    this._lockMark.scale.set(0.5, 0.5, 1); this._lockMark.position.y = 3.10; this._lockMark.renderOrder = 1001;
     // 色弱模式：头顶形状标记（友军圆环 / 敌军方块），非本地单位默认隐藏，由 setColorblind 控制
     const markGeo = this.team === 0 ? new THREE.TorusGeometry(0.16, 0.045, 6, 14) : new THREE.BoxGeometry(0.24, 0.24, 0.24);
     this._teamMark = new THREE.Mesh(
       markGeo,
       new THREE.MeshBasicMaterial({ color: this.team === 0 ? 0x66aaff : 0xff6666, transparent: true, opacity: 0.9, depthTest: false })
     );
-    this._teamMark.position.y = 3.15; this._teamMark.renderOrder = 1002; this._teamMark.visible = false;
+    this._teamMark.position.y = 3.35; this._teamMark.renderOrder = 1002; this._teamMark.visible = false;
     const showBar = !this.isLocal;
     this._hpBar.visible = showBar; this._hpBarBg.visible = showBar; this._postureBar.visible = showBar; this._postureBarBg.visible = showBar;
     this.skeleton = new Skeleton(this.root);
@@ -189,9 +202,43 @@ export class Character {
       head: this.head, helm, visor, cape: this.cape, weaponPivot: this.weaponPivot,
       rPauldron, lPauldron, rKneeguard, lKneeguard, chestplate, emblem, factionFlag
     });
+    if (this._bossType) this._customizeBoss(this._bossType);
+    if (this._isElite) this._customizeElite();
     this.root.add(this._hpBar, this._hpBarBg, this._postureBar, this._postureBarBg, this._lockMark, this._teamMark);
   }
 
+  _customizeBoss(type) {
+    const b = this.skeleton.bones;
+    if (type === 'warlord') {
+      const hornGeo = new THREE.ConeGeometry(0.07, 0.22, 8);
+      const hornMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3, metalness: 0.9 });
+      const hornL = new THREE.Mesh(hornGeo, hornMat); hornL.position.set(-0.20, 0.42, 0); hornL.rotation.z = 0.35;
+      const hornR = new THREE.Mesh(hornGeo, hornMat); hornR.position.set(0.20, 0.42, 0); hornR.rotation.z = -0.35;
+      b.head.add(hornL, hornR);
+    } else if (type === 'ranger') {
+      const hood = new THREE.Mesh(new THREE.ConeGeometry(0.50, 0.55, 12, 1, true), new THREE.MeshStandardMaterial({ color: 0x2a5a3a, roughness: 0.7, side: THREE.DoubleSide }));
+      hood.position.set(0, 0.18, -0.02); b.head.add(hood);
+      const quiver = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.35, 8), new THREE.MeshStandardMaterial({ color: 0x4a3a1a, roughness: 0.8 }));
+      quiver.position.set(0.22, 0, -0.3); quiver.rotation.z = 0.2; b.spine.add(quiver);
+    } else if (type === 'mage') {
+      const crystal = new THREE.Mesh(new THREE.IcosahedronGeometry(0.10, 0), new THREE.MeshStandardMaterial({ color: 0x9a5aff, emissive: 0x7a3aff, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.1 }));
+      crystal.position.set(0, 0.12, 0.28); b.chest.add(crystal);
+      if (this.cape) this.cape.scale.set(1.3, 1.4, 1);
+    } else if (type === 'behemoth') {
+      const bumpMat = new THREE.MeshStandardMaterial({ color: 0x5a5a5a, roughness: 0.9, map: TextureFactory.noise(128, 128, '#4a4a4a', 20, 4) });
+      const bumpGeo = new THREE.DodecahedronGeometry(0.14, 0);
+      const bL = new THREE.Mesh(bumpGeo, bumpMat); bL.position.set(0.12, 0.10, 0); b.shoulderR.add(bL);
+      const bR = new THREE.Mesh(bumpGeo, bumpMat); bR.position.set(-0.12, 0.10, 0); b.shoulderL.add(bR);
+    }
+  }
+  _customizeElite() {
+    if (this.skeleton && this.skeleton.bones.head) {
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0xff2200, transparent: true, opacity: 0.75 });
+      const gL = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), glowMat); gL.position.set(-0.16, 0.06, 0.42);
+      const gR = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), glowMat); gR.position.set(0.16, 0.06, 0.42);
+      this.skeleton.bones.head.add(gL, gR);
+    }
+  }
   spawn(pos) {
     this.position.copy(pos); this.root.position.copy(pos);
     this.health.revive(); this.stamina.cur = this.stamina.max; this.alive = true; this.root.visible = true;
@@ -627,9 +674,11 @@ export class Character {
       const k = Math.max(0, this._hurt) / 0.3;
       const flash = 0.6 * Math.min(1, k * 2);
       for (const m of this._mats) { m.emissive.setRGB(flash, 0, 0); m.emissiveIntensity = 0.12 + flash; }
+      if (this._eyeMats) this._eyeMats[1].color.setHex(flash > 0.1 ? 0xff0000 : 0x111111);
       this._emisDirty = true;
     } else if (this._emisDirty) {
       for (const m of this._mats) { m.emissive.setRGB(0, 0, 0); m.emissiveIntensity = m === this._mats[0] ? 0.12 : 0; }
+      if (this._eyeMats) this._eyeMats[1].color.setHex(0x111111);
       this._emisDirty = false;
     }
   }
