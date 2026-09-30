@@ -4,7 +4,8 @@ import { Spear } from './weapons/Spear.js';
 import { SwordShield } from './weapons/SwordShield.js';
 import { Warhammer } from './weapons/Warhammer.js';
 import { Staff } from './weapons/Staff.js';
-import { Dagger } from './weapons/Dagger.js';
+import { MageDagger } from './weapons/MageDagger.js';
+import { HuntDagger } from './weapons/HuntDagger.js';
 
 export const CLASS_DEFS = {
   warrior: {
@@ -20,17 +21,17 @@ export const CLASS_DEFS = {
     name: '法师',
     desc: '远程法术爆发，AoE清场，脆皮高伤',
     stats: { speed: 9.0, sprintMul: 1.5, maxHp: 100, maxStamina: 80 },
-    weaponNames: ['法杖', '匕首'],
-    weapons: () => [new Staff(), new Dagger()],
+    weaponNames: ['法杖', '秘法匕首'],
+    weapons: () => [new Staff(), new MageDagger()],
     color: 0x4488ff,
     icon: '✦',
   },
   archer: {
     name: '弓箭手',
-    desc: '高机动风筝流，蓄力远程，匕首应急',
+    desc: '高机动风筝流，蓄力远程，猎手匕首应急',
     stats: { speed: 9.5, sprintMul: 1.8, maxHp: 140, maxStamina: 110 },
-    weaponNames: ['弓', '匕首'],
-    weapons: () => [new Bow(), new Dagger()],
+    weaponNames: ['弓', '猎手匕首'],
+    weapons: () => [new Bow(), new HuntDagger()],
     color: 0x44cc44,
     icon: '➹',
   },

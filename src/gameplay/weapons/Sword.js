@@ -12,6 +12,8 @@ export class Sword extends Weapon {
     this.comboLunge = [2.8, 2.0, 3.5];
     this.hitFrame = 0.35;
     this.skillName = '旋斩';
+    this.hitColor = 0xff4422;
+    this.hitEffect = 'normal';
   }
 
   createMesh() {

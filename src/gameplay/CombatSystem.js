@@ -32,6 +32,8 @@ export class CombatSystem {
     this._tmpDir = new THREE.Vector3();
     this._tmpVec = new THREE.Vector3();
     this._arrowPool = [];
+    this._fxRings = [];
+    this._projMatCache = {};
 
     // 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率
     this._counterMatrix = COUNTER_MATRIX;
@@ -100,6 +102,10 @@ export class CombatSystem {
     for (const n of this._numSprites) n.spr.visible = false;
     for (const s of this._pendingStrikes) { if (s.mesh) this.scene.remove(s.mesh); if (s.mat) s.mat.dispose(); }
     this._pendingStrikes.length = 0;
+    for (const r of this._fxRings) { this.scene.remove(r.mesh); r.mat.dispose(); }
+    this._fxRings.length = 0;
+    for (const k in this._projMatCache) this._projMatCache[k].dispose();
+    this._projMatCache = {};
     this.characters.length = 0;
   }
 
@@ -133,10 +139,30 @@ export class CombatSystem {
     if (counterMul > 1.2) this.bus.emit(EV.COMBAT_COUNTER, { attacker, victim, mul: counterMul });
     this.bus.emit(EV.COMBAT_HIT, { attacker, victim, damage, weapon: weaponName, combo, heavy, backstab, crit });
     this._tmpOrigin.copy(victim.position).add(this._tmpTo.set(0, 1.6, 0));
-    this.spawnHitFX(this._tmpOrigin, color);
+    const wHit = attacker && attacker.weapon;
+    const fxColor = (wHit && wHit.hitColor != null) ? wHit.hitColor : color;
+    this.spawnHitFX(this._tmpOrigin, fxColor);
+    if (wHit && wHit.hitEffect === 'magic') this._spawnMagicRing(this._tmpOrigin, fxColor);
     this.createDamageNumber(this._tmpOrigin, Math.round(damage), counterMul > COMBAT.COUNTER_THRESHOLD, crit);
     this.bus.emit(EV.FX_SHAKE, { amount: Math.min(COMBAT.SHAKE_MAX, (COMBAT.SHAKE_MAP[combo] ?? COMBAT.SHAKE_MAP[0]) + (heavy ? COMBAT.HEAVY_SHAKE_BONUS : 0)) });
     this.hitstop = Math.min(COMBAT.HITSTOP_MAX, this.hitstop + (COMBAT.HITSTOP_MAP[combo] ?? COMBAT.HITSTOP_MAP[0]) + (heavy ? COMBAT.HEAVY_HITSTOP_BONUS : 0));
+  }
+
+  _spawnMagicRing(pos, color) {
+    const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(this._aoeRingGeo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(pos.x, 0.08, pos.z);
+    mesh.scale.set(0.3, 0.3, 0.3);
+    this.scene.add(mesh);
+    this._fxRings.push({ mesh, mat, life: 0.35, max: 0.35, expand: 5 });
+  }
+
+  _getProjectileMat(color) {
+    if (!this._projMatCache[color]) {
+      this._projMatCache[color] = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5 });
+    }
+    return this._projMatCache[color];
   }
 
   spawnHitFX(pos, color) {
@@ -318,6 +344,7 @@ export class CombatSystem {
       a.vel.z += (Math.random() - 0.5) * spread * 10;
     }
     a.mesh.position.copy(this._tmpOrigin);
+    a.mesh.material = (weapon.projectileColor != null) ? this._getProjectileMat(weapon.projectileColor) : this._arrowMat;
     a.team = attacker.team;
     a.damage = weapon.damageFor(charge);
     a.life = COMBAT.ARROW_LIFE;
@@ -393,6 +420,15 @@ export class CombatSystem {
   }
 
   update(dt, terrain, now = 0) {
+    for (let i = this._fxRings.length - 1; i >= 0; i--) {
+      const r = this._fxRings[i];
+      r.life -= dt;
+      const t = 1 - r.life / r.max;
+      const s = 0.3 + t * r.expand;
+      r.mesh.scale.set(s, s, s);
+      r.mat.opacity = (1 - t) * 0.7;
+      if (r.life <= 0) { this.scene.remove(r.mesh); r.mat.dispose(); this._fxRings.splice(i, 1); }
+    }
     for (let i = this.arrows.length - 1; i >= 0; i--) {
       const a = this.arrows[i];
       this._tmpPrev.copy(a.pos);

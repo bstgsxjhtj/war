@@ -14,6 +14,8 @@ export class Dagger extends Weapon {
     this.hitFrame = 0.22;
     this.skillName = '影刃';
     this.skillDesc = '突进斩击';
+    this.hitColor = 0xff8844;
+    this.hitEffect = 'normal';
   }
 
   createMesh() {
