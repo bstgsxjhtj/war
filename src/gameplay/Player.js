@@ -25,6 +25,9 @@ export class Player extends Character {
     this._lastDirKey = { code: null, time: 0 };
     this._blocking = false;
     this._weaponSkills = null;
+    this._wasLocked = false;
+    this._lockReleaseT = 0;
+    this._lockReleaseFrom = 0;
     this._bindInput();
   }
 
@@ -196,12 +199,25 @@ export class Player extends Character {
       this.lockTarget.setLockMark(false); this.lockTarget = null; this.camera.lockTarget = null;
     }
 
-    // 锁定时朝向目标，否则相机yaw
-    if (this.lockTarget) {
+    // 锁定时朝向目标；解除锁定时缓动过渡到相机 yaw，避免瞬间朝向跳变
+    const isLocked = !!this.lockTarget;
+    if (isLocked) {
       this.setLook(Math.atan2(this.lockTarget.position.x - this.position.x, this.lockTarget.position.z - this.position.z));
+      this._lockReleaseT = 0;
+    } else if (this._wasLocked) {
+      this._lockReleaseFrom = this._yaw;
+      this._lockReleaseT = 0.2;
+      this.setLook(this._yaw);
+    } else if (this._lockReleaseT > 0) {
+      this._lockReleaseT -= dt;
+      const k = Math.min(1, 1 - Math.max(0, this._lockReleaseT) / 0.2);
+      let diff = this.camera.yaw - this._lockReleaseFrom;
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      this.setLook(this._lockReleaseFrom + diff * k);
     } else {
       this.setLook(this.camera.yaw);
     }
+    this._wasLocked = isLocked;
     const f = (this._keys.has(this._kb.get('forward')) ? 1 : 0) - (this._keys.has(this._kb.get('back')) ? 1 : 0);
     const r = (this._keys.has(this._kb.get('right')) ? 1 : 0) - (this._keys.has(this._kb.get('left')) ? 1 : 0);
     this.setMove(f, r);

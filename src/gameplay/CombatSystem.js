@@ -28,6 +28,9 @@ export class CombatSystem {
     this._tmpOrigin = new THREE.Vector3();
     this._tmpTo = new THREE.Vector3();
     this._tmpAim = new THREE.Vector3();
+    this._tmpPrev = new THREE.Vector3();
+    this._tmpDir = new THREE.Vector3();
+    this._tmpVec = new THREE.Vector3();
     this._arrowPool = [];
 
     // 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率
@@ -371,6 +374,7 @@ export class CombatSystem {
   update(dt, terrain, now = 0) {
     for (let i = this.arrows.length - 1; i >= 0; i--) {
       const a = this.arrows[i];
+      this._tmpPrev.copy(a.pos);
       a.vel.y -= 9.5 * dt;
       a.pos.addScaledVector(a.vel, dt);
       a.life -= dt;
@@ -384,7 +388,21 @@ export class CombatSystem {
         if (!c.alive || c.team === a.team) continue;
         if (a.hitSet && a.hitSet.has(c)) continue;
         const cap = c.capsule;
-        if (a.pos.distanceTo(cap.center) < cap.radius + cap.halfHeight * 0.5) {
+        const hitR = cap.radius + cap.halfHeight * 0.5;
+        // 线段-点扫掠命中：检测 prev→pos 线段到 capsule.center 的最近距离，避免高速箭矢穿隧
+        this._tmpDir.copy(a.pos).sub(this._tmpPrev);
+        const lenSq = this._tmpDir.lengthSq();
+        let distSq;
+        if (lenSq < 1e-8) {
+          distSq = a.pos.distanceToSquared(cap.center);
+        } else {
+          this._tmpVec.copy(cap.center).sub(this._tmpPrev);
+          let t = this._tmpVec.dot(this._tmpDir) / lenSq;
+          if (t < 0) t = 0; else if (t > 1) t = 1;
+          this._tmpVec.copy(this._tmpPrev).addScaledVector(this._tmpDir, t);
+          distSq = this._tmpVec.distanceToSquared(cap.center);
+        }
+        if (distSq < hitR * hitR) {
           const heavy = (a.charge ?? 0) >= 0.8;
           const lost = c.takeDamage(this._affixApply(a.attacker, a.attacker.weapon, a.damage), heavy, a.attacker, now);
           if (lost > 0) { this._emitHit(a.attacker, c, lost, '弓', 0xff5522, 0, heavy, now, false, this._lastAffixCrit); this._affixLeech(a.attacker, lost); }

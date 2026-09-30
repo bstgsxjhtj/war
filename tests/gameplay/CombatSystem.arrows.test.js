@@ -43,7 +43,7 @@ describe('CombatSystem 箭矢释放 _releaseArrow (P0-2)', () => {
     };
     const attacker = { team: 0, weapon: { weaponClass: 'BOW' } };
     cs.characters = [victim];
-    cs.arrows = [{ pos: { x: 0, y: 0, z: 0, addScaledVector() {}, copy() {}, distanceTo: () => 0.1 }, vel: { x: 0, y: 0, z: 0 }, life: 1, mesh: { position: { copy() {} }, lookAt() {} }, team: 0, attacker, damage: 10, charge: 0 }];
+    cs.arrows = [{ pos: new THREE.Vector3(0, 0, 0), vel: new THREE.Vector3(0, 0, 0), life: 1, mesh: { position: { copy() {} }, lookAt() {} }, team: 0, attacker, damage: 10, charge: 0 }];
     const terrain = { heightAt: () => 0 };
     expect(() => cs.update(0.016, terrain, 1000)).not.toThrow();
   });
@@ -180,5 +180,110 @@ describe('CombatSystem 穿透箭命中链 (P1 修复)', () => {
     cs.update(0.001, terrain, 0);
     expect(cs.arrows.length).toBe(0);
     expect(v1.takeDamage).toHaveBeenCalled();
+  });
+});
+
+describe('CombatSystem 高速箭矢扫掠命中 (D8 修复: 线段-点最近距离)', () => {
+  let cs, scene, bus, attacker;
+  function makeVictim(x) {
+    return {
+      _id: x, alive: true, team: 1,
+      position: new THREE.Vector3(x, 0, 0),
+      capsule: { center: new THREE.Vector3(x, 0, 0), radius: 1, halfHeight: 1 },
+      takeDamage: vi.fn(() => 10),
+      health: { alive: true }
+    };
+  }
+  function makeArrow(px, vx, opts = {}) {
+    return {
+      pos: new THREE.Vector3(px, 0, 0),
+      vel: new THREE.Vector3(vx, 0, 0),
+      life: 2, mesh: { position: { copy() {} }, lookAt() {} },
+      team: 0, attacker, damage: 10, charge: 0,
+      pierce: opts.pierce ?? 0,
+      hitSet: opts.hitSet ?? null
+    };
+  }
+  beforeEach(() => {
+    bus = { emit: vi.fn() };
+    scene = { add: vi.fn(), remove: vi.fn() };
+    cs = new CombatSystem(scene, bus);
+    cs.spawnHitFX = vi.fn();
+    cs._emitHit = vi.fn();
+    cs._affixApply = vi.fn(() => 10);
+    cs._affixLeech = vi.fn();
+    attacker = { team: 0, weapon: { weaponClass: 'BOW' } };
+  });
+
+  it('高速箭矢单帧跨过目标时仍命中（扫掠防穿隧）', () => {
+    const v = makeVictim(0);
+    cs.characters = [v];
+    cs.arrows = [makeArrow(-10, 100)];
+    const terrain = { heightAt: () => -10 };
+    cs.update(0.2, terrain, 0);
+    expect(v.takeDamage).toHaveBeenCalled();
+    expect(cs.arrows.length).toBe(0);
+  });
+
+  it('箭矢路径远离目标时不误命中', () => {
+    const v = makeVictim(50);
+    cs.characters = [v];
+    cs.arrows = [makeArrow(-10, 100)];
+    const terrain = { heightAt: () => -10 };
+    cs.update(0.2, terrain, 0);
+    expect(v.takeDamage).not.toHaveBeenCalled();
+  });
+
+  it('低速箭矢仍按端点距离命中（回归兼容）', () => {
+    const v = makeVictim(0);
+    cs.characters = [v];
+    cs.arrows = [makeArrow(-0.3, 1)];
+    const terrain = { heightAt: () => -10 };
+    cs.update(0.2, terrain, 0);
+    expect(v.takeDamage).toHaveBeenCalled();
+  });
+});
+
+describe('CombatSystem 终极箭穿透链 (D8 相关: pierce=99 + hitSet 修复)', () => {
+  let cs, scene, bus, attacker;
+  function makeVictim(id, x) {
+    return {
+      _id: id, alive: true, team: 1,
+      position: new THREE.Vector3(x, 0, 0),
+      capsule: { center: new THREE.Vector3(x, 0, 0), radius: 1, halfHeight: 1 },
+      takeDamage: vi.fn(() => 10),
+      health: { alive: true }
+    };
+  }
+  beforeEach(() => {
+    bus = { emit: vi.fn() };
+    scene = { add: vi.fn(), remove: vi.fn() };
+    cs = new CombatSystem(scene, bus);
+    cs.spawnHitFX = vi.fn();
+    cs._emitHit = vi.fn();
+    cs._affixApply = vi.fn(() => 50);
+    cs._affixLeech = vi.fn();
+    attacker = { team: 0, weapon: { weaponClass: 'BOW' } };
+  });
+
+  it('终极箭穿透多个目标不崩溃且仍存活', () => {
+    const v1 = makeVictim(1, 0);
+    const v2 = makeVictim(2, 5);
+    const v3 = makeVictim(3, 10);
+    cs.characters = [v1, v2, v3];
+    cs.arrows = [{
+      pos: new THREE.Vector3(-5, 0, 0),
+      vel: new THREE.Vector3(100, 0, 0),
+      life: 2, mesh: { position: { copy() {} }, lookAt() {} },
+      team: 0, attacker, damage: 50, charge: 1,
+      pierce: 99, hitSet: new Set()
+    }];
+    const terrain = { heightAt: () => -10 };
+    cs.update(0.2, terrain, 0);
+    expect(v1.takeDamage).toHaveBeenCalled();
+    expect(v2.takeDamage).toHaveBeenCalled();
+    expect(v3.takeDamage).toHaveBeenCalled();
+    expect(cs.arrows.length).toBe(1);
+    expect(cs.arrows[0].pierce).toBe(96);
   });
 });

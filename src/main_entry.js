@@ -199,12 +199,20 @@ async function bootstrap() {
   // 无障碍：色弱形状区分 / 减少动效（关脉冲+震动+顿帧）/ 屏幕震动强度
   let _colorblind = false;
   let _reducedMotion = false;
-  bus.on(EV.SETTINGS_COLORBLIND, ({ colorblind }) => { _colorblind = !!colorblind; miniMap.setColorblind(_colorblind); for (const c of enemies) if (c.setColorblind) c.setColorblind(_colorblind); });
+  bus.on(EV.SETTINGS_COLORBLIND, ({ colorblind }) => { _colorblind = !!colorblind; miniMap.setColorblind(_colorblind); for (const c of getEnemies()) if (c.setColorblind) c.setColorblind(_colorblind); });
   bus.on(EV.SETTINGS_REDUCED_MOTION, ({ reducedMotion }) => { _reducedMotion = !!reducedMotion; camera.setReducedMotion(_reducedMotion); hud.setReducedMotion(_reducedMotion); });
   // 启动应用延后到 player/aiManager 赋值后避免 TDZ
 
-  let player, ais = [], enemies = [];
+  let player, ais = [];
   let remotes = [];
+  // 派生视图：始终反映 player + ais + remotes 的当前状态，避免召唤/增援单位遗漏
+  const getEnemies = () => {
+    const e = [];
+    if (player) e.push(player);
+    for (const a of ais) e.push(a);
+    for (const r of remotes) e.push(r);
+    return e;
+  };
   let netInfo = null;
   const net = new NetClient('ws://127.0.0.1:3000');
   netInfo = await net.connect();
@@ -218,7 +226,6 @@ async function bootstrap() {
       rp.setCameraRef(camera);
       scene.add(rp.root);
       remotes.push(rp);
-      if (player) enemies = [player, ...ais, ...remotes];
     });
     net.on('state', (msg) => {
       const rp = remotes.find(r => r.netId === msg.id);
@@ -226,7 +233,7 @@ async function bootstrap() {
     });
     net.on('leave', (msg) => {
       const i = remotes.findIndex(r => r.netId === msg.id);
-      if (i >= 0) { scene.remove(remotes[i].root); remotes.splice(i, 1); if (player) enemies = [player, ...ais, ...remotes]; }
+      if (i >= 0) { scene.remove(remotes[i].root); remotes.splice(i, 1); }
     });
     net.on('hit', (msg) => {
       if (msg.victim === net.id && player && player.alive) {
@@ -331,8 +338,7 @@ async function bootstrap() {
       weather.clearForecast();
       weather.scheduleNext(['rain','night','snow','storm'][Math.floor(Math.random() * 4)], 30 + Math.random() * 30);
     }
-    enemies = [player, ...ais];
-    if (_colorblind) for (const c of enemies) if (c.setColorblind) c.setColorblind(true);
+    if (_colorblind) for (const c of getEnemies()) if (c.setColorblind) c.setColorblind(true);
     hud.setRefs(player, ais, camera);
     miniMap.setRefs(player, ais, camera.cam);
     miniMap.setWorldSize(MapGenerator.MAPS[currentMapKey].size[0]);
@@ -424,7 +430,7 @@ async function bootstrap() {
         for (const ai of ais) ai._weatherEffects = weatherFx;
         combat._weatherEffects = weatherFx;
         player.update(ldt, terrain, combat, now);
-        for (const a of ais) a.update(ldt, terrain, combat, enemies, now);
+        for (const a of ais) a.update(ldt, terrain, combat, getEnemies(), now);
         for (const rp of remotes) rp.update(ldt, terrain, combat, now);
         combat.update(ldt, terrain, now);
         gameClock.update(ldt);
@@ -443,7 +449,7 @@ async function bootstrap() {
         water.update(dt, now);
         scene.updateCloud(now);
         supply.update(player, dt, now);
-        siege.update(dt, combat, enemies);
+        siege.update(dt, combat, getEnemies());
         // 投石机争夺：靠近自动占领/夺占
         const _prevT = siege.trebuchet.team;
         if (player.alive && siege.tryOccupy(player) && _prevT !== player.team) hud.flash('已占领投石机！');
@@ -537,7 +543,6 @@ async function bootstrap() {
             }
             const lay = mode.spawnLayout();
             spawnRed(lay.red, { bossWave: lay.isBoss, modifier: lay.modifier });
-            enemies = [player, ...ais];
             let msg = '第 ' + mode.wave + ' 波来袭！';
             if (lay.modifier) msg = '第 ' + mode.wave + ' 波 · 【' + lay.modifier.name + '】' + lay.modifier.desc;
             const milestone = mode.checkMilestone();

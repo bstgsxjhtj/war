@@ -177,7 +177,7 @@
 
 ## 设计问题深度评审修复（2026-09-29 第七轮）
 
-> 来源：5 专家圆桌评审（架构/游戏设计/性能/代码质量/测试），10 个候选问题中 7 个确认真实并修复，3 个 P2 留待下轮。
+> 来源：5 专家圆桌评审（架构/游戏设计/性能/代码质量/测试），10 个候选问题全部确认真实并修复（D1-D7 第七轮，D8-D10 第八轮）。
 
 | # | 问题 | 严重级 | 状态 |
 |---|---|---|---|
@@ -188,6 +188,6 @@
 | D5 | WeaponTrail 无 detach（每回合泄漏 LineSegments + 幽灵拖尾） | P1 | ✅已修：加 clear() 方法（remove+dispose+解除 userData 引用），spawnAll 调用 |
 | D6 | switchWeapon/setWeapons 泄漏旧武器 mesh（remove 但不 dispose） | P1 | ✅已修：remove 后调 deepDispose |
 | D7 | 完美闪避 timeScale 死代码（Camera 私设字段无消费者） | P1 | ✅已修：Camera 移除 timeScale 字段，EventWiring FX_PERFECTDODGE 改走 hitStop.trigger(0.4, 0.5) |
-| D8 | 高速箭矢穿隧（tunneling，60m/s 单帧 1m 可越过判定球） | P2 | ⬜留待下轮（需线段-胶囊扫掠） |
-| D9 | 锁定解除瞬间角色朝向跳变（两个缓动系统不同步） | P2 | ⬜留待下轮 |
-| D10 | 召唤/增援单位不进 enemies 快照，AI 协同失效 | P2 | ⬜留待下轮（enemies 改派生视图） |
+| D8 | 高速箭矢穿隧（tunneling，60m/s 单帧 1m 可越过判定球） | P2 | ✅已修：命中判定改线段-点扫掠（prev→pos 线段到 capsule.center 最近距离），终极箭 pierce:true 改 pierce:99+hitSet |
+| D9 | 锁定解除瞬间角色朝向跳变（两个缓动系统不同步） | P2 | ✅已修：Player 加 _wasLocked/_lockReleaseT/_lockReleaseFrom，解除锁定时 0.2s 角度插值过渡到 camera.yaw |
+| D10 | 召唤/增援单位不进 enemies 快照，AI 协同失效 | P2 | ✅已修：enemies 快照数组改 getEnemies() 派生视图，始终反映 player+ais+remotes 当前状态 |

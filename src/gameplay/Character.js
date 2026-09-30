@@ -645,7 +645,7 @@ export class Character {
         const pos = this.position.clone().add(new THREE.Vector3(0, 1.5, 0)).add(fwd.clone().multiplyScalar(0.7));
         const vel = fwd.multiplyScalar(70); vel.y += 1.8;
         mesh.position.copy(pos); mesh.castShadow = true; combat.scene.add(mesh);
-        combat.arrows.push({ mesh, pos: pos.clone(), vel, team: this.team, damage: 50, life: 3.5, attacker: this, charge: 1, pierce: true });
+        combat.arrows.push({ mesh, pos: pos.clone(), vel, team: this.team, damage: 50, life: 3.5, attacker: this, charge: 1, pierce: 99, hitSet: new Set() });
       }
     } else if (w.weaponClass === 'HEAVY') {
       combat.spawnAoE(this.position, 6, 60, this, performance.now() * 0.001);
