@@ -77,6 +77,7 @@ export class MatchController {
         const mul = COUNTER_MATRIX[killer.weapon?.weaponClass]?.[victim.weapon?.weaponClass] ?? 1;
         if (mul > 1.2) this.counterDeaths++;
       }
+      this.deps.getMode()?.onKill?.(victim, killer);
     });
     bus.on(EV.ROUND_RESTART, () => { if (this.deps.state.current === States.ENDED && !this._restarting) this.restart(); });
   }

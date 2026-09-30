@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { Health } from './Health.js';
 import { Stamina } from './Stamina.js';
 import { Sword } from './weapons/Sword.js';
@@ -62,6 +62,7 @@ export class Character {
     this._dodgeTimer = 0; this._dodgeIFrame = 0; this._dodgeOverride = 0;
     this._iFrame = 0;
     this._stun = 0;
+    this._weaponTrail = null; this._weaponTrailColor = 0;
     this._deadTimer = 0;
     // 第三轮：锁定/格挡/完美闪避/击飞
     this.lockTarget = null;
@@ -100,7 +101,7 @@ export class Character {
     if (k >= 7) { dmgMul = 1.3; lifesteal = 0.05; }
     return { dmgMul, cdMul, lifesteal };
   }
-  get canBeExecuted() { return this.alive && (this.health.ratio < COMBAT.EXECUTE_HP_RATIO || this._postureBroken > 0); }
+  get canBeExecuted() { return this.alive && (this.health.ratio < COMBAT.EXECUTE_HP_RATIO + (this._runExecBonus || 0) || this._postureBroken > 0); }
 
   _build() {
     const teamColor = this.team === 0 ? 0x2f5fa8 : 0xa83030;
@@ -196,7 +197,8 @@ export class Character {
     this.health.revive(); this.stamina.cur = this.stamina.max; this.alive = true; this.root.visible = true;
     this.root.rotation.x = 0; this.root.rotation.z = 0; this.root.position.y = pos.y;
     this._comboCount = 0; this._anim = 0; this._attacking = false; this._hurt = 0; this._deadTimer = 0;
-    this._dodgeTimer = 0; this._dodgeIFrame = 0; this._iFrame = 0; this._stun = 0; this._dodgeOverride = 0;
+    this._dodgeTimer = 0; this._dodgeIFrame = 0; this._iFrame = 0; this._stun = 0;
+    this._dodgeOverride = 0;
     this._blocking = false; this._perfectWindow = 0; this._perfectDodge = false; this._perfectBuff = 0; this._launchRot = 0;
     this._updateHpBar();
   }
@@ -213,11 +215,14 @@ export class Character {
 
   switchWeapon(idx) {
     if (idx < 0 || idx >= this.weapons.length || idx === this.weaponIdx) return;
+    if (this._weaponTrail) this._weaponTrail.detach(this._weaponMesh);
     this.weaponIdx = idx;
     this.weaponPivot.remove(this._weaponMesh);
     deepDispose(this._weaponMesh);
     this._weaponMesh = this.weapon.createMesh();
     this.weaponPivot.add(this._weaponMesh);
+    if (this._weaponTrail) this._weaponTrail.attach(this._weaponMesh, this._weaponTrailColor || 0xfff0a0);
+    this._applyAffixMaxHp();
     this._comboCount = 0; this._attacking = false; this._blocking = false;
   }
 
@@ -281,7 +286,7 @@ export class Character {
     if (this._attacking && this._anim >= this._animDur * 0.5) return false;
     this._attacking = false; this._hitResolved = true; this._blocking = false;
     // 完美闪避：闪避后0.12s内被攻击时触发(在takeDamage检测)
-    this._dodgeTimer = 0.32; this._dodgeIFrame = 0.25; this._dodgeOverride = 0.18;
+    this._dodgeTimer = 0.32 * (this._runDodgeCdMul || 1); this._dodgeIFrame = 0.25 + (this._skill?.dodgeIFrameBonus || 0); this._dodgeOverride = 0.18;
     if (!this.stamina.consume(25)) { this._dodgeIFrame = 0; } // 耐力不足：无iFrame翻滚
     this._vTmp.copy(dir).setY(0).normalize();
     this._curVel.addScaledVector(this._vTmp, 13);
@@ -321,6 +326,7 @@ export class Character {
       return 0;
     }
     // 格挡判定
+    if (this._skill && this._skill.branchDodgeChance > 0 && Math.random() < this._skill.branchDodgeChance) return 0;
     if (this._blocking && attacker) {
       const dx = attacker.position.x - this.position.x;
       const dz = attacker.position.z - this.position.z;
@@ -352,6 +358,7 @@ export class Character {
       }
     }
     if (this.damageReduction) amount *= (1 - this.damageReduction);
+    if (this._runArmorMul) amount *= this._runArmorMul;
     if (this._skill && this._skill.branchDefenseMul) amount *= this._skill.branchDefenseMul;
     if (!blocked) this._addPosture(POSTURE.HIT_TAKEN);
     const lost = this.health.damage(amount);
@@ -382,13 +389,15 @@ export class Character {
   setBus(b) { this._bus = b; }
   setComboSys(cs) { this._comboSys = cs; }
   setAudio(a) { this._audio = a; }
-  setSkill(s) { this._skill = s; if (s) { this.health.maxHp += s.maxHpBonus; this.health.cur = this.health.maxHp; this.stamina.max += s.maxStaminaBonus; this.stamina.cur = this.stamina.max; } }
+  setWeaponTrail(t, color = 0) { this._weaponTrail = t; this._weaponTrailColor = color; }
+  setSkill(s) { this._skill = s; if (s) { this._applyAffixMaxHp(); this.health.cur = this.health.maxHp; this.stamina.max += s.maxStaminaBonus; this.stamina.cur = this.stamina.max; } }
 
   setAffixes(a) { this._affixes = a; this._applyAffixMaxHp(); }
   _applyAffixMaxHp() {
     if (!this._affixes) return;
     const bonus = this._affixes.affixBonus(this.weapon, '坚韧');
-    this.health.maxHp = this._baseMaxHp + bonus;
+    const skillBonus = this._skill ? this._skill.maxHpBonus : 0;
+    this.health.maxHp = this._baseMaxHp + bonus + skillBonus;
     if (this.health.cur > this.health.maxHp) this.health.cur = this.health.maxHp;
   }
 
@@ -400,6 +409,8 @@ export class Character {
     if (this._executing > 0) { this._tickExecuting(dt, now); return; }
     this._tickTimers(dt);
     this.stamina.regen(dt * ((this._weatherEffects && this._weatherEffects.staminaRegenMul) || 1), this._attacking || this._dodgeTimer > 0 || this._blocking);
+    if (this._runRegen && this.alive) { this._regenAcc = (this._regenAcc || 0) + dt; if (this._regenAcc >= 1) { this.health.hp = Math.min(this.health.maxHp, this.health.hp + this._runRegen); this._regenAcc -= 1; this._updateHpBar(); } }
+    if (this._skill && this._skill.branchRegen && this.alive) { this.health.hp = Math.min(this.health.maxHp, this.health.hp + this._skill.branchRegen * dt); this._updateHpBar(); }
     if (this._postureBroken > 0) {
       this._postureBroken -= dt;
       if (this._postureBroken <= 0) { this._postureBroken = 0; this._posture = 0; }

@@ -14,7 +14,7 @@ export class NetClient {
       try {
         this.ws = new WebSocket(this.url);
       } catch (e) { resolve(null); return; }
-      const to = setTimeout(() => { resolve(null); }, 3000);
+      const to = setTimeout(() => { try { this.ws.close(); } catch (e) {} resolve(null); }, 3000);
       this.ws.onopen = () => { this.connected = true; };
       this.ws.onmessage = (e) => {
         let msg;

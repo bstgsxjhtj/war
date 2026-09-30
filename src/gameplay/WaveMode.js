@@ -43,6 +43,7 @@ export class WaveMode {
       const r = 20 + Math.random() * 6;
       red.push({ x: Math.cos(a) * r, z: 40 + Math.sin(a) * r, ang: Math.PI, isBoss: isBoss && i === 0 });
     }
+    this.alive = red.length;
     return { blue: [{ x: -16, z: -30 }], red, isBoss, wave: this.wave, modifier: mod, nextModifier: this.nextModifier };
   }
 

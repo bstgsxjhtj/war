@@ -339,7 +339,7 @@ export class HUD {
       const b = player._skill.branches;
       if (b.berserk.level > 0) parts.push(this._buffChip('狂暴 +25%', '#f55'));
       if (b.guardian.level > 0) parts.push(this._buffChip('守护 -15%', '#5af'));
-      if (b.regen.level > 0) parts.push(this._buffChip('回复 +2/s', '#5f5'));
+      if (b.regen.level > 0) parts.push(this._buffChip(`回复 +${player._skill.branchRegen}/s`, '#5f5'));
       if (b.lifesteal.level > 0) parts.push(this._buffChip('吸血 5%', '#f7a'));
       if (b.swift.level > 0) parts.push(this._buffChip('疾风 +10%', '#7df'));
       if (b.evade.level > 0) parts.push(this._buffChip('闪避 10%', '#a7f'));

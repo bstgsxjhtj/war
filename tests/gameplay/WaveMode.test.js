@@ -51,6 +51,22 @@ describe('WaveMode', () => {
     w.onKill();
     expect(w.alive).toBe(0);
   });
+
+  it('G4: spawnLayout 设置 alive 为敌人数量', () => {
+    const w = new WaveMode({});
+    const layout = w.spawnLayout();
+    expect(w.alive).toBe(layout.red.length);
+    expect(w.alive).toBeGreaterThan(0);
+  });
+
+  it('G4: waveInfo.alive 与 spawnLayout/onKill 联动', () => {
+    const w = new WaveMode({});
+    w.spawnLayout();
+    const initial = w.waveInfo.alive;
+    expect(initial).toBeGreaterThan(0);
+    w.onKill();
+    expect(w.waveInfo.alive).toBe(initial - 1);
+  });
 });
 
 describe('WaveMode endless', () => {

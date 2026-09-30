@@ -318,6 +318,7 @@ async function bootstrap() {
     scene.add(player.root);
     combat.register(player);
     if (player._weaponMesh) weaponTrail.attach(player._weaponMesh, 0xfff0a0);
+    player.setWeaponTrail(weaponTrail, 0xfff0a0);
     if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx);
     let redLayout, bossWave = false, spawnModifier = null, stageDifficulty = 1;
     if (mode.name === '战役') { const lay = campaign.spawnLayout(); redLayout = lay.red; stageDifficulty = lay.difficulty || 1; }

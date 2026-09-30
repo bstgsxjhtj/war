@@ -120,15 +120,16 @@ export class CombatSystem {
     this.scene.remove(this._partPts);
   }
 
-  _counterMul(atkW, vicW) {
+  _counterMul(atkW, vicW, attacker) {
     const a = atkW?.weaponClass, v = vicW?.weaponClass;
     if (!a || !v) return 1;
-    return this._counterMatrix[a]?.[v] ?? 1;
+    const base = this._counterMatrix[a]?.[v] ?? 1;
+    return base > 1 ? base * (attacker?._runCounterMul || 1) : base;
   }
 
   _emitHit(attacker, victim, damage, weaponName, color, combo = 0, heavy = false, now = 0, backstab = false, crit = false) {
     if (attacker && attacker.addRage) attacker.addRage(3);
-    const counterMul = this._counterMul(attacker.weapon, victim.weapon);
+    const counterMul = this._counterMul(attacker.weapon, victim.weapon, attacker);
     if (counterMul > 1.2) this.bus.emit(EV.COMBAT_COUNTER, { attacker, victim, mul: counterMul });
     this.bus.emit(EV.COMBAT_HIT, { attacker, victim, damage, weapon: weaponName, combo, heavy, backstab, crit });
     this._tmpOrigin.copy(victim.position).add(this._tmpTo.set(0, 1.6, 0));
@@ -232,7 +233,7 @@ export class CombatSystem {
       if (angle <= weapon.arc / 2) {
         const backDot = c.forward.x * attacker.forward.x + c.forward.z * attacker.forward.z;
         const isBackstab = backDot > 0.7;
-        const counterMul = this._counterMul(attacker.weapon, c.weapon);
+        const counterMul = this._counterMul(attacker.weapon, c.weapon, attacker);
         const countered = counterMul > 1.2;
         const perfect = !!attacker._perfectRebound;
         if (perfect) attacker._perfectRebound = false;
