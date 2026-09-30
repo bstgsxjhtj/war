@@ -4,7 +4,9 @@ export const WEAPON_STATS = {
   SPEAR: { name: '枪', damage: 18, range: 4.2, cooldown: 0.4 },
   SWORD_SHIELD: { name: '剑盾', damage: 20, range: 2.6, cooldown: 0.32 },
   WARHAMMER: { name: '重锤', damage: 55, range: 2.4, cooldown: 1.2 },
-  BOW: { name: '弓', damage: 30, range: 70, cooldown: 0.95 }
+  BOW: { name: '弓', damage: 30, range: 70, cooldown: 0.95 },
+  STAFF: { name: '法杖', damage: 35, range: 50, cooldown: 0.8 },
+  DAGGER: { name: '匕首', damage: 12, range: 1.8, cooldown: 0.18 }
 };
 
 // 战斗反馈：屏幕震动/顿帧/背刺/暴击/处决阈值与伤害

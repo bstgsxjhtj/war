@@ -36,7 +36,9 @@ describe('P2-8 balance.js 魔法数字收敛', () => {
     expect(EXECUTE.DURATION).toBeGreaterThan(0);
   });
 
-  it('WEAPON_STATS 保持既有五武器', () => {
-    expect(Object.keys(WEAPON_STATS).length).toBe(5);
+  it('WEAPON_STATS 包含基础五武器+职业扩展武器', () => {
+    expect(Object.keys(WEAPON_STATS).length).toBe(7);
+    expect(WEAPON_STATS.STAFF).toBeDefined();
+    expect(WEAPON_STATS.DAGGER).toBeDefined();
   });
 });

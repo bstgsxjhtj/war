@@ -3,10 +3,10 @@ import * as THREE from 'three';
 import { EV } from '../core/constants/events.js';
 
 const BOSS_TYPES = {
-  warlord: { hp: 300, speed: 5.5, name: '战将', skills: ['charge', 'roar', 'summon'], phase3: null },
-  ranger:  { hp: 220, speed: 6.0, name: '游侠', skills: ['rapidshot', 'dodge', 'trap'], phase3: 'clone' },
-  mage:    { hp: 180, speed: 5.0, name: '法师', skills: ['fireball', 'teleport', 'aoe'], phase3: 'meteor' },
-  behemoth:{ hp: 400, speed: 4.5, name: '巨兽', skills: ['slam', 'charge', 'regenerate'], phase3: 'quake' },
+  warlord:  { hp: 300, speed: 5.5, name: '战将', skills: ['charge', 'roar', 'summon'], phase3: null,      weakness: 'backstab', weaknessMul: 1.5, weaknessDesc: '弱点：背刺' },
+  ranger:   { hp: 220, speed: 6.0, name: '游侠', skills: ['rapidshot', 'dodge', 'trap'], phase3: 'clone', weakness: 'melee', weaknessMul: 1.5, weaknessDesc: '弱点：近战' },
+  mage:     { hp: 180, speed: 5.0, name: '法师', skills: ['fireball', 'teleport', 'aoe'], phase3: 'meteor', weakness: 'interrupt', weaknessMul: 2.0, weaknessDesc: '弱点：施法时打断' },
+  behemoth: { hp: 400, speed: 4.5, name: '巨兽', skills: ['slam', 'charge', 'regenerate'], phase3: 'quake', weakness: 'projectile', weaknessMul: 1.5, weaknessDesc: '弱点：远程' },
 };
 // 技能阶段门槛：基础技阶段 1 开放，未列出的默认阶段 2，summon 阶段 3
 const PHASE_GATE = { slam: 1, dodge: 1, summon: 3 };
@@ -49,6 +49,10 @@ export class BossEnemy extends AIController {
     this._quakeCd = 0;
     this._meteorCd = 0;
     this._cloneCd = 0;
+    this._weakness = cfg.weakness || null;
+    this._weaknessMul = cfg.weaknessMul || 1;
+    this._weaknessDesc = cfg.weaknessDesc || '';
+    this._castingTimer = 0;
     if (this.root) {
       const s = mini ? 1.1 : 1.35;
       this.root.scale.set(s, s, s);
@@ -56,7 +60,29 @@ export class BossEnemy extends AIController {
     }
   }
 
-  get displayName() { return '【Boss】' + this._name; }
+  get displayName() { return '【Boss】' + this._name + (this._weaknessDesc ? ' · ' + this._weaknessDesc : ''); }
+
+  getWeaknessMul(attacker) {
+    if (!this._weakness || !attacker) return 1;
+    switch (this._weakness) {
+      case 'backstab': {
+        const dx = attacker.position.x - this.position.x;
+        const dz = attacker.position.z - this.position.z;
+        const dist2 = dx * dx + dz * dz;
+        if (dist2 < 0.01) return 1;
+        const fwdDot = (dx * this.forward.x + dz * this.forward.z) / Math.sqrt(dist2);
+        return fwdDot < -0.3 ? this._weaknessMul : 1;
+      }
+      case 'melee':
+        return (attacker.weapon && attacker.weapon.type === 'melee') ? this._weaknessMul : 1;
+      case 'interrupt':
+        return this._castingTimer > 0 ? this._weaknessMul : 1;
+      case 'projectile':
+        return (attacker.weapon && attacker.weapon.type === 'projectile') ? this._weaknessMul : 1;
+      default:
+        return 1;
+    }
+  }
 
   _phaseGate(skill) { return PHASE_GATE[skill] ?? 2; }
 
@@ -130,6 +156,7 @@ export class BossEnemy extends AIController {
     if (!target) return;
     const dir = new THREE.Vector3().subVectors(target.position, this.root.position).setY(0).normalize();
     combat.spawnPierceArrow && combat.spawnPierceArrow(this, this.weapon, 1, { origin: this.root.position, dir, damage: 50 });
+    this._castingTimer = 0.8;
     this._fireballCd = 7;
   }
 
@@ -137,11 +164,13 @@ export class BossEnemy extends AIController {
     if (!target) return;
     const fwd = new THREE.Vector3().subVectors(target.position, this.position).setY(0).normalize().multiplyScalar(-5);
     this.position.copy(target.position).add(fwd);
+    this._castingTimer = 0.8;
     this._teleportCd = 10;
   }
 
   _skillAoe(combat, now) {
     combat.spawnAoE && combat.spawnAoE(this.root.position, 8, 35, this, now, 0.35);
+    this._castingTimer = 0.8;
     this._aoeSkillCd = 12;
   }
 
@@ -172,6 +201,7 @@ export class BossEnemy extends AIController {
   _skillMeteor(target, combat, now) {
     if (!target || !combat.spawnAoE) return;
     combat.spawnAoE(target.position, 5, 40, this, now, 0.6);
+    this._castingTimer = 1.0;
     this._meteorCd = 12;
     this._bus && this._bus.emit(EV.FX_SHAKE, { amount: 0.5 });
   }
@@ -213,6 +243,7 @@ export class BossEnemy extends AIController {
     this._quakeCd -= dt * cdRate;
     this._meteorCd -= dt * cdRate;
     this._cloneCd -= dt * cdRate;
+    if (this._castingTimer > 0) this._castingTimer -= dt;
     if (this._trapTimer > 0) {
       this._trapTimer -= dt;
       if (this._trapTimer <= 0 && this._trapPos) {

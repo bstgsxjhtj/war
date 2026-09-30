@@ -10,8 +10,9 @@ import { KeyBindings } from '../core/input/KeyBindings.js';
 
 // 本地玩家：Tab锁定 / 右键格挡(持刀) / 蓄力越肩(弓) / Q闪避
 export class Player extends Character {
-  constructor(camera, bus, keyBindings) {
-    super({ team: 0, isLocal: true, speed: 8.5, maxHp: 160 });
+  constructor(camera, bus, keyBindings, classStats = null) {
+    const stats = classStats || { speed: 8.5, sprintMul: 1.7, maxHp: 160, maxStamina: 100 };
+    super({ team: 0, isLocal: true, ...stats });
     this.camera = camera;
     this.setBus(bus);
     this._keys = new Set();

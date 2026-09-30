@@ -29,7 +29,7 @@ function applyFresnelRim(mat, rimColor, intensity) {
 
 // 角色：耐力+锁定+格挡+完美闪避+击飞+涉水(第三轮进化)
 export class Character {
-  constructor({ team = 0, isLocal = false, speed = 8.5, sprintMul = 1.7, maxHp = 160 } = {}) {
+  constructor({ team = 0, isLocal = false, speed = 8.5, sprintMul = 1.7, maxHp = 160, maxStamina = 100 } = {}) {
     this.team = team;
     this.isLocal = isLocal;
     this.speed = speed;
@@ -46,7 +46,7 @@ export class Character {
 
     this.health = new Health(maxHp);
     this._baseMaxHp = maxHp;
-    this.stamina = new Stamina(100);
+    this.stamina = new Stamina(maxStamina);
     this.weapons = [new Sword(), new Bow()];
     this.weaponIdx = 0;
 
@@ -441,6 +441,11 @@ export class Character {
     if (this.damageReduction) amount *= (1 - this.damageReduction);
     if (this._runArmorMul) amount *= this._runArmorMul;
     if (this._skill && this._skill.branchDefenseMul) amount *= this._skill.branchDefenseMul;
+    const wMul = this.getWeaknessMul ? this.getWeaknessMul(attacker) : 1;
+    if (wMul > 1) {
+      amount *= wMul;
+      if (this._bus) this._bus.emit(EV.FX_SHAKE, { amount: 0.15 });
+    }
     if (!blocked) this._addPosture(POSTURE.HIT_TAKEN);
     const lost = this.health.damage(amount);
     if (attacker) this.lastAttacker = attacker;
@@ -820,6 +825,14 @@ export class Character {
     } else if (w.weaponClass === 'SPEAR') {
       this._curVel.addScaledVector(this.forward, 30);
       combat.ultimateLine(this.position, this.forward, 5, 50, this);
+    } else if (w.weaponClass === 'STAFF') {
+      const now2 = performance.now() * 0.001;
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * Math.PI * 2;
+        const r = 4 + i * 0.5;
+        const p = this.position.clone().add(new THREE.Vector3(Math.cos(ang) * r, 0, Math.sin(ang) * r));
+        combat.spawnAoE(p, 5, 45, this, now2, i * 0.15);
+      }
     } else {
       combat.ultimateMelee(this, Math.PI * 2, 5, 6);
     }

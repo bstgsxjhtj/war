@@ -62,9 +62,26 @@ export class SkillTree {
     arr.splice(to, 0, item);
   }
 
+  setWeaponSlots(names) {
+    const n = names.length;
+    const oldLevel = this.weaponLevel;
+    const oldNames = this.weaponNames;
+    this.weaponNames = [...names];
+    this.weaponLevel = {};
+    this.weaponOrder = [];
+    for (let i = 0; i < n; i++) {
+      this.weaponLevel[i] = 1;
+      this.weaponOrder.push(i);
+    }
+    for (let i = 0; i < n; i++) {
+      const oldIdx = oldNames.indexOf(names[i]);
+      if (oldIdx >= 0 && oldLevel[oldIdx]) this.weaponLevel[i] = oldLevel[oldIdx];
+    }
+  }
+
   reset() {
     for (const s of Object.values(this.skills)) { this.points += s.level * s.cost; s.level = 0; }
-    for (let i = 0; i < 4; i++) { this.points += (this.weaponLevel[i] - 1) * 2; this.weaponLevel[i] = 1; }
+    for (let i = 0; i < this.weaponOrder.length; i++) { this.points += (this.weaponLevel[i] - 1) * 2; this.weaponLevel[i] = 1; }
     for (const b of Object.values(this.branches)) { this.points += b.level * b.cost; b.level = 0; }
   }
 
@@ -106,7 +123,7 @@ export class SkillTree {
       if (!d) return false;
       this.points = d.points || 0;
       for (const [k, v] of Object.entries(d.skills || {})) if (this.skills[k]) this.skills[k].level = v;
-      for (let i = 0; i < 4; i++) this.weaponLevel[i] = (d.weaponLevel && d.weaponLevel[i]) || 1;
+      for (let i = 0; i < this.weaponOrder.length; i++) this.weaponLevel[i] = (d.weaponLevel && d.weaponLevel[i]) || 1;
       if (Array.isArray(d.skillOrder)) this.skillOrder = d.skillOrder;
       if (Array.isArray(d.weaponOrder)) this.weaponOrder = d.weaponOrder;
       return true;
@@ -115,9 +132,9 @@ export class SkillTree {
   restore(data = {}) {
     if (typeof data.points === 'number') this.points = data.points;
     for (const [k, v] of Object.entries(data.skills || {})) if (this.skills[k] && typeof v === 'number') this.skills[k].level = Math.max(0, Math.min(this.skills[k].max, v));
-    for (let i = 0; i < 4; i++) if (typeof (data.weaponLevel && data.weaponLevel[i]) === 'number') this.weaponLevel[i] = Math.max(1, Math.min(3, data.weaponLevel[i]));
+    for (let i = 0; i < this.weaponOrder.length; i++) if (typeof (data.weaponLevel && data.weaponLevel[i]) === 'number') this.weaponLevel[i] = Math.max(1, Math.min(3, data.weaponLevel[i]));
     if (Array.isArray(data.skillOrder) && data.skillOrder.length === 4) this.skillOrder = data.skillOrder;
-    if (Array.isArray(data.weaponOrder) && data.weaponOrder.length === 4) this.weaponOrder = data.weaponOrder;
+    if (Array.isArray(data.weaponOrder) && data.weaponOrder.length === this.weaponNames.length) this.weaponOrder = data.weaponOrder;
     for (const [k, v] of Object.entries(data.branches || {})) if (this.branches[k] && typeof v === 'number') this.branches[k].level = Math.max(0, Math.min(this.branches[k].max, v));
   }
 

@@ -118,11 +118,11 @@ describe('BossEnemy 技能方法', () => {
 });
 
 describe('BossEnemy displayName', () => {
-  it('【Boss】战将', () => {
-    expect(new BossEnemy({ type: 'warlord' }).displayName).toBe('【Boss】战将');
+  it('【Boss】战将 · 弱点：背刺', () => {
+    expect(new BossEnemy({ type: 'warlord' }).displayName).toBe('【Boss】战将 · 弱点：背刺');
   });
-  it('【Boss】巨兽', () => {
-    expect(new BossEnemy({ type: 'behemoth' }).displayName).toBe('【Boss】巨兽');
+  it('【Boss】巨兽 · 弱点：远程', () => {
+    expect(new BossEnemy({ type: 'behemoth' }).displayName).toBe('【Boss】巨兽 · 弱点：远程');
   });
 });
 

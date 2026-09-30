@@ -48,6 +48,8 @@ import { ResultScreen } from './ui/ResultScreen.js';
 import { SupplyPoint } from './world/SupplyPoint.js';
 import { MapGenerator } from './world/MapGenerator.js';
 import { MiniMap } from './ui/MiniMap.js';
+import { CLASS_DEFS } from './gameplay/ClassDefinition.js';
+import { ClassSelectUI } from './ui/ClassSelectUI.js';
 import { WeaponTrail, HitDirection, HitStop } from './render/WeaponTrail.js';
 import { DodgeGhosts } from './render/DodgeGhosts.js';
 import { BossEnemy, EliteEnemy } from './gameplay/BossEnemy.js';
@@ -209,6 +211,7 @@ async function bootstrap() {
   // 启动应用延后到 player/aiManager 赋值后避免 TDZ
 
   let player, ais = [];
+  let selectedClass = 'warrior';
   let remotes = [];
   // 派生视图：始终反映 player + ais + remotes 的当前状态，避免召唤/增援单位遗漏
   const getEnemies = () => {
@@ -298,20 +301,22 @@ async function bootstrap() {
     if (player) { if (player.dispose) player.dispose(); scene.remove(player.root); }
     for (const a of ais) { if (a.dispose) a.dispose(); scene.remove(a.root); }
     ais = [];
-    player = new Player(camera, bus, keyBindings);
+    const _classDef = CLASS_DEFS[selectedClass] || CLASS_DEFS.warrior;
+    player = new Player(camera, bus, keyBindings, _classDef.stats);
     player.setComboSys(comboSys);
     comboSys.count = 0; comboSys._tier = 0; comboSys._finisher = false;
     player.setWeaponSkills(weaponSkills);
     weaponSkills.reset();
     combat.setAffixes(affixes);
     player.setAffixes(affixes);
-    player.setWeapons([new Sword(), new Bow(), new Spear(), new Warhammer()]);
+    player.setWeapons(_classDef.weapons());
     const _savedAff = saveManager.load();
     if (_savedAff && _savedAff.affixSlots) {
       for (const w of player.weapons) {
         if (w && _savedAff.affixSlots[w.weaponClass]) w.affixes = _savedAff.affixSlots[w.weaponClass].map(a => a ? { ...a } : null);
       }
     }
+    skills.setWeaponSlots(_classDef.weaponNames);
     player.setSkill(skills);
     try { if (runBuffs) runBuffs.reapply(player); } catch (e) {}
     try { if (upgradePicker) upgradePicker.player = player; } catch (e) {}
@@ -384,8 +389,23 @@ async function bootstrap() {
   let _wavePending = false;
   hud.setRound(0, 0, match.targetWins);
   hud.setMode(mode.name + ' · ' + currentMapName);
-  hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式');
+  hud.flash('点击锁定鼠标 · WASD移动 · 左键攻击 · 右键格挡/蓄力 · Tab锁定 · Q闪避 · 1-4切换武器 · M切换模式 · C切换职业');
   setTimeout(() => hud.clearHint(), 5000);
+  const classSelectUI = new ClassSelectUI((key) => {
+    selectedClass = key;
+    spawnAll();
+    const def = CLASS_DEFS[key];
+    hud.flash('已选择：' + def.name + ' · ' + def.desc);
+    setTimeout(() => hud.clearHint(), 3000);
+  });
+  classSelectUI.show();
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyC' && !e.repeat) {
+      const locked = document.pointerLockElement;
+      if (locked) document.exitPointerLock();
+      classSelectUI.show();
+    }
+  });
   let tutorial = null;
   try { if (!localStorage.getItem(LS.TUTORIAL_DONE)) tutorial = new Tutorial(bus, keyBindings); } catch (e) {}
 
