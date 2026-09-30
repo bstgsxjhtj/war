@@ -114,10 +114,12 @@ export class Character {
     const matTrim = new THREE.MeshStandardMaterial({ color: trim, roughness: 0.5, metalness: 0.7 });
     applyFresnelRim(matArmor, 0xffb060, 0.5); applyFresnelRim(matTrim, 0xffb060, 0.6);
     const matSkin = new THREE.MeshStandardMaterial({ color: skin, roughness: 0.8 });
+    const matHelm = new THREE.MeshStandardMaterial({ color: this.team === 0 ? 0x7a9fd0 : 0x4a4a52, roughness: 0.3, metalness: 0.85 });
+    applyFresnelRim(matHelm, 0xaaccff, 0.5);
     const matEyeW = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const matEyeP = new THREE.MeshBasicMaterial({ color: 0x111111 });
     this._eyeMats = [matEyeW, matEyeP];
-    this._mats = [matBody, matArmor, matTrim, matSkin];
+    this._mats = [matBody, matArmor, matTrim, matSkin, matHelm];
 
     const legGeo = new THREE.CapsuleGeometry(0.20, 0.40, 4, 12);
     this.rLeg = new THREE.Mesh(legGeo, matArmor); this.rLeg.position.set(0.2, 0.5, 0); this.rLeg.castShadow = true;
@@ -131,32 +133,58 @@ export class Character {
     this.rArm = new THREE.Mesh(armGeo, matBody); this.rArm.position.set(0.5, 1.3, 0); this.rArm.castShadow = true;
     this.lArm = new THREE.Mesh(armGeo, matBody); this.lArm.position.set(-0.5, 1.3, 0); this.lArm.castShadow = true;
     this.head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 2), matSkin); this.head.position.y = 2.1; this.head.castShadow = true;
-    const eyeGeoW = new THREE.SphereGeometry(0.07, 8, 8);
-    const eyeGeoP = new THREE.SphereGeometry(0.04, 6, 6);
-    const eyeL = new THREE.Mesh(eyeGeoW, matEyeW); eyeL.position.set(-0.16, 0.06, 0.35);
-    const pupilL = new THREE.Mesh(eyeGeoP, matEyeP); pupilL.position.set(-0.16, 0.06, 0.41);
-    const eyeR = new THREE.Mesh(eyeGeoW, matEyeW); eyeR.position.set(0.16, 0.06, 0.35);
-    const pupilR = new THREE.Mesh(eyeGeoP, matEyeP); pupilR.position.set(0.16, 0.06, 0.41);
-    const browGeo = new THREE.BoxGeometry(0.13, 0.03, 0.02);
+    const eyeGeoW = new THREE.SphereGeometry(0.095, 10, 10);
+    const eyeGeoP = new THREE.SphereGeometry(0.052, 8, 8);
+    const eyeL = new THREE.Mesh(eyeGeoW, matEyeW); eyeL.position.set(-0.16, 0.06, 0.36);
+    const pupilL = new THREE.Mesh(eyeGeoP, matEyeP); pupilL.position.set(-0.16, 0.06, 0.43);
+    const eyeR = new THREE.Mesh(eyeGeoW, matEyeW); eyeR.position.set(0.16, 0.06, 0.36);
+    const pupilR = new THREE.Mesh(eyeGeoP, matEyeP); pupilR.position.set(0.16, 0.06, 0.43);
+    const browGeo = new THREE.BoxGeometry(0.15, 0.035, 0.02);
     const browMat = new THREE.MeshBasicMaterial({ color: 0x2a1a08 });
-    const browL = new THREE.Mesh(browGeo, browMat); browL.position.set(-0.16, 0.16, 0.38); browL.rotation.z = -0.15;
-    const browR = new THREE.Mesh(browGeo, browMat); browR.position.set(0.16, 0.16, 0.38); browR.rotation.z = 0.15;
+    const browL = new THREE.Mesh(browGeo, browMat); browL.position.set(-0.16, 0.17, 0.39); browL.rotation.z = -0.15;
+    const browR = new THREE.Mesh(browGeo, browMat); browR.position.set(0.16, 0.17, 0.39); browR.rotation.z = 0.15;
     this.head.add(eyeL, pupilL, eyeR, pupilR, browL, browR);
-    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.02), new THREE.MeshBasicMaterial({ color: 0x3a2010 }));
-    mouth.position.set(0, -0.14, 0.38);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.09, 6), matSkin);
+    nose.position.set(0, -0.03, 0.43); nose.rotation.x = Math.PI / 2;
+    this.head.add(nose);
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.02), new THREE.MeshBasicMaterial({ color: 0x3a2010 }));
+    mouth.position.set(0, -0.15, 0.40);
     this.head.add(mouth);
     this._face = { eyeL, eyeR, pupilL, pupilR, mouth, browL, browR, mouthMat: mouth.material };
     this._blinkTimer = 2 + Math.random() * 3;
     this._blinkPhase = 0;
     this._faceState = "idle";
+    // 阵营头部装饰：蓝方野蛮人（牛角盔+金色大胡子） / 红方骑士（暗铁盔+红色盔缨）
+    if (this.team === 0) {
+      const hornGeo = new THREE.TorusGeometry(0.14, 0.045, 6, 10, Math.PI * 0.85);
+      const hornMat = new THREE.MeshStandardMaterial({ color: 0xe8e0d0, roughness: 0.55 });
+      const hornL = new THREE.Mesh(hornGeo, hornMat); hornL.position.set(-0.38, 0.30, 0); hornL.rotation.z = Math.PI * 0.5; hornL.castShadow = true;
+      const hornR = new THREE.Mesh(hornGeo, hornMat); hornR.position.set(0.38, 0.30, 0); hornR.rotation.z = -Math.PI * 0.35; hornR.castShadow = true;
+      this.head.add(hornL, hornR);
+      const beardMat = new THREE.MeshStandardMaterial({ color: 0xd8a030, roughness: 0.85 });
+      const beard = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.30, 8), beardMat);
+      beard.position.set(0, -0.32, 0.28); beard.rotation.x = Math.PI;
+      this.head.add(beard);
+      const mustGeo = new THREE.BoxGeometry(0.14, 0.045, 0.04);
+      const mustL = new THREE.Mesh(mustGeo, beardMat); mustL.position.set(-0.11, -0.17, 0.39); mustL.rotation.z = 0.35; mustL.rotation.y = -0.3;
+      const mustR = new THREE.Mesh(mustGeo, beardMat); mustR.position.set(0.11, -0.17, 0.39); mustR.rotation.z = -0.35; mustR.rotation.y = 0.3;
+      this.head.add(mustL, mustR);
+    } else {
+      const crest = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.22, 0.55),
+        new THREE.MeshStandardMaterial({ color: 0xd03030, roughness: 0.7 })
+      );
+      crest.position.set(0, 0.62, -0.05); crest.castShadow = true;
+      this.head.add(crest);
+    }
     const helmPoints = [
       new THREE.Vector2(0.46, 0), new THREE.Vector2(0.44, 0.05),
       new THREE.Vector2(0.40, 0.12), new THREE.Vector2(0.34, 0.25),
       new THREE.Vector2(0.24, 0.38), new THREE.Vector2(0.12, 0.46),
       new THREE.Vector2(0, 0.50),
     ];
-    const helm = new THREE.Mesh(new THREE.LatheGeometry(helmPoints, 16), matTrim); helm.position.y = 2.28; helm.castShadow = true;
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.12, 0.12), matArmor); visor.position.set(0, 2.12, 0.28);
+    const helm = new THREE.Mesh(new THREE.LatheGeometry(helmPoints, 16), matHelm); helm.position.y = 2.28; helm.castShadow = true;
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.08, 0.14), matHelm); visor.position.set(0, 2.26, 0.32);
     const rPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.35, 12), matTrim); rPauldron.position.set(0.5, 1.82, 0); rPauldron.castShadow = true;
     const lPauldron = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.35, 12), matTrim); lPauldron.position.set(-0.5, 1.82, 0); lPauldron.castShadow = true;
     const rKneeguard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 1), matTrim); rKneeguard.position.set(0.2, 0.28, 0.05); rKneeguard.castShadow = true;
@@ -686,13 +714,13 @@ export class Character {
     }
     // Eyebrow expression
     if (st === 'attack1' || st === 'attack2' || st === 'attack3' || st === 'charge') {
-      f.browL.rotation.z = -0.35; f.browR.rotation.z = 0.35; f.browL.position.y = 0.14; f.browR.position.y = 0.14;
+      f.browL.rotation.z = -0.35; f.browR.rotation.z = 0.35; f.browL.position.y = 0.15; f.browR.position.y = 0.15;
     } else if (st === 'hurt' || st === 'death') {
-      f.browL.rotation.z = 0.20; f.browR.rotation.z = -0.20; f.browL.position.y = 0.19; f.browR.position.y = 0.19;
+      f.browL.rotation.z = 0.20; f.browR.rotation.z = -0.20; f.browL.position.y = 0.20; f.browR.position.y = 0.20;
     } else if (st === 'block' || st === 'dodge') {
-      f.browL.rotation.z = -0.25; f.browR.rotation.z = 0.25; f.browL.position.y = 0.15; f.browR.position.y = 0.15;
+      f.browL.rotation.z = -0.25; f.browR.rotation.z = 0.25; f.browL.position.y = 0.16; f.browR.position.y = 0.16;
     } else {
-      f.browL.rotation.z = -0.15; f.browR.rotation.z = 0.15; f.browL.position.y = 0.16; f.browR.position.y = 0.16;
+      f.browL.rotation.z = -0.15; f.browR.rotation.z = 0.15; f.browL.position.y = 0.17; f.browR.position.y = 0.17;
     }
     // Pupil tracking: look toward forward direction
     if (this.forward) {

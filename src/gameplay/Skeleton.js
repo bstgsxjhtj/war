@@ -51,7 +51,7 @@ export class Skeleton {
     if (p.lArm) { this.bones.elbowL.add(p.lArm); p.lArm.position.set(0, 0, 0); }
     if (p.head) { this.bones.head.add(p.head); p.head.position.set(0, 0, 0); }
     if (p.helm) { this.bones.head.add(p.helm); p.helm.position.set(0, 0.18, 0); }
-    if (p.visor) { this.bones.head.add(p.visor); p.visor.position.set(0, 0.02, 0.28); }
+    if (p.visor) { this.bones.head.add(p.visor); p.visor.position.set(0, 0.16, 0.32); }
     if (p.cape) { this.bones.spine.add(p.cape); p.cape.position.set(0, 0.25, -0.42); }
     if (p.weaponPivot) { this.bones.handR.add(p.weaponPivot); p.weaponPivot.position.set(0, 0.35, 0.15); }
   }
