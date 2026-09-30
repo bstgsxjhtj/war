@@ -52,7 +52,14 @@ export function wireCoreHandlers(bus, deps) {
     progressUI.refresh();
     audio.playSound('ultimate');
   });
-  bus.on(EV.COMBAT_KILL, ({ victim }) => { if (victim && victim.isLocal && !victim.alive) assist.onPlayerDeath(); });
+  bus.on(EV.COMBAT_KILL, ({ victim }) => {
+    if (!(victim && victim.isLocal && !victim.alive)) return;
+    assist.onPlayerDeath();
+    // 死亡时释放 Tab 锁定：清除目标标记与相机锁定引用，避免回合间歇/复活后
+    // camera.follow 仍朝向旧 lockTarget 自动旋转，抢夺鼠标转向
+    if (victim.lockTarget) { victim.lockTarget.setLockMark(false); victim.lockTarget = null; }
+    camera.lockTarget = null;
+  });
   bus.on(EV.COMBAT_EXECUTE, ({ char } = {}) => {
     if (char && char.isLocal) { audio.playSound('execute'); hitStop.trigger(0.18, 0.1); bus.emit(EV.FX_SHAKE, { amount: 0.4 }); }
   });

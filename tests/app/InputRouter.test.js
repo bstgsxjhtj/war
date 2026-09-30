@@ -27,6 +27,7 @@ function makeDeps(overrides = {}) {
     mapName: () => '平原',
     currentMapKey: () => 'plain',
     getPlayer: () => ({ alive: true }),
+    relock: vi.fn(),
     ...overrides
   };
   return { deps, state };
@@ -103,17 +104,19 @@ describe('InputRouter', () => {
     expect(deps.loadMap).toHaveBeenCalledWith('plain');
   });
 
-  it('KeyR 在 ENDED 时重开对局', () => {
+  it('KeyR 在 ENDED 时重开对局并重新锁定鼠标', () => {
     state.transit(States.PLAYING); state.transit(States.ENDED);
     key('KeyR');
     expect(deps.match.restart).toHaveBeenCalled();
+    expect(deps.relock).toHaveBeenCalled();
   });
 
-  it('KeyR 在 ROUND_END 时清倒计时并立即开下一局', () => {
+  it('KeyR 在 ROUND_END 时清倒计时并立即开下一局并重新锁定鼠标', () => {
     state.transit(States.PLAYING); state.transit(States.ROUND_END);
     key('KeyR');
     expect(deps.match.roundEndTimer).toBe(0);
     expect(deps.match.startRound).toHaveBeenCalled();
+    expect(deps.relock).toHaveBeenCalled();
   });
 
   it('KeyM 在 ENDED 时轮换模式（死斗→据点）、加载地图并重开', () => {

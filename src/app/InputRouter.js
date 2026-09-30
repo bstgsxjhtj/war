@@ -24,8 +24,8 @@ export class InputRouter {
   _onKey(e) {
     const { state, hud, campaign, daily, weather, settings, match } = this.deps;
     if (e.code === 'KeyR') {
-      if (state.current === States.ENDED) match.restart();
-      else if (state.current === States.ROUND_END) { match.roundEndTimer = 0; match.startRound(); }
+      if (state.current === States.ENDED) { match.restart(); this.deps.relock?.(); }
+      else if (state.current === States.ROUND_END) { match.roundEndTimer = 0; match.startRound(); this.deps.relock?.(); }
     }
     if (e.code === (this.deps.kb ? this.deps.kb.get('mode') : 'KeyM') && (state.current === States.ENDED || state.current === States.ROUND_END || state.current === States.PLAYING && !this.deps.getPlayer()?.alive)) {
       this._rotateMode();

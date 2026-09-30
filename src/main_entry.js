@@ -321,6 +321,10 @@ async function bootstrap() {
     deathFeedback.hide();
     lod.clear();
     weaponTrail.clear();
+    // 复活/重开时清理上一回合残留的相机锁定与击杀镜头，避免新回合相机仍朝向旧目标
+    camera.lockTarget = null;
+    camera._killCamTarget = null;
+    camera._killTimer = 0;
     if (player) { if (player.dispose) player.dispose(); scene.remove(player.root); }
     for (const a of ais) { if (a.dispose) a.dispose(); scene.remove(a.root); }
     ais = [];
@@ -402,6 +406,7 @@ async function bootstrap() {
     mapName: () => currentMapName,
     currentMapKey: () => currentMapKey,
     getPlayer: () => player,
+    relock: relockPointer,
     openMenu,
   });
   inputRouter.install();
@@ -481,6 +486,9 @@ async function bootstrap() {
           match.roundEndTimer -= dt;
           env.update(dt, now);
           water.update(dt, now);
+          // 回合间歇仍允许鼠标转动视角：跟随玩家位置并应用鼠标 look 缓动，
+          // 否则 pointerLock 仍持有但相机冻结，玩家以为死亡后无法转视角
+          if (player) camera.follow(player.position);
           if (match.roundEndTimer <= 0) match.startRound();
           return;
         }
