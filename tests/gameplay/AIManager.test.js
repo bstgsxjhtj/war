@@ -23,6 +23,17 @@ describe('AIManager', () => {
     expect(m.difficulty()).toBe(DIFFICULTY.normal);
   });
 
+  it('setDifficulty 记录 level key 并提供 currentLevel()', () => {
+    const m = new AIManager(null);
+    expect(m.currentLevel()).toBe('normal');
+    expect(m._level).toBe('normal');
+    m.setDifficulty('hard');
+    expect(m.currentLevel()).toBe('hard');
+    expect(m._level).toBe('hard');
+    m.setDifficulty('不存在');
+    expect(m.currentLevel()).toBe('normal');
+  });
+
   it('assignSquad 每 3 人一组，角色轮转', () => {
     const m = new AIManager(null);
     const ais = Array.from({ length: 7 }, (_, i) => mkAI(i * 10, 0));

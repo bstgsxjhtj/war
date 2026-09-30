@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DifficultyAssist } from '../../src/gameplay/DifficultyAssist.js';
+import { AIManager } from '../../src/gameplay/AIManager.js';
 
 function mkManager(level) {
   return {
@@ -71,5 +72,18 @@ describe('DifficultyAssist', () => {
     assist.onPlayerDeath();
     assist.onPlayerDeath();
     expect(mgr._level).toBe('easy');
+  });
+
+  it('与真实 AIManager 集成：连续死亡降档并提示（回归 _level 缺失）', () => {
+    const real = new AIManager(null);
+    real.setDifficulty('hard');
+    const notify = vi.fn();
+    const a = new DifficultyAssist(real, notify);
+    a.onPlayerDeath();
+    a.onPlayerDeath();
+    expect(real.currentLevel()).toBe('normal');
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('辅助'));
+    a.onPlayerWin();
+    expect(real.currentLevel()).toBe('hard');
   });
 });

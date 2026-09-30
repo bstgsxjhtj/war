@@ -189,6 +189,9 @@ async function bootstrap() {
   for (const box of env.collisionBoxes) envHazards.addWallBox(box);
   for (const box of siege.collisionBoxes) terrain.colliders.push({ x: (box.minX + box.maxX) * 0.5, z: (box.minZ + box.maxZ) * 0.5, r: Math.min((box.maxX - box.minX) * 0.5, (box.maxZ - box.minZ) * 0.5) });
   const settings = new SettingsMenu(bus, audio, keyBindings);
+  // 启动即应用已保存难度（此前难度需先打开一次设置菜单才生效——根因修复）
+  aiManager.setDifficulty(settings.difficulty || AI_DIFFICULTY);
+  assist.setBaseLevel(settings.difficulty || AI_DIFFICULTY);
   // P2-5 画质档位：统一应用到渲染器/环境粒子/天气粒子；低端机自适应降帧
   const qualityGovernor = new QualityGovernor({ quality: 'high' });
   function applyQuality(q) {

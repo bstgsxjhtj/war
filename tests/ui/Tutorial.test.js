@@ -27,10 +27,10 @@ function mousedown(button) {
 }
 
 describe('Tutorial - 构造与初始状态', () => {
-  it('12 步 toast，初始 step=0 active=true，渲染第一步', () => {
+  it('16 步 toast，初始 step=0 active=true，渲染第一步', () => {
     const bus = mkBus();
     const t = new Tutorial(bus);
-    expect(t.steps.length).toBe(12);
+    expect(t.steps.length).toBe(16);
     expect(t.step).toBe(0);
     expect(t.active).toBe(true);
     expect(t.el.parentNode).toBe(document.body);
@@ -208,12 +208,12 @@ describe('Tutorial - 进阶步骤（可选引导）', () => {
     expect(t.el.textContent).toContain('词条');
   });
 
-  it('⑫ 词条：KeyI 推进到完成', () => {
+  it('⑫ 词条：KeyI 推进到职业步', () => {
     const t = new Tutorial(mkBus());
     t.step = 11; t.phase = 'hold'; t.phaseT = 10; t._render();
     keydown('KeyI');
-    expect(t.active).toBe(false);
-    expect(localStorage.getItem(LS.TUTORIAL_DONE)).toBe('1');
+    expect(t.step).toBe(12);
+    expect(t.el.textContent).toContain('职业');
   });
 });
 
@@ -233,6 +233,10 @@ describe('Tutorial - 完成与收尾', () => {
     bus.emit(EV.COMBO_FINISHER); // ⑩ 连击终结
     keydown('KeyK');    // ⑪ 技能树
     keydown('KeyI');    // ⑫ 词条
+    keydown('KeyC');    // ⑬ 职业
+    keydown('KeyB');    // ⑭ Build
+    keydown('KeyM');    // ⑮ 战场模式
+    bus.emit(EV.HUD_BOSSPHASE); // ⑯ Boss
     expect(t.active).toBe(false);
     expect(localStorage.getItem(LS.TUTORIAL_DONE)).toBe('1');
     expect(t.el.textContent).toContain('引导完成');
@@ -245,6 +249,7 @@ describe('Tutorial - 完成与收尾', () => {
     keydown('KeyQ'); keydown('Digit1'); keydown('KeyT'); keydown('KeyE');
     bus.emit(EV.COMBAT_COUNTER);
     keydown('Tab'); bus.emit(EV.COMBO_FINISHER); keydown('KeyK'); keydown('KeyI');
+    keydown('KeyC'); keydown('KeyB'); keydown('KeyM'); bus.emit(EV.HUD_BOSSPHASE);
     expect(t.el.style.display).not.toBe('none');
     t.update(2);
     expect(t.el.style.display).toBe('none');
@@ -405,15 +410,87 @@ describe('Tutorial - 进阶步骤键位动态化（P2-2）', () => {
     expect(t.step).toBe(11);
   });
 
-  it('⑫ 词条步：重绑 affix→KeyP 后按 KeyP 完成，KeyI 不再完成', () => {
+  it('⑫ 词条步：重绑 affix→KeyP 后按 KeyP 推进，KeyI 不再推进', () => {
     const kb = new KeyBindings();
     kb.set('affix', 'KeyP');
     const t = new Tutorial(mkBus(), kb);
     t.step = 11; t.phase = 'hold'; t.phaseT = 10; t._render();
     keydown('KeyI');
-    expect(t.active).toBe(true);
+    expect(t.step).toBe(11);
     keydown('KeyP');
+    expect(t.step).toBe(12);
+  });
+});
+
+describe('Tutorial - 新系统引导步骤（⑬-⑯）', () => {
+  it('⑪ 技能树文案已更新为 11 分支', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 10; t._render();
+    expect(t.el.textContent).toContain('11 分支');
+    expect(t.el.textContent).not.toContain('8 分支');
+  });
+
+  it('⑬ 职业：KeyC 推进到 Build 步', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 12; t.phase = 'hold'; t.phaseT = 10; t._render();
+    expect(t.el.textContent).toContain('职业');
+    keydown('KeyC');
+    expect(t.step).toBe(13);
+    expect(t.el.textContent).toContain('Build');
+  });
+
+  it('⑭ Build：KeyB 推进到战场模式步', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 13; t.phase = 'hold'; t.phaseT = 10; t._render();
+    keydown('KeyB');
+    expect(t.step).toBe(14);
+    expect(t.el.textContent).toContain('战场');
+  });
+
+  it('⑮ 战场模式：KeyM 推进到 Boss 步', () => {
+    const t = new Tutorial(mkBus());
+    t.step = 14; t.phase = 'hold'; t.phaseT = 10; t._render();
+    keydown('KeyM');
+    expect(t.step).toBe(15);
+    expect(t.el.textContent).toContain('Boss');
+  });
+
+  it('⑮ 战场模式：重绑 mode→KeyN 后按 KeyN 推进，KeyM 不再推进', () => {
+    const kb = new KeyBindings();
+    kb.set('mode', 'KeyN');
+    const t = new Tutorial(mkBus(), kb);
+    t.step = 14; t.phase = 'hold'; t.phaseT = 10; t._render();
+    keydown('KeyM');
+    expect(t.step).toBe(14);
+    keydown('KeyN');
+    expect(t.step).toBe(15);
+  });
+
+  it('⑯ Boss：HUD_BOSSPHASE 事件推进到完成', () => {
+    const bus = mkBus();
+    const t = new Tutorial(bus);
+    t.step = 15; t.phase = 'hold'; t.phaseT = 10; t._render();
+    bus.emit(EV.HUD_BOSSPHASE);
     expect(t.active).toBe(false);
     expect(localStorage.getItem(LS.TUTORIAL_DONE)).toBe('1');
+  });
+
+  it('完成条含 C 职业 / B Build', () => {
+    const t = new Tutorial(mkBus());
+    t._finish();
+    expect(t.el.textContent).toContain('C 职业');
+    expect(t.el.textContent).toContain('B Build');
+  });
+
+  it('destroy 取消 HUD_BOSSPHASE 订阅', () => {
+    const offs = [];
+    const bus = {
+      on: vi.fn((name, fn) => { const off = vi.fn(); offs.push(off); return off; }),
+      emit: vi.fn(),
+    };
+    const t = new Tutorial(bus);
+    t.destroy();
+    expect(bus.on).toHaveBeenCalledWith(EV.HUD_BOSSPHASE, expect.any(Function));
+    expect(offs.some(o => o.mock.calls.length > 0)).toBe(true);
   });
 });

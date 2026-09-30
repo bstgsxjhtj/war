@@ -1,4 +1,4 @@
-// 新手引导：12 步 toast 教程（基础 8 步 + 进阶 4 步），动作/事件推进，仅首局出现
+// 新手引导：16 步 toast 教程（基础 8 步 + 进阶 8 步），动作/事件推进，仅首局出现
 import { EV } from '../core/constants/events.js';
 import { LS } from '../core/constants/storage-keys.js';
 import { DEFAULT_BINDINGS, keyLabel } from '../core/input/KeyBindings.js';
@@ -22,8 +22,12 @@ export class Tutorial {
       { text: () => '⑧ 克制：青色伤害数字 = 你克制敌人', event: EV.COMBAT_COUNTER },
       { text: (t) => `⑨ 锁定：${t.bindLabel('lock')} 键锁定敌人（镜头跟随，专注单挑）`, actions: ['lock'] },
       { text: () => '⑩ 连击终结：三段连击第三击触发终结技（大范围伤害）', event: EV.COMBO_FINISHER },
-      { text: () => '⑪ 技能树：K 键加点升级（8 分支 build）', actions: ['skilltree'] },
-      { text: () => '⑫ 词条：I 键管理装备词条（Boss 掉落）', actions: ['affix'] },
+      { text: (t) => `⑪ 技能树：${t.bindLabel('skilltree')} 键加点升级（11 分支，含职业专属）`, actions: ['skilltree'] },
+      { text: (t) => `⑫ 词条：${t.bindLabel('affix')} 键管理装备词条（Boss 掉落）`, actions: ['affix'] },
+      { text: () => '⑬ 职业：C 键随时切换职业（战士/法师/弓手，武器与技能各不相同）', keys: ['KeyC'] },
+      { text: () => '⑭ Build：B 键查看当前职业/武器/天赋/局内升级', keys: ['KeyB'] },
+      { text: (t) => `⑮ 战场模式：${t.bindLabel('mode')} 键轮换到「战场」（波次防守 → 攻城破门）`, actions: ['mode'] },
+      { text: () => '⑯ Boss：精英有弱点（背刺/近战/打断/远程），Boss 有阶段跃迁（血条下提示弱点）', event: EV.HUD_BOSSPHASE },
     ];
     this.step = 0;
     this.active = true;
@@ -52,6 +56,7 @@ export class Tutorial {
       this._offUlt = this.bus.on(EV.COMBAT_ULTIMATE, () => this._match({ k: 'event', name: EV.COMBAT_ULTIMATE }));
       this._offCnt = this.bus.on(EV.COMBAT_COUNTER, () => this._match({ k: 'event', name: EV.COMBAT_COUNTER }));
       this._offFin = this.bus.on(EV.COMBO_FINISHER, () => this._match({ k: 'event', name: EV.COMBO_FINISHER }));
+      this._offBoss = this.bus.on(EV.HUD_BOSSPHASE, () => this._match({ k: 'event', name: EV.HUD_BOSSPHASE }));
     }
   }
 
@@ -107,7 +112,7 @@ export class Tutorial {
     const md = this.bindLabel('mode');
     const wt = this.bindLabel('weather');
     const st = this.bindLabel('settings');
-    this.el.innerHTML = `<div style="color:#4ade80;font-weight:600;">✓ 引导完成！${lock} 锁定 · ${dodge} 闪避 · ${exec} 处决 · ${sk} 技能树 · ${md} 模式 · ${wt} 天气 · ${st} 设置</div>`;
+    this.el.innerHTML = `<div style="color:#4ade80;font-weight:600;">✓ 引导完成！${lock} 锁定 · ${dodge} 闪避 · ${exec} 处决 · C 职业 · B Build · ${sk} 技能树 · ${md} 模式 · ${wt} 天气 · ${st} 设置</div>`;
   }
 
   update(dt) {
@@ -132,6 +137,7 @@ export class Tutorial {
     if (this._offUlt) this._offUlt();
     if (this._offCnt) this._offCnt();
     if (this._offFin) this._offFin();
+    if (this._offBoss) this._offBoss();
     if (this.el.parentNode) this.el.parentNode.removeChild(this.el);
   }
 }

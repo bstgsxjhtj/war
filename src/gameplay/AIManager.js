@@ -9,13 +9,19 @@ export const DIFFICULTY = {
 export class AIManager {
   constructor(bus) {
     this.bus = bus;
+    this._level = 'normal';
     this._difficulty = DIFFICULTY.normal;
     this._squads = new Map();
     this._ais = [];
     this._bind();
   }
-  setDifficulty(d) { this._difficulty = DIFFICULTY[d] || DIFFICULTY.normal; }
+  // 记录 level key（easy/normal/hard），供 DifficultyAssist 读取当前档位与比较
+  setDifficulty(d) {
+    this._level = DIFFICULTY[d] ? d : 'normal';
+    this._difficulty = DIFFICULTY[this._level];
+  }
   difficulty() { return this._difficulty; }
+  currentLevel() { return this._level; }
   assignSquad(ais) {
     this._ais = ais;
     this._squads.clear();
