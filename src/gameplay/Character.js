@@ -37,6 +37,10 @@ export class Character {
     this._classType = classType;
     this._classColor = classColor;
     this.alive = true;
+    // P2: AI 动画降频——非本地角色 skeleton.update 降至 30fps（玩家满帧保证响应），
+    // _animAccum 累积 dt 达到 _animInterval 才执行一次骨骼矩阵更新
+    this._animAccum = 0;
+    this._animInterval = isLocal ? 0 : 1 / 30;
     this.position = new THREE.Vector3();
     this.forward = new THREE.Vector3(0, 0, 1);
     this._targetYaw = 0;
@@ -861,7 +865,15 @@ export class Character {
       skelT = ((now * 0.018 * (this._sprint ? 1.6 : 1)) % Math.PI) / Math.PI;
     }
     this.skeleton.applyState(skelState, skelT, { speed: moving, sprint: this._sprint, now: now * 0.001 });
-    this.skeleton.update(dt);
+    // P2: AI 动画降频——累积 dt 达到间隔才更新骨骼矩阵，跳帧时姿态保持上一帧（30fps 仍流畅）
+    if (this._animInterval > 0) {
+      this._animAccum += dt;
+      if (this._animAccum < this._animInterval) { this._tickFace(dt, skelState); return; }
+      this.skeleton.update(this._animAccum);
+      this._animAccum = 0;
+    } else {
+      this.skeleton.update(dt);
+    }
     this._tickFace(dt, skelState);
   }
 

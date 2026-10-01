@@ -5,6 +5,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import { EnvMap } from '../render/EnvMap.js';
 
 function viewport() {
@@ -31,7 +32,9 @@ const VignetteShader = {
 
 export class Renderer {
   constructor(canvas) {
-    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    // P2: antialias=false——MSAA 经 EffectComposer 渲染到非多重采样 render target 时无效；
+    // 改用 SMAAPass（后处理 AA）在 setup() 中加入管线
+    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
     this.webgl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     const [w, h] = viewport();
     this.webgl.setSize(w, h);
@@ -53,6 +56,12 @@ export class Renderer {
     this.composer.passes = [];
     this.composer.addPass(new RenderPass(scene, camera));
     try { scene.environment = EnvMap.create(); } catch (e) { console.warn('[EnvMap] fail:', e.message); }
+    // P2: SMAA 后处理抗锯齿（替代无效的 MSAA renderer flag），紧跟 RenderPass 对原始渲染边沿做形态学 AA
+    try {
+      const [w, h] = viewport();
+      this._smaa = new SMAAPass(w, h);
+      this.composer.addPass(this._smaa);
+    } catch (e) { console.warn('[SMAA] unavailable, fallback to no AA:', e.message); }
     try {
       const [w, h] = viewport();
       this._ssao = new SSAOPass(scene, camera, w, h);
@@ -70,8 +79,9 @@ export class Renderer {
     if (!this.webgl) return;
     this._quality = q;
     const low = q === 'low';
-    // 低画质关闭后处理开销大户：SSAO + Bloom
+    // 低画质关闭后处理开销大户：SSAO + SMAA + Bloom
     if (this._ssao) this._ssao.enabled = q === 'high';
+    if (this._smaa) this._smaa.enabled = !low;
     if (this._bloom) this._bloom.enabled = !low;
     if (low) { this.webgl.shadowMap.enabled = false; this.webgl.setPixelRatio(0.7); }
     else if (q === 'mid') { this.webgl.shadowMap.enabled = true; this.webgl.setPixelRatio(1); }

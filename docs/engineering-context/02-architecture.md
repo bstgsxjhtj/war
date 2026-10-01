@@ -17,9 +17,9 @@ ESM 依赖图必须保持无环（DAG）。
 ## 2. 模块职责
 
 - **core**：EventBus（on 返回 off 函数）、GameState 状态机、Time 主循环、input/KeyBindings（20 动作可重绑 + 冲突检测 + localStorage 持久化，纯数据输入基础设施）、constants/events（EV，50 个 bus 事件）、constants/storage-keys（LS，14 个键）、constants/balance（WEAPON_STATS/COMBAT/CAMERA/EXECUTE/POSTURE/ENEMY_MODS）。ECS.js 当前未被使用（保留待决）。
-- **engine**：Renderer（后期管线：SSAO+Reflector 静态 import 修 dist 404、UnrealBloom+暗角 Vignette、low 画质降级关 SSAO/Bloom/Reflector）、Scene（黄昏琥珀调色、远山顶点扰动、Fresnel rim 替固定方向光）、Camera、AssetLoader。
+- **engine**：Renderer（后期管线：SMAA 后处理 AA 替无效 MSAA renderer flag、SSAO+Reflector 静态 import 修 dist 404、UnrealBloom+暗角 Vignette、low 画质降级关 SSAO/SMAA/Bloom/Reflector）、Scene（黄昏琥珀调色、远山顶点扰动、Fresnel rim 替固定方向光）、Camera、AssetLoader。
 - **world**：Terrain、Environment（树/石/残骸均 InstancedMesh：树 1 trunk + 3 leaf InstancedMesh 共 4 drawcall 替代 ~136、石 1 drawcall 替代 24、残骸≤2 drawcall 替代 16；草 6 InstancedMesh 已有）、Water、WeatherSystem、MapGenerator、SiegeStructure、SupplyPoint。
-- **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/Cavalry）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、Weapon、weapons/*（Sword/Spear/SwordShield/Warhammer/Bow）；AI 辅助（AIManager、UnitFormation、AffixBehavior）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge、RunBuffs）；SaveManager；战斗辅助（EnvironmentHazards、DifficultyAssist、TrajectoryPreview、EscortTarget、DefensePoint）；Spawner（红队生成）。
+- **gameplay**：Character 基类（Health/Stamina/Skeleton，非本地角色 skeleton.update 降频至 30fps）→ Player / AIController（→BossEnemy/Cavalry）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、Weapon、weapons/*（Sword/Spear/SwordShield/Warhammer/Bow）；AI 辅助（AIManager、UnitFormation、AffixBehavior）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge、RunBuffs）；SaveManager；战斗辅助（EnvironmentHazards、DifficultyAssist、TrajectoryPreview、EscortTarget、DefensePoint）；Spawner（红队生成）。
 - **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI、ProgressionUI、WeaponSkinsUI、UIPanel（面板基类）、UIStack（Escape 栈，支持 closable=false 不可关面板）、UpgradePicker（3 选 1 升级）、DeathFeedback（死亡反馈）、MainMenuUI（标题屏）、StageSelectUI（选关/地图）、ClassSelectUI（职业选择）、GameMenu（Esc 菜单）。
 - **render**：TextureFactory（程序纹理 canvas 缓存）、disposeUtils、WeaponTrail、DodgeGhosts、EnvMap、LODManager、ParticleFX、TelegraphIndicator。
 - **app**：MatchController（比分/回合/胜负）、SaveOrchestrator（存档编排）、InputRouter（全局按键）、GameClock（随 timeScale 缩放的延迟任务）、EventWiring（17 个纯事件处理器下沉）、AchievementWiring（成就接线）、QualityGovernor（自适应画质：双向——持续低帧率降级 + 持续高帧率回升，回升不越过用户设定 ceiling；tick 返回新档位与 direction 标志）。
@@ -112,3 +112,18 @@ ESM 依赖图必须保持无环（DAG）。
 
 - **视觉统一**：ClassSelectUI 遮罩背景从 `rgba(8,12,18,0.92)` + `fontFamily: sans-serif` 对齐为 `rgba(6,9,14,0.94)` + `Segoe UI, sans-serif`（与 MainMenuUI/StageSelectUI/GameMenu 一致）；卡片背景从 `rgba(20,28,40,0.85)` 对齐为 `rgba(30,40,55,0.9)`（与 StageSelectUI 卡片一致）。全部菜单面板现共用同一套色板：遮罩 `rgba(6,9,14,0.9x)` / 面板 `#161c26` / 边框 `#3a4a60` / 文字 `#e0d8c8` / 强调金 `#e0b050`+`#ffd070` / 字体 `Segoe UI, sans-serif`。
 - **次级入口**：MainMenuUI 主按钮列下方新增次级按钮行——成就 / 词条 / 存档。与"设置"按钮同模式：不隐藏标题屏，面板（AchievementsUI/AffixesUI/SaveUI，均 UIPanel 子类）经 `show()` 压入 UIStack 叠于标题屏之上；Esc 经 UIStack 先关栈顶面板（closable 未设，默认可关），再关标题屏（closable=false 吞 Esc 不关）。回调 `onOpenAchievements/onOpenAffixes/onOpenSave` 在 main_entry 分别委托 `achievementsUI.show()/affixesUI.show()/saveUI.show()`（三者已在 L419-420/L280 构造）。
+
+## 13. SMAA 抗锯齿 + AI 动画降频（P2，2026-10-01）
+
+**SMAA 替无效 MSAA**：`WebGLRenderer({ antialias: true })` 的 MSAA 在 EffectComposer 管线下无效——composer 将场景渲染到非多重采样 render target，renderer 层的 MSAA 从不生效。改为后处理形态学 AA：
+
+- `Renderer` 构造 `antialias: true` → `antialias: false`（关闭无效的 renderer MSAA flag）。
+- `setup()` 在 `RenderPass` 之后、`SSAOPass` 之前插入 `SMAAPass`（`three/examples/jsm/postprocessing/SMAAPass.js`）——对原始渲染边沿做形态学 AA，紧跟 RenderPass 保证作用于未降采样画面。`this._smaa` 缓存实例引用。
+- `setQuality(q)` 低画质关闭 SMAA（`this._smaa.enabled = !low`），与 SSAO/Bloom 同列降级；中/高画质保持开启。
+- SMAA 不可用（import/构造异常）时 try/catch 降级为无 AA，不阻断管线。
+
+**AI 动画降频**：`Character._tickAnimState` 原每帧每角色调 `skeleton.update(dt)` 更新骨骼矩阵，战场多 AI 时为纯 CPU 开销。改为分档：
+
+- 构造时 `isLocal ? 0 : 1/30` 设 `_animInterval`（本地玩家=0 满帧保证输入响应；非本地 AI=1/30 即 30fps）。
+- `_tickAnimState` 中非本地角色累积 `dt` 到 `_animAccum`，未达 `_animInterval` 早返回（姿态保持上一帧，30fps 仍视觉流畅），达阈值才调 `skeleton.update(累积dt)` 并清零。`skeleton.applyState`（姿态计算）与 `_tickFace`（表情）每帧执行不受影响——只降频骨骼矩阵写入。
+- 本地玩家走 else 分支每帧 `skeleton.update(dt)`，响应不受降频影响。

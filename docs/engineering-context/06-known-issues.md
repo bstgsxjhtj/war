@@ -319,5 +319,6 @@
 | P1-2 | StageSelectUI.test.js（新建） | 13（show 压栈/10 关卡片/cleared 解锁锁定/点击解锁关回调/锁定不回调/自由 tab 地图数/地图回调/难度回调/难度高亮/返回 onBack/Esc 关 onBack/选择态不 onBack/dispose） |
 | P1-2 | MainMenuUI.test.js | 1（onQuickBattle→onStageSelect 更名适配） |
 | P1-3 | MainMenuUI.test.js | 1（次级按钮 成就/词条/存档 分别回调且不隐藏标题屏） |
+| P2 | Character.anim-throttle.test.js（新建） | 5（非本地 _animInterval=1/30+累积=0、本地 _animInterval=0、未达间隔不调 update+累积、达间隔调 update 传累积 dt+清零、本地每帧调 update 传原始 dt） |
 
-测试总量：1033 → 1138（+105，含历史新增累计），107 个测试文件全绿。
+测试总量：1033 → 1143（+110，含历史新增累计），108 个测试文件全绿。
