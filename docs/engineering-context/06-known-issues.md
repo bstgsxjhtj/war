@@ -301,7 +301,7 @@
 |---|---|---|---|
 | P0-1a | QualityGovernor 双向化（回升不越过用户 ceiling）+ direction 标志 | P0 | ✅已修 |
 | P0-1b | HUD F4 性能面板（FPS/帧时/Min/Max/drawcall/三角面/档位/单位数） | P0 | ✅已修 |
-| P0-2 | 环境物 InstancedMesh（树/石/残骸）削减 drawcall | P0 | ⬜待做 |
+| P0-2 | 环境物 InstancedMesh（树/石/残骸）削减 drawcall | P0 | ✅已修 |
 | P1-1 | 主菜单/标题屏（开始/继续战役/模式选择） | P1 | ⬜待做 |
 | P1-2 | 战役选关界面 + 地图/难度选择 | P1 | ⬜待做 |
 | P1-3 | 菜单统一视觉 + 补成就/词条/存档入口 | P1 | ⬜待做 |
@@ -313,5 +313,6 @@
 |---|---|---|
 | P0-1a | QualityGovernor.test.js | 4（降级后回升 direction=up、回升未达阈值不触发、回升不越 ceiling、无变更 direction=null） |
 | P0-1b | HUD.test.js | 5（默认关闭、toggle 切换、关闭时仅采样不写 DOM、开启跨节流刷新文案、F4 键触发） |
+| P0-2 | Environment.instancing.test.js（新建） | 6（树 4 InstancedMesh+碰撞体、石单 InstancedMesh、残骸≤2 InstancedMesh、layout 模式、dispose 不抛） |
 
-测试总量：1033 → 1105（+72，含历史新增累计），104 个测试文件全绿。
+测试总量：1033 → 1111（+78，含历史新增累计），105 个测试文件全绿。

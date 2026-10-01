@@ -18,7 +18,7 @@ ESM 依赖图必须保持无环（DAG）。
 
 - **core**：EventBus（on 返回 off 函数）、GameState 状态机、Time 主循环、input/KeyBindings（20 动作可重绑 + 冲突检测 + localStorage 持久化，纯数据输入基础设施）、constants/events（EV，50 个 bus 事件）、constants/storage-keys（LS，14 个键）、constants/balance（WEAPON_STATS/COMBAT/CAMERA/EXECUTE/POSTURE/ENEMY_MODS）。ECS.js 当前未被使用（保留待决）。
 - **engine**：Renderer（后期管线：SSAO+Reflector 静态 import 修 dist 404、UnrealBloom+暗角 Vignette、low 画质降级关 SSAO/Bloom/Reflector）、Scene（黄昏琥珀调色、远山顶点扰动、Fresnel rim 替固定方向光）、Camera、AssetLoader。
-- **world**：Terrain、Environment、Water、WeatherSystem、MapGenerator、SiegeStructure、SupplyPoint。
+- **world**：Terrain、Environment（树/石/残骸均 InstancedMesh：树 1 trunk + 3 leaf InstancedMesh 共 4 drawcall 替代 ~136、石 1 drawcall 替代 24、残骸≤2 drawcall 替代 16；草 6 InstancedMesh 已有）、Water、WeatherSystem、MapGenerator、SiegeStructure、SupplyPoint。
 - **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/Cavalry）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、Weapon、weapons/*（Sword/Spear/SwordShield/Warhammer/Bow）；AI 辅助（AIManager、UnitFormation、AffixBehavior）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge、RunBuffs）；SaveManager；战斗辅助（EnvironmentHazards、DifficultyAssist、TrajectoryPreview、EscortTarget、DefensePoint）；Spawner（红队生成）。
 - **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI、ProgressionUI、WeaponSkinsUI、UIPanel（面板基类）、UIStack（Escape 栈）、UpgradePicker（3 选 1 升级）、DeathFeedback（死亡反馈）。
 - **render**：TextureFactory（程序纹理 canvas 缓存）、disposeUtils、WeaponTrail、DodgeGhosts、EnvMap、LODManager、ParticleFX、TelegraphIndicator。
@@ -80,3 +80,13 @@ ESM 依赖图必须保持无环（DAG）。
 - 显示：FPS（指数平滑 `0.9*旧+0.1*新`）、帧时 ms、Min/Max（每刷新周期重置）、drawcall（`renderer.webgl.info.render.calls`）、三角面（k）、画质档位（低/中/高）、单位数。
 - 关闭时 `updatePerf` 仅做 FPS 采样（供下次开启即有值）不写 DOM；开启时 0.25s 节流刷新 `textContent`，避免每帧 DOM 写入。
 - main_entry 主循环在 `qualityGovernor.tick(dt)` 后立即调用 `hud.updatePerf`，`direction` 区分 `hud.flash` 文案为"画质自动回升至"或"画质自动降至"。
+
+## 9. 环境物 InstancedMesh（P0-2，2026-10-01）
+
+`Environment` 的树/石/残骸原为 per-item `Group`/`Mesh`，数百 drawcall 浪费。改为 InstancedMesh：
+
+- **树**（`_scatterTrees`）：1 trunk `InstancedMesh`（CylinderGeometry）+ 3 leaf `InstancedMesh`（每层 ConeGeometry 一份，共享 white base material + `setColorAt` per-instance 从 3 色随机取一）。34 棵树从 ~136 drawcall 降至 4。`_collidables` 碰撞体保持 `r: 0.6 * scale`。
+- **石**（`_scatterRocks`）：1 `InstancedMesh`（unit DodecahedronGeometry(1,1) + per-instance scale）。24 石从 24 drawcall 降至 1。`s > 0.8` 的碰撞体保持。
+- **残骸**（`_wreckage`）：预分盾/矛两类，各建一个 `InstancedMesh`（≤2 drawcall 替代 16）。
+- 矩阵用共享 `dummy` Object3D 组装（position + rotation + scale → `updateMatrix` → `setMatrixAt`），`instanceMatrix.needsUpdate` 末尾统一置位。
+- `setQuality` 仍只缩放 grass/dust/leaves 计数（结构物树/石/残骸 count 不随画质变化，避免 popping）；`deepDispose` 遍历 group 自动释放 InstancedMesh 几何/材质/实例缓冲。

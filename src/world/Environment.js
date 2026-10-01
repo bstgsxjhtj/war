@@ -59,40 +59,60 @@ export class Environment {
 
   _scatterTrees(n) {
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2f1a, roughness: 1 });
-    const leafMats = [0x355028, 0x3a4a20, 0x446030].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1 }));
+    const leafColors = [0x355028, 0x3a4a20, 0x446030].map(c => new THREE.Color(c));
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 });
+    const trunkGeo = new THREE.CylinderGeometry(0.25, 0.42, 2.6, 8);
+    const leafGeos = [0, 1, 2].map(j => new THREE.ConeGeometry(1.8 - j * 0.35, 1.6, 8));
+    const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, n);
+    trunkMesh.castShadow = true;
+    const leafMeshes = leafGeos.map(g => new THREE.InstancedMesh(g, leafMat, n));
+    leafMeshes.forEach(m => m.castShadow = true);
+    const dummy = new THREE.Object3D();
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, r = 32 + Math.random() * 60;
       const x = Math.cos(a) * r, z = Math.sin(a) * r, y = this.terrain.heightAt(x, z);
-      const g = new THREE.Group();
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.42, 2.6, 8), trunkMat);
-      trunk.position.y = 1.3; trunk.castShadow = true;
-      const lm = leafMats[Math.floor(Math.random() * 3)];
+      const rot = Math.random() * Math.PI;
+      const scale = 0.85 + Math.random() * 0.5;
+      dummy.position.set(x, y + 1.3 * scale, z);
+      dummy.rotation.y = rot;
+      dummy.scale.setScalar(scale);
+      dummy.updateMatrix();
+      trunkMesh.setMatrixAt(i, dummy.matrix);
       for (let j = 0; j < 3; j++) {
-        const leaf = new THREE.Mesh(new THREE.ConeGeometry(1.8 - j * 0.35, 1.6, 8), lm);
-        leaf.position.y = 2.6 + j * 0.9; leaf.castShadow = true;
-        g.add(leaf);
+        dummy.position.set(x, y + (2.6 + j * 0.9) * scale, z);
+        dummy.updateMatrix();
+        leafMeshes[j].setMatrixAt(i, dummy.matrix);
       }
-      g.add(trunk);
-      g.position.set(x, y, z); g.rotation.y = Math.random() * Math.PI;
-      g.scale.setScalar(0.85 + Math.random() * 0.5);
-      this.group.add(g);
-      (this._collidables ||= []).push({ x, z, r: 0.6 * g.scale.x });
+      const lc = leafColors[Math.floor(Math.random() * 3)];
+      leafMeshes.forEach(m => m.setColorAt(i, lc));
+      (this._collidables ||= []).push({ x, z, r: 0.6 * scale });
     }
+    trunkMesh.instanceMatrix.needsUpdate = true;
+    leafMeshes.forEach(m => { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+    this._treeMeshes = [trunkMesh, ...leafMeshes];
+    this.group.add(...this._treeMeshes);
   }
 
   _scatterRocks(n) {
     const mat = new THREE.MeshStandardMaterial({ color: 0x6b6862, roughness: 1 });
+    const geo = new THREE.DodecahedronGeometry(1, 1);
+    const mesh = new THREE.InstancedMesh(geo, mat, n);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    const dummy = new THREE.Object3D();
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, r = 14 + Math.random() * 75;
       const x = Math.cos(a) * r, z = Math.sin(a) * r, y = this.terrain.heightAt(x, z);
       const s = 0.5 + Math.random() * 1.8;
-      const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 1), mat);
-      rock.position.set(x, y + s * 0.3, z);
-      rock.rotation.set(Math.random(), Math.random(), Math.random());
-      rock.castShadow = true; rock.receiveShadow = true;
-      this.group.add(rock);
+      dummy.position.set(x, y + s * 0.3, z);
+      dummy.rotation.set(Math.random(), Math.random(), Math.random());
+      dummy.scale.setScalar(s);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
       if (s > 0.8) (this._collidables ||= []).push({ x, z, r: s });
     }
+    mesh.instanceMatrix.needsUpdate = true;
+    this._rockMesh = mesh;
+    this.group.add(mesh);
   }
 
   get collisionBoxes() {
@@ -243,22 +263,44 @@ export class Environment {
   _wreckage(n) {
     const shieldMat = new THREE.MeshStandardMaterial({ color: 0x6a6258, roughness: 1, side: THREE.DoubleSide });
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 1 });
+    const shieldGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.06, 6);
+    const spearGeo = new THREE.BoxGeometry(0.05, 0.05, 1.5);
+    const items = [];
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, r = 8 + Math.random() * 12;
       const x = Math.cos(a) * r, z = Math.sin(a) * r, y = this.terrain.heightAt(x, z);
-      const g = new THREE.Group();
-      if (Math.random() > 0.5) {
-        const shield = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 6), shieldMat);
-        shield.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
-        g.add(shield);
-      } else {
-        const spear = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 1.5), woodMat);
-        spear.rotation.set(0, Math.random() * Math.PI, Math.PI / 2);
-        g.add(spear);
-      }
-      g.position.set(x, y + 0.05, z);
-      this.group.add(g);
+      items.push({ x, y, z, isShield: Math.random() > 0.5, rot: Math.random() * Math.PI });
     }
+    const shields = items.filter(it => it.isShield);
+    const spears = items.filter(it => !it.isShield);
+    const dummy = new THREE.Object3D();
+    const meshes = [];
+    if (shields.length) {
+      const sm = new THREE.InstancedMesh(shieldGeo, shieldMat, shields.length);
+      shields.forEach((it, i) => {
+        dummy.position.set(it.x, it.y + 0.05, it.z);
+        dummy.rotation.set(Math.PI / 2, 0, it.rot);
+        dummy.scale.setScalar(1);
+        dummy.updateMatrix();
+        sm.setMatrixAt(i, dummy.matrix);
+      });
+      sm.instanceMatrix.needsUpdate = true;
+      meshes.push(sm);
+    }
+    if (spears.length) {
+      const pm = new THREE.InstancedMesh(spearGeo, woodMat, spears.length);
+      spears.forEach((it, i) => {
+        dummy.position.set(it.x, it.y + 0.05, it.z);
+        dummy.rotation.set(0, it.rot, Math.PI / 2);
+        dummy.scale.setScalar(1);
+        dummy.updateMatrix();
+        pm.setMatrixAt(i, dummy.matrix);
+      });
+      pm.instanceMatrix.needsUpdate = true;
+      meshes.push(pm);
+    }
+    this._wreckMeshes = meshes;
+    this.group.add(...meshes);
   }
 
   _bloodstains(n) {
