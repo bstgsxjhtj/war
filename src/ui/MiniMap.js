@@ -18,6 +18,10 @@ export class MiniMap {
     this._player = null; this._ais = []; this._camera = null;
     this._supply = [];
     this._colorblind = false;
+    // 战役一#5：小地图降频至 15Hz——每帧全量 canvas 重绘（clear+clip+rotate+逐实体 draw）
+    // 在低端机是主线程热点，15fps 足够战术感知，60fps 纯浪费
+    this._mmAccum = 0;
+    this._mmInterval = 1 / 15;
     bus.on(EV.MINIMAP_SUPPLY, (pts) => { this._supply = pts || []; });
   }
 
@@ -26,6 +30,10 @@ export class MiniMap {
   }
 
   update(dt) {
+    // 战役一#5：15Hz 节流——累积 dt 达间隔才重绘，跳帧时小地图冻结上一帧（可接受）
+    this._mmAccum += dt;
+    if (this._mmAccum < this._mmInterval) return;
+    this._mmAccum -= this._mmInterval;
     if (!this._player) return;
     const ctx = this.ctx, W = this.canvas.width, H = this.canvas.height, cx = W / 2, cy = H / 2, R = W / 2 - 4;
     ctx.clearRect(0, 0, W, H);

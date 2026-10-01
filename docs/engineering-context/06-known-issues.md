@@ -332,8 +332,8 @@
 | C1-1 | QualityGovernor/Perf 喂真实帧间隔（从 onFixed 移到 onRender）+ Time onRender 传 delta | P0 | ✅已修 |
 | C1-2 | 攻击缓冲对齐动画时长 + 命中帧后排队连招 | P0 | ✅已修 |
 | C1-3 | 修完美闪避只触发一次（tryDodge 重置 _perfectDodge） | P0 | ✅已修 |
-| C1-4 | 相机/震屏缓动 dt 化 | P0 | ⬜待做 |
-| C1-5 | HUD setter 全部走 _write 脏检查 + MiniMap 降频 15Hz | P0 | ⬜待做 |
+| C1-4 | 相机/震屏缓动 dt 化 | P0 | ✅已修 |
+| C1-5 | HUD setter 全部走 _write 脏检查 + MiniMap 降频 15Hz | P0 | ✅已修 |
 | C1-6 | 菜单暂停闸门（UIStack pausesGame） | P0 | ⬜待做 |
 | C1-7 | 会话闭环：退出到主菜单 + 结算屏三键（重试/换模式/回主菜单） | P0 | ⬜待做 |
 | C1-8 | 角色纹理/材质共享缓存消除换波尖峰 | P0 | ⬜待做 |
@@ -348,5 +348,6 @@
 | C1-2 | Character.combo.test.js | 6（挥击前段不可取消、命中帧后+武器就绪取消后摇、命中帧后+冷却中不取消、弓不可取消、非攻击+未就绪 false、非攻击+就绪 true 基线） |
 | C1-3 | Character.takeDamage.test.js | 1（tryDodge 重置 _perfectDodge 允许下次完美闪避：首次触发→tryDodge 重置→第二次再次触发+FX_PERFECTDODGE 二次发射） |
 | C1-4 | Camera.dt.test.js（新建） | 4（60fps 单帧=原系数、帧率无关 1帧30fps≈2帧60fps、震屏衰减帧率无关、低帧率单帧缓动更慢） |
+| C1-5 | MiniMap.test.js | 2（单帧 dt<间隔不触发重绘、累积 dt 达间隔后触发重绘）+ 6 旧用例 dt 0.016→0.07 适配节流 |
 
-测试总量：1143 → 1156（+13），109 个测试文件全绿。
+测试总量：1143 → 1158（+15），109 个测试文件全绿。

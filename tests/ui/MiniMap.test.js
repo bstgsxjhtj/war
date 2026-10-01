@@ -33,21 +33,21 @@ describe('MiniMap 濒死敌人标记', () => {
   it('绘制敌方圆点', () => {
     const mm = new MiniMap(mkBus());
     mm.setRefs(mkPlayer(), [mkAI()], cam);
-    mm.update(0.016);
+    mm.update(0.07); // 战役一#5：dt 需超过 1/15≈0.067 节流间隔才触发重绘
     expect(ops.some(o => o.op === 'fill' && o.style === '#ff4444')).toBe(true);
   });
 
   it('可处决敌人额外绘制处决菱形标记', () => {
     const mm = new MiniMap(mkBus());
     mm.setRefs(mkPlayer(), [mkAI({ canBeExecuted: true })], cam);
-    mm.update(0.016);
+    mm.update(0.07);
     expect(ops.some(o => o.op === 'stroke' && o.style === '#ffea00')).toBe(true);
   });
 
   it('非濒死敌人不绘制处决标记', () => {
     const mm = new MiniMap(mkBus());
     mm.setRefs(mkPlayer(), [mkAI()], cam);
-    mm.update(0.016);
+    mm.update(0.07);
     expect(ops.some(o => o.op === 'stroke' && o.style === '#ffea00')).toBe(false);
   });
 });
@@ -57,7 +57,7 @@ describe('MiniMap 色弱模式形状区分', () => {
     const mm = new MiniMap(mkBus());
     mm.setColorblind(true);
     mm.setRefs(mkPlayer(), [mkAI()], cam);
-    mm.update(0.016);
+    mm.update(0.07);
     expect(ops.some(o => o.op === 'rect')).toBe(true);
   });
 
@@ -65,7 +65,7 @@ describe('MiniMap 色弱模式形状区分', () => {
     const mm = new MiniMap(mkBus());
     mm.setColorblind(true);
     mm.setRefs(mkPlayer(), [mkAI({ team: 0 })], cam);
-    mm.update(0.016);
+    mm.update(0.07);
     expect(ops.some(o => o.op === 'arc')).toBe(true);
     expect(ops.some(o => o.op === 'rect')).toBe(false);
   });
@@ -73,8 +73,28 @@ describe('MiniMap 色弱模式形状区分', () => {
   it('关闭时敌人仍用圆形绘制', () => {
     const mm = new MiniMap(mkBus());
     mm.setRefs(mkPlayer(), [mkAI()], cam);
-    mm.update(0.016);
+    mm.update(0.07);
     expect(ops.some(o => o.op === 'rect')).toBe(false);
     expect(ops.some(o => o.op === 'arc')).toBe(true);
+  });
+});
+
+describe('MiniMap 15Hz 节流 (C1-5)', () => {
+  it('单帧 dt < 间隔（0.016 < 0.067）不触发重绘', () => {
+    const mm = new MiniMap(mkBus());
+    mm.setRefs(mkPlayer(), [mkAI()], cam);
+    ops.length = 0; // 清空构造时 mkCtx 的副作用
+    mm.update(0.016);
+    expect(ops.length).toBe(0);
+  });
+
+  it('累积 dt 达间隔后触发重绘', () => {
+    const mm = new MiniMap(mkBus());
+    mm.setRefs(mkPlayer(), [mkAI()], cam);
+    ops.length = 0;
+    mm.update(0.04); // 累积 0.04 < 0.067，不触发
+    expect(ops.length).toBe(0);
+    mm.update(0.04); // 累积 0.08 >= 0.067，触发
+    expect(ops.some(o => o.op === 'fill' && o.style === '#ff4444')).toBe(true);
   });
 });

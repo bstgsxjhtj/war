@@ -328,12 +328,16 @@ export class HUD {
   }
   setPosture(c) {
     if (!this._postureBar) return;
-    if (!c || !c.alive) { this._postureBar.style.display = 'none'; return; }
+    if (!c || !c.alive) { this._write(this._postureBar, 'display', 'none'); return; }
     const p = c._posture || 0;
     const broken = (c._postureBroken || 0) > 0;
-    this._postureBar.style.display = (p > 0 || broken) ? 'block' : 'none';
-    this._postureFill.style.width = `${Math.min(1, p / 100) * 100}%`;
-    this._postureFill.style.background = broken ? 'linear-gradient(90deg,#f00,#f44)' : (p > 70 ? 'linear-gradient(90deg,#f44,#fa0)' : 'linear-gradient(90deg,#c88,#fa4)');
+    const show = (p > 0 || broken);
+    this._write(this._postureBar, 'display', show ? 'block' : 'none');
+    if (show) {
+      // 战役一#5：宽度量化到 1% 步长，避免每帧浮点微变触发 DOM 重排
+      this._write(this._postureFill, 'width', `${Math.round(Math.min(1, p / 100) * 100)}%`);
+      this._write(this._postureFill, 'background', broken ? 'linear-gradient(90deg,#f00,#f44)' : (p > 70 ? 'linear-gradient(90deg,#f44,#fa0)' : 'linear-gradient(90deg,#c88,#fa4)'));
+    }
   }
   flashKillstreak(n) { const msg = n >= 3 ? `${n}连杀！` : '击杀！'; this._kill.textContent = msg; this._kill.style.opacity = '1'; this._killTimer = 1.4; }
   // 单个 buff 标签：限时 buff 传 remain/max 时额外渲染倒计时条
@@ -444,9 +448,11 @@ export class HUD {
     if (c.comboTimer > 0) {
       const p = c.comboTimer / c.comboWindow;
       const col = c.comboCount === 2 ? '#ff5533' : '#ffd070';
-      this._comboRing.style.border = `2px solid ${col}`;
-      this._comboRing.style.clipPath = `inset(0 ${(1 - p) * 100}% 0 0)`;
-    } else this._comboRing.style.border = '2px solid transparent';
+      this._write(this._comboRing, 'border', `2px solid ${col}`);
+      // 战役一#5：clipPath 量化到 1% 步长，连击窗口倒计时不再每帧触发 layout
+      const pct = Math.round((1 - p) * 100);
+      this._write(this._comboRing, 'clipPath', `inset(0 ${pct}% 0 0)`);
+    } else this._write(this._comboRing, 'border', '2px solid transparent');
   }
   flashKill(msg) { this._kill.textContent = msg; this._kill.style.opacity = '1'; this._killTimer = 1.2; }
   _renderErrLog() {
