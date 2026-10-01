@@ -20,7 +20,7 @@ ESM 依赖图必须保持无环（DAG）。
 - **engine**：Renderer（后期管线：SSAO+Reflector 静态 import 修 dist 404、UnrealBloom+暗角 Vignette、low 画质降级关 SSAO/Bloom/Reflector）、Scene（黄昏琥珀调色、远山顶点扰动、Fresnel rim 替固定方向光）、Camera、AssetLoader。
 - **world**：Terrain、Environment（树/石/残骸均 InstancedMesh：树 1 trunk + 3 leaf InstancedMesh 共 4 drawcall 替代 ~136、石 1 drawcall 替代 24、残骸≤2 drawcall 替代 16；草 6 InstancedMesh 已有）、Water、WeatherSystem、MapGenerator、SiegeStructure、SupplyPoint。
 - **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/Cavalry）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、Weapon、weapons/*（Sword/Spear/SwordShield/Warhammer/Bow）；AI 辅助（AIManager、UnitFormation、AffixBehavior）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge、RunBuffs）；SaveManager；战斗辅助（EnvironmentHazards、DifficultyAssist、TrajectoryPreview、EscortTarget、DefensePoint）；Spawner（红队生成）。
-- **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI、ProgressionUI、WeaponSkinsUI、UIPanel（面板基类）、UIStack（Escape 栈，支持 closable=false 不可关面板）、UpgradePicker（3 选 1 升级）、DeathFeedback（死亡反馈）、MainMenuUI（标题屏）、ClassSelectUI（职业选择）、GameMenu（Esc 菜单）。
+- **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI、ProgressionUI、WeaponSkinsUI、UIPanel（面板基类）、UIStack（Escape 栈，支持 closable=false 不可关面板）、UpgradePicker（3 选 1 升级）、DeathFeedback（死亡反馈）、MainMenuUI（标题屏）、StageSelectUI（选关/地图）、ClassSelectUI（职业选择）、GameMenu（Esc 菜单）。
 - **render**：TextureFactory（程序纹理 canvas 缓存）、disposeUtils、WeaponTrail、DodgeGhosts、EnvMap、LODManager、ParticleFX、TelegraphIndicator。
 - **app**：MatchController（比分/回合/胜负）、SaveOrchestrator（存档编排）、InputRouter（全局按键）、GameClock（随 timeScale 缩放的延迟任务）、EventWiring（17 个纯事件处理器下沉）、AchievementWiring（成就接线）、QualityGovernor（自适应画质：双向——持续低帧率降级 + 持续高帧率回升，回升不越过用户设定 ceiling；tick 返回新档位与 direction 标志）。
 
@@ -99,3 +99,11 @@ ESM 依赖图必须保持无环（DAG）。
 - **存档检测**：`hasSave: () => !!saveManager.load()` 决定"继续战役"禁用态；`getCampaignStage`/`getCampaignCleared` 在按钮文案显示"第X关"/"已通关X关"。
 - **UIStack closable 扩展**：`installUIStackEscape` 的捕获阶段 Escape 处理器在 `e.preventDefault() + e.stopImmediatePropagation()` 之后检查 `top.closable === false`——若不可关则直接 return（Escape 已被吞掉、不泄露到 InputRouter，但面板保持打开）。MainMenuUI 设 `closable = false`，避免标题屏被 Esc 关闭后无路可走；SettingsMenu 叠于其上时 Esc 正常关闭 SettingsMenu（栈顶 closable 未设，默认可关）。现有面板不设 closable 属性（`undefined === false` 为 false），行为完全向后兼容。
 - **模式切换时机**：`applyModeByName('战役')` 内部 `match.restart() → startRound() → spawnAll()`，在 `classSelectUI.show()` 前以默认职业生成实体；职业选择回调再次 `spawnAll()` 覆写为所选职业。叠层覆盖画面，用户不可见中间态。
+
+## 11. 选关/地图面板（P1-2，2026-10-01）
+
+`StageSelectUI`（`src/ui/StageSelectUI.js`）：双 tab 面板，由主菜单"选关/地图"按钮进入，`onBack` 返回主菜单。
+
+- **战役选关 tab**：从 `CampaignMode.STAGES`（10 关）生成卡片网格，每卡显示关名/地图名（`MapGenerator.MAPS[mapKey].name`）/天气/目标/难度星条。`refresh()` 按 `getCleared()` 标记 `index > cleared` 的关卡为锁定（半透明 + `cursor: not-allowed` + `dataset.locked='1'`）。点击已解锁关卡 → `campaign.skipTo(index)` + `applyModeByName('战役')` + `classSelectUI.show()`。
+- **自由对战 tab**：难度 3 档按钮（简单/普通/困难，`getDifficulty` 高亮当前）+ 8 地图卡片网格（`MapGenerator.MAPS` 全量）。难度切换 → `settings.difficulty = level` + `bus.emit(SETTINGS_DIFFICULTY)`（与 SettingsMenu 同一事件，EventWiring 已处理 `assist.setBaseLevel` + `aiManager.setDifficulty`）。地图点击 → `loadMap(mapKey)` + `classSelectUI.show()`（保持当前模式，用户可 Esc 切模式）。
+- **面板返回语义**：`_selecting` 标志区分选择态与关闭态——`hide()` 在 `_selecting=false` 时调 `onBack`（Esc 关闭或返回按钮触发），`_selecting=true` 时跳过（已选关/地图，由回调自行转场 classSelectUI）。面板可关（closable 未设，默认可关），Esc 经 UIStack 关闭后自动 `onBack` 回主菜单。

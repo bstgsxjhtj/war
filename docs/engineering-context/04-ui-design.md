@@ -38,6 +38,7 @@
 4. UI 只依赖 gameplay 的数据/常量，不反向被依赖。
 5. UI 测试用 `// @vitest-environment jsdom` pragma，模板见 tests/ui/SettingsMenu.test.js。
 6. 面板内提示统一走 `bus.emit('hud.flash', ...)` → HUD 监听显示（禁止发无人监听的事件）。
+7. **面板双关语义**（P1-2，StageSelectUI）：面板同时有"返回"（回上级面板）与"选择"（转场到下级面板）两种关闭路径时，用 `_selecting` 标志区分——`hide()` 在 `_selecting=false` 时调 `onBack`（Esc 关闭或返回按钮），`_selecting=true` 时跳过（选择回调自行转场）。选择回调在调 `hide()` 前置 `_selecting=true`。
 
 ## 4. 结算评级
 

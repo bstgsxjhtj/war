@@ -13,7 +13,7 @@ describe('MainMenuUI 主菜单标题屏', () => {
     getCampaignCleared: () => 4,
     onNewGame: vi.fn(),
     onContinue: vi.fn(),
-    onQuickBattle: vi.fn(),
+    onStageSelect: vi.fn(),
     onOpenSettings: vi.fn(),
   });
 
@@ -63,12 +63,12 @@ describe('MainMenuUI 主菜单标题屏', () => {
     m.dispose();
   });
 
-  it('点击"快速对战"触发 onQuickBattle', () => {
+  it('点击"选关/地图"触发 onStageSelect', () => {
     const o = baseOpts();
     const m = new MainMenuUI(o);
     m.show();
-    m.el.querySelector('[data-action="quick"]').click();
-    expect(o.onQuickBattle).toHaveBeenCalledTimes(1);
+    m.el.querySelector('[data-action="stageselect"]').click();
+    expect(o.onStageSelect).toHaveBeenCalledTimes(1);
     m.dispose();
   });
 

@@ -51,15 +51,15 @@ export class MainMenuUI {
 
     const newBtn = mk('new', '开始新游戏', '#3a5a3a');
     const conBtn = mk('continue', '继续战役', '#365070');
-    const quickBtn = mk('quick', '快速对战', '#4a4a3a');
+    const stageBtn = mk('stageselect', '选关/地图', '#4a4a3a');
     const setBtn = mk('settings', '设置', '#3a3a4a');
 
     newBtn.addEventListener('click', () => { this.hide(); if (this.opts.onNewGame) this.opts.onNewGame(); });
     conBtn.addEventListener('click', () => { if (conBtn.disabled) return; this.hide(); if (this.opts.onContinue) this.opts.onContinue(); });
-    quickBtn.addEventListener('click', () => { this.hide(); if (this.opts.onQuickBattle) this.opts.onQuickBattle(); });
+    stageBtn.addEventListener('click', () => { this.hide(); if (this.opts.onStageSelect) this.opts.onStageSelect(); });
     setBtn.addEventListener('click', () => { if (this.opts.onOpenSettings) this.opts.onOpenSettings(); });
 
-    col.append(newBtn, conBtn, quickBtn, setBtn);
+    col.append(newBtn, conBtn, stageBtn, setBtn);
     overlay.appendChild(col);
     this._continueBtn = conBtn;
 

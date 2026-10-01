@@ -52,6 +52,7 @@ import { CLASS_DEFS } from './gameplay/ClassDefinition.js';
 import { ClassSelectUI } from './ui/ClassSelectUI.js';
 import { GameMenu } from './ui/GameMenu.js';
 import { MainMenuUI } from './ui/MainMenuUI.js';
+import { StageSelectUI } from './ui/StageSelectUI.js';
 import { BuildReviewUI } from './ui/BuildReviewUI.js';
 import { WeaponTrail, HitDirection, HitStop } from './render/WeaponTrail.js';
 import { DodgeGhosts } from './render/DodgeGhosts.js';
@@ -443,6 +444,8 @@ async function bootstrap() {
     relockPointer();
   });
   // P1-1 主菜单标题屏：启动首个面板，选择后进入职业选择
+  // P1-2 选关/地图面板：战役选关（解锁进度）+ 自由对战（地图+难度）
+  let stageSelectUI;
   const mainMenuUI = new MainMenuUI({
     hasSave: () => !!saveManager.load(),
     getCampaignStage: () => campaign.stage,
@@ -456,10 +459,31 @@ async function bootstrap() {
       inputRouter.applyModeByName('战役');
       classSelectUI.show();
     },
-    onQuickBattle: () => {
+    onStageSelect: () => { stageSelectUI.show(); },
+    onOpenSettings: () => settings.show(),
+  });
+  stageSelectUI = new StageSelectUI({
+    getCleared: () => campaign.cleared,
+    getModeName: () => mode.name,
+    getDifficulty: () => settings.difficulty,
+    onStageSelect: (index) => {
+      campaign.skipTo(index);
+      inputRouter.applyModeByName('战役');
+      hud.flash('战役 · 第' + (index + 1) + '关：' + campaign.currentStage.name);
+      setTimeout(() => hud.clearHint(), 3000);
       classSelectUI.show();
     },
-    onOpenSettings: () => settings.show(),
+    onMapSelect: (mapKey) => {
+      loadMap(mapKey);
+      hud.flash('地图：' + currentMapName + ' · 点击选择职业');
+      setTimeout(() => hud.clearHint(), 3000);
+      classSelectUI.show();
+    },
+    onDifficultyChange: (level) => {
+      settings.difficulty = level;
+      bus.emit(EV.SETTINGS_DIFFICULTY, { difficulty: level });
+    },
+    onBack: () => { mainMenuUI.show(); },
   });
   mainMenuUI.show();
   gameMenu = new GameMenu({
