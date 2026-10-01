@@ -22,7 +22,7 @@ ESM 依赖图必须保持无环（DAG）。
 - **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/Cavalry）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、Weapon、weapons/*（Sword/Spear/SwordShield/Warhammer/Bow）；AI 辅助（AIManager、UnitFormation、AffixBehavior）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge、RunBuffs）；SaveManager；战斗辅助（EnvironmentHazards、DifficultyAssist、TrajectoryPreview、EscortTarget、DefensePoint）；Spawner（红队生成）。
 - **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI、ProgressionUI、WeaponSkinsUI、UIPanel（面板基类）、UIStack（Escape 栈）、UpgradePicker（3 选 1 升级）、DeathFeedback（死亡反馈）。
 - **render**：TextureFactory（程序纹理 canvas 缓存）、disposeUtils、WeaponTrail、DodgeGhosts、EnvMap、LODManager、ParticleFX、TelegraphIndicator。
-- **app**：MatchController（比分/回合/胜负）、SaveOrchestrator（存档编排）、InputRouter（全局按键）、GameClock（随 timeScale 缩放的延迟任务）、EventWiring（17 个纯事件处理器下沉）、AchievementWiring（成就接线）、QualityGovernor（自适应画质）。
+- **app**：MatchController（比分/回合/胜负）、SaveOrchestrator（存档编排）、InputRouter（全局按键）、GameClock（随 timeScale 缩放的延迟任务）、EventWiring（17 个纯事件处理器下沉）、AchievementWiring（成就接线）、QualityGovernor（自适应画质：双向——持续低帧率降级 + 持续高帧率回升，回升不越过用户设定 ceiling；tick 返回新档位与 direction 标志）。
 
 ## 3. 运行期解耦
 
@@ -63,3 +63,20 @@ ESM 依赖图必须保持无环（DAG）。
 - `_acquireArrow()`：从 `_arrowPool`（上限 64）弹出复用对象，池空时新建；mesh 为空时才创建并设 `castShadow`；`scene.add(mesh)` 后返回。每个池对象自带 `pos`/`vel` 两个 `Vector3`，发射时 `pos.copy(_tmpOrigin)`、`vel.copy(forward)`，不再 `.clone()`。
 - `_releaseArrow(a)`：`scene.remove(mesh)` 后压回池（超上限则丢弃，让 GC 回收）。
 - 复用时重置状态字段：普通箭 `pierce=0 / hitSet=null`；穿刺箭 `pierce=PIERCE_ARROW_PIERCE / hitSet=new Set()`，避免上一支箭的穿透命中集合残留。
+
+## 8. 自适应画质双向调节 + 性能 HUD（P0-1，2026-10-01）
+
+**QualityGovernor 双向化**：原实现仅降级（持续低帧率下调一档），低端机一旦降级永不回升。改为双向：
+
+- **降级**：连续 `slowFrames`（90）帧 FPS < `slowFps`（30）→ 下调一档。
+- **回升**：连续 `recoverFrames`（240）帧 FPS ≥ `recoverFps`（55）→ 上调一档，**但不超过 `_ceiling`**（用户/启动时 `setQuality` 设定的档位），避免与用户显式选择冲突。
+- 冷却期（`cooldownFrames` 300）对降级与回升均生效，避免抖动；触发任一方向后重置计数与冷却。
+- `tick()` 返回新档位或 `null`；`direction` getter 暴露 `'down'`/`'up'`/`null`，供调用方区分提示文案。
+- `setQuality(q)` 同时抬升 `_ceiling = q`，用户在设置面板手动选档后，自动回升上限随之调整。
+
+**HUD 性能面板（F4）**：左上角诊断叠层，默认关闭。
+
+- `togglePerf()` 切换可见性；`updatePerf(dt, info)` 每帧由 main_entry 主循环调用（含菜单/结算态）。
+- 显示：FPS（指数平滑 `0.9*旧+0.1*新`）、帧时 ms、Min/Max（每刷新周期重置）、drawcall（`renderer.webgl.info.render.calls`）、三角面（k）、画质档位（低/中/高）、单位数。
+- 关闭时 `updatePerf` 仅做 FPS 采样（供下次开启即有值）不写 DOM；开启时 0.25s 节流刷新 `textContent`，避免每帧 DOM 写入。
+- main_entry 主循环在 `qualityGovernor.tick(dt)` 后立即调用 `hud.updatePerf`，`direction` 区分 `hud.flash` 文案为"画质自动回升至"或"画质自动降至"。

@@ -121,6 +121,22 @@ export class HUD {
     });
     document.body.appendChild(this._errPanel);
 
+    // F4 性能面板：FPS / 帧时 / drawcall / 三角面 / 画质档位（默认关闭，观察用）
+    this._perfEl = document.createElement('div');
+    Object.assign(this._perfEl.style, {
+      position: 'fixed', top: '18px', left: '18px', zIndex: '16',
+      fontFamily: 'Consolas, monospace', fontSize: '12px', lineHeight: '1.5',
+      color: '#9f9', textShadow: '0 0 4px #000', background: 'rgba(8,12,10,.62)',
+      padding: '6px 9px', borderRadius: '4px', border: '1px solid #354',
+      whiteSpace: 'pre', pointerEvents: 'none', display: 'none'
+    });
+    document.body.appendChild(this._perfEl);
+    this._perfVisible = false;
+    this._perfFps = 0;
+    this._perfTimer = 0;
+    this._perfMin = Infinity;
+    this._perfMax = 0;
+
     on(EV.ENGINE_ERROR, ({ err, ts, frame }) => {
       this._errCount++;
       this._errLog.push({ msg: err && err.message ? err.message : String(err), ts, frame });
@@ -137,6 +153,9 @@ export class HUD {
         const show = this._errPanel.style.display === 'none';
         this._errPanel.style.display = show ? 'block' : 'none';
         if (show) this._renderErrLog();
+      } else if (e.key === 'F4') {
+        e.preventDefault();
+        this.togglePerf();
       }
     };
     document.addEventListener('keydown', this._onKeydown);
@@ -434,6 +453,35 @@ export class HUD {
     if (!this._errLog.length) { this._errPanel.textContent = '无错误记录'; return; }
     this._errPanel.innerHTML = '<div style="color:#f88;font-weight:bold;margin-bottom:4px">最近错误 (frame | msg)</div>' +
       this._errLog.map(e => `<div>#${e.frame} | ${e.msg}</div>`).join('');
+  }
+
+  // F4 性能面板开关
+  togglePerf() {
+    this._perfVisible = !this._perfVisible;
+    this._perfEl.style.display = this._perfVisible ? 'block' : 'none';
+    if (this._perfVisible) { this._perfMin = Infinity; this._perfMax = 0; this._perfTimer = 0; }
+    else this._perfEl.textContent = '';
+  }
+
+  // 每帧调用（含菜单/结算态）；面板关闭时仅做极轻量 FPS 采样，开启时 0.25s 节流刷新 DOM
+  updatePerf(dt, info = {}) {
+    const inst = dt > 0 ? 1 / dt : 0;
+    if (inst > 0) this._perfFps = this._perfFps > 0 ? this._perfFps * 0.9 + inst * 0.1 : inst;
+    if (!this._perfVisible) return;
+    if (this._perfFps > 0 && this._perfFps < this._perfMin) this._perfMin = this._perfFps;
+    if (this._perfFps > this._perfMax) this._perfMax = this._perfFps;
+    this._perfTimer -= dt;
+    if (this._perfTimer > 0) return;
+    this._perfTimer = 0.25;
+    const fps = this._perfFps;
+    const ms = fps > 0 ? 1000 / fps : 0;
+    const qLabels = { low: '低', mid: '中', high: '高' };
+    this._perfEl.textContent =
+      `FPS ${fps.toFixed(0).padStart(3)} (${ms.toFixed(1)}ms) Min ${this._perfMin === Infinity ? '-' : this._perfMin.toFixed(0)} Max ${this._perfMax.toFixed(0)}\n` +
+      `档位 ${qLabels[info.quality] || info.quality || '-'}  Draw ${info.calls || 0}  三角 ${((info.triangles || 0) / 1000).toFixed(1)}k\n` +
+      `单位 ${info.enemies || 0}`;
+    this._perfMin = Infinity;
+    this._perfMax = 0;
   }
 
   flash(msg) { this._endLocked = false; this._hint.textContent = msg; }

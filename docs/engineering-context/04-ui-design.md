@@ -5,6 +5,8 @@
 | 界面 | 触发 | 说明 |
 |---|---|---|
 | HUD | 常驻 | 血条/体力/怒气/比分/小地图/击杀提示；暴露 flash()/flashKill() 方法 |
+| HUD 性能面板 | F4 | 左上 FPS/帧时/Min/Max + drawcall/三角面/画质档位/单位数；HUD.togglePerf/updatePerf，默认关闭，0.25s 节流刷新 |
+| HUD 错误面板 | F3 | 右上错误计数 + 最近 10 条 ENGINE_ERROR 日志；HUD._errEl/_errPanel |
 | 设置菜单 | Esc | SettingsMenu |
 | 技能树面板 | K | SkillTreeUI |
 | 成就面板 | J | AchievementsUI |
@@ -21,7 +23,8 @@
 
 **面板自监听**：J（成就 AchievementsUI）、V（皮肤 WeaponSkinsUI）、H（存档 SaveUI）。
 
-已占用合计 27 个按键：W A S D Shift Space Q F T E Tab 1 2 3 4 K I M N Escape R , C D J V H。
+已占用合计 29 个按键：W A S D Shift Space Q F T E Tab 1 2 3 4 K I M N Escape R , C D J V H F3 F4。
+**F3/F4 为 HUD 诊断面板专用键**（不走 KeyBindings 可重绑体系，固定于 document keydown 监听）：F3 切错误日志面板，F4 切性能（FPS/drawcall/档位）面板；两者默认关闭、互不干扰，面板关闭时 updatePerf 仅做极轻量 FPS 指数平滑采样（0.9*旧+0.1*新）不写 DOM。
 面板开关键（I/J/V/H/K）由**面板组件在 document 自监听**，main_entry 不重复绑定。
 **新手引导（Tutorial）读 KeyBindings**（P0-3，2026-09-28）：步骤匹配与文案由 `kb.get(action)` 反查当前键码（dodge/ultimate/execute/lock/weapon1-4/移动），重绑后不再卡死；`kb=null` 回退 DEFAULT_BINDINGS。
 **UI 快捷键纳入 KeyBindings**（P2-2，2026-09-28）：新增 skilltree(K)/affix(I)/mode(M)/weather(N)/settings(Esc) 5 个可重绑动作（共 20 项）。InputRouter 读 `kb.get('mode'/'weather'/'settings')` 替代硬编码 KeyM/KeyN/Escape；UIPanel 接受可选 `kb+action` 参数、AffixesUI 透传；SkillTreeUI 接受 `kb` 读 skilltree 键；Tutorial ⑪⑫步改 `actions` 驱动、_renderFinal 全键位动态化。无 kb 时回退默认键码（向后兼容）。

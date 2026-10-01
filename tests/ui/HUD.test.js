@@ -387,3 +387,50 @@ describe('HUD 减少动效', () => {
     expect(hud._hitvignette.style.opacity).toBe('0.6');
   });
 });
+
+describe('HUD F4 性能面板', () => {
+  it('默认关闭且面板不可见', () => {
+    const hud = mkHud();
+    expect(hud._perfVisible).toBe(false);
+    expect(hud._perfEl.style.display).toBe('none');
+  });
+
+  it('togglePerf 切换可见性', () => {
+    const hud = mkHud();
+    hud.togglePerf();
+    expect(hud._perfVisible).toBe(true);
+    expect(hud._perfEl.style.display).toBe('block');
+    hud.togglePerf();
+    expect(hud._perfVisible).toBe(false);
+    expect(hud._perfEl.style.display).toBe('none');
+    expect(hud._perfEl.textContent).toBe('');
+  });
+
+  it('关闭时 updatePerf 仅采样 FPS 不写 DOM', () => {
+    const hud = mkHud();
+    hud.updatePerf(1 / 60, { calls: 100, triangles: 5000, quality: 'high', enemies: 5 });
+    expect(hud._perfFps).toBeGreaterThan(0);
+    expect(hud._perfEl.textContent).toBe('');
+  });
+
+  it('开启并跨过节流后刷新 FPS/drawcall/档位 文案', () => {
+    const hud = mkHud();
+    hud.togglePerf();
+    hud.updatePerf(1 / 60, { calls: 120, triangles: 8000, quality: 'mid', enemies: 3 });
+    hud.updatePerf(1 / 60, { calls: 120, triangles: 8000, quality: 'mid', enemies: 3 });
+    const txt = hud._perfEl.textContent;
+    expect(txt).toContain('FPS');
+    expect(txt).toContain('Draw 120');
+    expect(txt).toContain('档位 中');
+    expect(txt).toContain('单位 3');
+  });
+
+  it('F4 键触发 togglePerf', () => {
+    const hud = mkHud();
+    const ev = new KeyboardEvent('keydown', { key: 'F4' });
+    document.dispatchEvent(ev);
+    expect(hud._perfVisible).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'F4' }));
+    expect(hud._perfVisible).toBe(false);
+  });
+});

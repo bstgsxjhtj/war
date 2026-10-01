@@ -80,4 +80,40 @@ describe('QualityGovernor (P2-5)', () => {
     for (let i = 0; i < 100; i++) expect(g.tick(0.05)).toBeNull();
     expect(g.quality).toBe('high');
   });
+
+  it('降级后持续高帧率回升一级（direction=up）', () => {
+    const g = new QualityGovernor({ quality: 'high', slowFrames: 10, cooldownFrames: 5, recoverFrames: 20, recoverFps: 55 });
+    for (let i = 0; i < 10; i++) g.tick(0.05);
+    expect(g.quality).toBe('mid');
+    expect(g.direction).toBe('down');
+    for (let i = 0; i < 5; i++) g.tick(0.05); // 冷却期内不计数
+    let out = null;
+    for (let i = 0; i < 20; i++) out = g.tick(1 / 60);
+    expect(out).toBe('high');
+    expect(g.quality).toBe('high');
+    expect(g.direction).toBe('up');
+  });
+
+  it('回升未达阈值不触发', () => {
+    const g = new QualityGovernor({ quality: 'high', slowFrames: 10, cooldownFrames: 0, recoverFrames: 20 });
+    for (let i = 0; i < 10; i++) g.tick(0.05);
+    expect(g.quality).toBe('mid');
+    for (let i = 0; i < 19; i++) expect(g.tick(1 / 60)).toBeNull();
+    expect(g.quality).toBe('mid');
+  });
+
+  it('回升不超过用户设定上限（setQuality 设 lower 后不再回升）', () => {
+    const g = new QualityGovernor({ quality: 'high', slowFrames: 5, cooldownFrames: 0, recoverFrames: 5 });
+    for (let i = 0; i < 5; i++) g.tick(0.05);
+    expect(g.quality).toBe('mid');
+    g.setQuality('mid'); // 用户显式选择 mid → 上限=mid
+    for (let i = 0; i < 50; i++) expect(g.tick(1 / 60)).toBeNull();
+    expect(g.quality).toBe('mid');
+  });
+
+  it('无变更时 direction 为 null', () => {
+    const g = new QualityGovernor();
+    g.tick(1 / 60);
+    expect(g.direction).toBeNull();
+  });
 });

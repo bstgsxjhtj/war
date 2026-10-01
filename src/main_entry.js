@@ -479,9 +479,21 @@ async function bootstrap() {
     time.tick(
       (dt) => {
         const now = time.now * 0.001;
-        // P2-5 自适应降帧：持续低帧率时自动下调画质
+        // P2-5 自适应画质：持续低帧率自动降级，持续高帧率自动回升（不越过用户设定上限）
         const _qs = qualityGovernor.tick(dt);
-        if (_qs) { applyQuality(_qs); hud.flash('性能优化：画质自动降至' + (_qs === 'low' ? '低' : '中')); setTimeout(() => hud.clearHint(), 2000); }
+        if (_qs) {
+          applyQuality(_qs);
+          const _ql = _qs === 'low' ? '低' : (_qs === 'mid' ? '中' : '高');
+          hud.flash((qualityGovernor.direction === 'up' ? '性能良好：画质自动回升至' : '性能优化：画质自动降至') + _ql);
+          setTimeout(() => hud.clearHint(), 2000);
+        }
+        // F4 性能面板：FPS/帧时/drawcall/三角面/画质档位（含菜单/结算态持续刷新）
+        hud.updatePerf(dt, {
+          calls: renderer.webgl.info.render.calls,
+          triangles: renderer.webgl.info.render.triangles,
+          quality: qualityGovernor.quality,
+          enemies: (player ? 1 : 0) + ais.length + remotes.length,
+        });
         if (state.current === States.ROUND_END) {
           match.roundEndTimer -= dt;
           env.update(dt, now);
