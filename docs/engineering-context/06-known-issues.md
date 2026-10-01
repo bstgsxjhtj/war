@@ -347,5 +347,6 @@
 | C1-1 | Time.test.js | 2（onRender 第二参数为真实帧间隔非 fixedStep、高帧率时接近 fixedStep 仍为真实值） |
 | C1-2 | Character.combo.test.js | 6（挥击前段不可取消、命中帧后+武器就绪取消后摇、命中帧后+冷却中不取消、弓不可取消、非攻击+未就绪 false、非攻击+就绪 true 基线） |
 | C1-3 | Character.takeDamage.test.js | 1（tryDodge 重置 _perfectDodge 允许下次完美闪避：首次触发→tryDodge 重置→第二次再次触发+FX_PERFECTDODGE 二次发射） |
+| C1-4 | Camera.dt.test.js（新建） | 4（60fps 单帧=原系数、帧率无关 1帧30fps≈2帧60fps、震屏衰减帧率无关、低帧率单帧缓动更慢） |
 
-测试总量：1143 → 1152（+9），108 个测试文件全绿。
+测试总量：1143 → 1156（+13），109 个测试文件全绿。

@@ -58,25 +58,28 @@ export class Camera {
     this._killTimer = Math.max(0, (this._killTimer || 0) - dt);
     this.target.x = target.x;
     this.target.z = target.z;
-    this.target.y += (target.y - this.target.y) * 0.25;
-    // 鼠标输入平滑：yaw/pitch 缓动到目标值
-    this.yaw += (this._targetYaw - this.yaw) * CAMERA.LERP_LOOK;
-    this.pitch += (this._targetPitch - this.pitch) * CAMERA.LERP_LOOK;
+    // 战役一#4：所有缓动 dt 化——factor = 1-pow(1-k, dt*60) 使 60fps 行为不变，
+    // 低帧率（30fps）时缓动更慢更平滑而非每帧固定比例跳变，高帧率（144Hz）时不再过快漂移
+    const dt60 = Math.min(dt, 0.1) * 60;
+    this.target.y += (target.y - this.target.y) * (1 - Math.pow(0.75, dt60));
+    const lookF = 1 - Math.pow(1 - CAMERA.LERP_LOOK, dt60);
+    this.yaw += (this._targetYaw - this.yaw) * lookF;
+    this.pitch += (this._targetPitch - this.pitch) * lookF;
     // 锁定时相机 yaw 缓动朝向目标
     if (this.lockTarget && this.lockTarget.alive) {
       const ty = Math.atan2(this.lockTarget.position.x - target.x, this.lockTarget.position.z - target.z);
       let dy = ty - this._targetYaw;
       while (dy > Math.PI) dy -= Math.PI * 2;
       while (dy < -Math.PI) dy += Math.PI * 2;
-      this._targetYaw += dy * 0.1;
+      this._targetYaw += dy * (1 - Math.pow(0.9, dt60));
     }
 
     const wantDist = this.aimMode ? 3.2 : this.distance;
     const wantHgt = this.aimMode ? 1.9 : this.height;
     const wantFov = this.aimMode ? CAMERA.FOV_AIM : CAMERA.FOV_DEFAULT;
-    this._curDist += (wantDist - this._curDist) * CAMERA.LERP_DIST;
-    this._curHgt += (wantHgt - this._curHgt) * CAMERA.LERP_HGT;
-    this._curFov += (wantFov - this._curFov) * CAMERA.LERP_FOV;
+    this._curDist += (wantDist - this._curDist) * (1 - Math.pow(1 - CAMERA.LERP_DIST, dt60));
+    this._curHgt += (wantHgt - this._curHgt) * (1 - Math.pow(1 - CAMERA.LERP_HGT, dt60));
+    this._curFov += (wantFov - this._curFov) * (1 - Math.pow(1 - CAMERA.LERP_FOV, dt60));
     if (Math.abs(this.cam.fov - this._curFov) > 0.01) { this.cam.fov = this._curFov; this.cam.updateProjectionMatrix(); }
 
     const cosp = Math.cos(this.pitch);
@@ -87,7 +90,7 @@ export class Camera {
 
     if (this._shake > 0.001) {
       this._shakeOffset.set((Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP, (Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP, (Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP);
-      this._shake *= CAMERA.SHAKE_DECAY;
+      this._shake *= Math.pow(CAMERA.SHAKE_DECAY, dt60);
     } else this._shakeOffset.set(0, 0, 0);
 
     this.cam.position.set(

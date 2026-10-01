@@ -199,7 +199,7 @@ export class Player extends Character {
 
   update(dt, terrain, combat, now) {
     this._pendingCombat = combat;
-    if (!this.alive) { this.camera.follow(this.position); return; }
+    if (!this.alive) { this.camera.follow(this.position, dt); return; }
     if (this.lockTarget && (!this.lockTarget.alive || this.lockTarget.position.distanceTo(this.position) > 15)) {
       this.lockTarget.setLockMark(false); this.lockTarget = null; this.camera.lockTarget = null;
     }
