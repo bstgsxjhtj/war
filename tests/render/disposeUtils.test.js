@@ -51,4 +51,21 @@ describe('deepDispose (P1-5)', () => {
     expect(() => deepDispose(null)).not.toThrow();
     expect(() => deepDispose(undefined)).not.toThrow();
   });
+
+  it('共享纹理（_shared=true）不被 dispose (C1-8)', () => {
+    const tex = new THREE.Texture();
+    tex._shared = true;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial({ map: tex }));
+    const ts = vi.spyOn(tex, 'dispose');
+    deepDispose(m);
+    expect(ts).not.toHaveBeenCalled();
+  });
+
+  it('非共享纹理仍被 dispose (C1-8)', () => {
+    const tex = new THREE.Texture();
+    const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial({ map: tex }));
+    const ts = vi.spyOn(tex, 'dispose');
+    deepDispose(m);
+    expect(ts).toHaveBeenCalled();
+  });
 });

@@ -5,7 +5,8 @@ function disposeMaterial(mat) {
   if (Array.isArray(mat)) { for (const m of mat) disposeMaterial(m); return; }
   for (const k of TEX_KEYS) {
     const t = mat[k];
-    if (t && typeof t.dispose === 'function') t.dispose();
+    // 战役一#8：跳过共享纹理（TextureFactory 缓存实例），dispose 后其他角色仍引用
+    if (t && typeof t.dispose === 'function' && !t._shared) t.dispose();
   }
   if (typeof mat.dispose === 'function') mat.dispose();
 }

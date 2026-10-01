@@ -336,7 +336,7 @@
 | C1-5 | HUD setter 全部走 _write 脏检查 + MiniMap 降频 15Hz | P0 | ✅已修 |
 | C1-6 | 菜单暂停闸门（UIStack pausesGame + installUIStackEscape 幂等修复） | P0 | ✅已修 |
 | C1-7 | 会话闭环：退出到主菜单 + 结算屏三键（重试/换模式/回主菜单） | P0 | ✅已修 |
-| C1-8 | 角色纹理/材质共享缓存消除换波尖峰 | P0 | ⬜待做 |
+| C1-8 | 角色纹理/材质共享缓存消除换波尖峰 | P0 | ✅已修 |
 | C2 | 画面调通（雾效/Bloom/水面/打击特效）+ 内容可达（模式/进度入口） | P1 | ⬜待做 |
 | C3 | 画面提质（Q版比例/色调/刀光）+ 深度优化（多档存档/空间哈希/UI令牌） | P2 | ⬜待做 |
 
@@ -351,5 +351,6 @@
 | C1-5 | MiniMap.test.js | 2（单帧 dt<间隔不触发重绘、累积 dt 达间隔后触发重绘）+ 6 旧用例 dt 0.016→0.07 适配节流 |
 | C1-6 | UIStack.test.js | 4（空栈 pausing=false、pausesGame=true 入栈后 pausing=true、pausesGame 未设不触发、栈中任意面板 pausesGame=true 即触发） |
 | C1-7 | ResultScreen.gradeGap.test.js / GameMenu.test.js / MainMenuUI.test.js | 5（三键渲染、重试 emit ROUND_RESTART、换模式回调、回主菜单回调、hide 不 emit）+ 1（GameMenu 退出按钮）+ 1（MainMenuUI pausesGame）+ 1（GameMenu pausesGame） |
+| C1-8 | TextureFactory.test.js（新建）/ disposeUtils.test.js | 9（noise/normal/rough/brick 同参数返回同一实例、不同 repeat/base 不同实例、_shared 标记、repeat 正确、canvas 包装）+ 2（共享纹理不 dispose、非共享仍 dispose） |
 
-测试总量：1143 → 1170（+27），109 个测试文件全绿。
+测试总量：1143 → 1181（+38），110 个测试文件全绿。

@@ -155,3 +155,13 @@ ESM 依赖图必须保持无环（DAG）。
 **GameMenu 退出到主菜单**：操作行下方新增全宽按钮"退出到主菜单"（`data-action="exit"`），回调 `opts.onExitToMenu`。main_entry 中 `onExitToMenu: () => { gameMenu.hide(); mainMenuUI.show(); }`——关闭 Esc 菜单后显示标题屏，`UIStack.pausing` 仍为 true（MainMenuUI.pausesGame=true），gameplay 冻结。
 
 **MainMenuUI pausesGame**：标题屏增设 `this.pausesGame = true`。从结算屏/GameMenu 回主菜单时，gameplay 立即冻结（AI/战斗/玩家更新全跳过）。从主菜单开始新游戏时 `mainMenuUI.hide()` → `UIStack.pausing = false` → `applyModeByName` → `match.restart()` → `startRound()` → `state.transit(PLAYING)`，gameplay 恢复。
+
+## 16. 纹理实例缓存消除换波 GPU 尖峰（C1-8，2026-10-01）
+
+**问题**：`Character._build()` 每个角色创建 3 个 `THREE.CanvasTexture`（armor 的 map/normalMap/roughnessMap，经 `TextureFactory.noise/normal/rough`）。`TextureFactory` 原仅缓存 `<canvas>` 元素（`_canvasCache`），但每次调用 `new THREE.CanvasTexture(canvas)` 创建新包装 → 首次渲染触发 GPU `texImage2D` 上传。换波时 N 个角色同步构造 → 3N 次 GPU 上传 → 帧尖峰。
+
+**解法**：`TextureFactory` 新增 `_textureCache` Map，按参数键缓存 `CanvasTexture` 实例。同一参数只创建一次纹理 → GPU 只上传一次。`noise` 的纹理键含 `repeat`（canvas 键不含，canvas 不受 repeat 影响）。
+
+- **共享标记**：缓存纹理设 `t._shared = true`。`disposeUtils.disposeMaterial` 检查 `!t._shared` 跳过 dispose——角色 dispose 后其他角色仍引用同一纹理。
+- **deepDispose 安全**：`deepDispose` 遍历材质时，`_shared=true` 的纹理不被 dispose；`_shared` 未设（falsy）的纹理照常 dispose（向后兼容）。
+- **缓存生命周期**：`_textureCache` 为模块级 Map，无淘汰策略。实际键数极少（noise 256x256 #4a4a4a amp18 r4 × 1、normal 256x256 0.4 × 1、rough 256x256 0.5 × 1、terrain noise × 2、boss noise 128x128 × 1、brick 256x256 × 1 ≈ 7 条），内存可忽略。
