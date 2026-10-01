@@ -10,6 +10,8 @@ vi.mock('../../src/render/TextureFactory.js', () => ({
 
 import * as THREE from 'three';
 import { AIController } from '../../src/gameplay/AIController.js';
+import { BossEnemy } from '../../src/gameplay/BossEnemy.js';
+import { CavalryEnemy } from '../../src/gameplay/Cavalry.js';
 import { Character } from '../../src/gameplay/Character.js';
 import { EV } from '../../src/core/constants/events.js';
 
@@ -133,6 +135,60 @@ describe('AIController 决策', () => {
     ai.update(0.016, terrain, combat, [mkEnemy(0, 1, 0)], NOW);
     expect(ai.setMove).not.toHaveBeenCalled();
     expect(superUpdate).toHaveBeenCalled();
+  });
+});
+
+describe('AIController 共享空间哈希（#21）', () => {
+  let ai, superUpdate;
+  beforeEach(() => {
+    superUpdate = vi.spyOn(Character.prototype, 'update').mockImplementation(() => {});
+    ai = new AIController({ team: 1 });
+    ai.setWeapons([mkWeapon()]);
+    ai.tryAttack = vi.fn();
+  });
+  afterEach(() => superUpdate.mockRestore());
+
+  it('传入外部共享哈希时不再自建网格（复用调用方构建结果）', () => {
+    const ownClear = vi.spyOn(ai._spatialHash, 'clear');
+    const ownInsert = vi.spyOn(ai._spatialHash, 'insert');
+    const shared = { queryRadius: vi.fn(() => []), queryNearest: vi.fn(() => null), clear: vi.fn(), insert: vi.fn() };
+    ai.update(0.016, terrain, combat, [mkEnemy(0, 1, 0)], NOW, shared);
+    expect(ownClear).not.toHaveBeenCalled();
+    expect(ownInsert).not.toHaveBeenCalled();
+    expect(shared.clear).not.toHaveBeenCalled(); // 构建由调用方负责，AI 只查询
+    expect(shared.insert).not.toHaveBeenCalled();
+  });
+
+  it('未传入哈希时回退自建（独立实例行为不变）', () => {
+    const ownClear = vi.spyOn(ai._spatialHash, 'clear');
+    const ownInsert = vi.spyOn(ai._spatialHash, 'insert');
+    ai.update(0.016, terrain, combat, [mkEnemy(0, 1, 0)], NOW);
+    expect(ownClear).toHaveBeenCalled();
+    expect(ownInsert).toHaveBeenCalled();
+  });
+
+  it('BossEnemy.update 将第 6 个 spatialHash 参数转发给 AIController', () => {
+    const aiSpy = vi.spyOn(AIController.prototype, 'update').mockImplementation(() => {});
+    const b = new BossEnemy({ type: 'mage' });
+    for (const k of Object.getOwnPropertyNames(BossEnemy.prototype)) {
+      if (k.startsWith('_skill') || k === '_phaseBurst' || k === '_castSignature') b[k] = vi.fn();
+    }
+    const shared = {};
+    b.update(0.016, terrain, { spawnAoE: vi.fn() }, [], NOW, shared);
+    expect(aiSpy).toHaveBeenCalled();
+    expect(aiSpy.mock.calls[aiSpy.mock.calls.length - 1][5]).toBe(shared);
+    aiSpy.mockRestore();
+  });
+
+  it('CavalryEnemy.update 将第 6 个 spatialHash 参数转发给 AIController', () => {
+    const aiSpy = vi.spyOn(AIController.prototype, 'update').mockImplementation(() => {});
+    const cav = new CavalryEnemy({ team: 1 });
+    cav.setWeapons([mkWeapon()]);
+    const shared = {};
+    cav.update(0.016, terrain, combat, [], NOW, shared);
+    expect(aiSpy).toHaveBeenCalled();
+    expect(aiSpy.mock.calls[aiSpy.mock.calls.length - 1][5]).toBe(shared);
+    aiSpy.mockRestore();
   });
 });
 

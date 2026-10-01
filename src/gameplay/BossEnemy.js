@@ -297,7 +297,7 @@ export class BossEnemy extends AIController {
     }
   }
 
-  update(dt, terrain, combat, enemies, now) {
+  update(dt, terrain, combat, enemies, now, spatialHash = null) {
     if (!this._meshScaled && this.root) {
       const s = this._isMini ? 1.1 : 1.35;
       this.root.scale.set(s, s, s);
@@ -364,7 +364,7 @@ export class BossEnemy extends AIController {
     if (this._phase >= 3 && this._phase3Skill === 'clone' && this._cloneCd <= 0) this._skillClone();
     // 签名技：阶段 2 起解锁（mini 不携带）
     if (!this._isMini && this._phase >= 2 && this._signature && this._sigCd <= 0) this._castSignature(combat, now, tgt);
-    super.update(dt, terrain, combat, enemies, now);
+    super.update(dt, terrain, combat, enemies, now, spatialHash);
   }
 }
 
@@ -383,12 +383,12 @@ export class EliteEnemy extends AIController {
 
   get displayName() { return '【精英】' + this._name; }
 
-  update(dt, terrain, combat, enemies, now) {
+  update(dt, terrain, combat, enemies, now, spatialHash = null) {
     if (!this._meshScaled && this.root) {
       this.root.scale.set(1.15, 1.15, 1.15);
       this._meshScaled = true;
     }
-    super.update(dt, terrain, combat, enemies, now);
+    super.update(dt, terrain, combat, enemies, now, spatialHash);
   }
 
   takeDamage(amount, heavy = false, attacker = null, now = 0) {

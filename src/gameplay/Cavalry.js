@@ -142,7 +142,7 @@ export class CavalryEnemy extends AIController {
     }
   }
 
-  update(dt, terrain, combat, enemies, now) {
+  update(dt, terrain, combat, enemies, now, spatialHash = null) {
     if (this._chargeCd > 0) this._chargeCd -= dt;
 
     if (this._chargeState !== 'idle') {
@@ -150,7 +150,7 @@ export class CavalryEnemy extends AIController {
       Character.prototype.update.call(this, dt, terrain, combat, now);
     } else {
       this._maybeStartCharge(enemies);
-      super.update(dt, terrain, combat, enemies, now);
+      super.update(dt, terrain, combat, enemies, now, spatialHash);
     }
 
     if (this._horse && this.root) {
