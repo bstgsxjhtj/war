@@ -79,7 +79,8 @@ ESM 依赖图必须保持无环（DAG）。
 - `togglePerf()` 切换可见性；`updatePerf(dt, info)` 每帧由 main_entry 主循环调用（含菜单/结算态）。
 - 显示：FPS（指数平滑 `0.9*旧+0.1*新`）、帧时 ms、Min/Max（每刷新周期重置）、drawcall（`renderer.webgl.info.render.calls`）、三角面（k）、画质档位（低/中/高）、单位数。
 - 关闭时 `updatePerf` 仅做 FPS 采样（供下次开启即有值）不写 DOM；开启时 0.25s 节流刷新 `textContent`，避免每帧 DOM 写入。
-- main_entry 主循环在 `qualityGovernor.tick(dt)` 后立即调用 `hud.updatePerf`，`direction` 区分 `hud.flash` 文案为"画质自动回升至"或"画质自动降至"。
+- main_entry 主循环在 `qualityGovernor.tick(rdt)` 后立即调用 `hud.updatePerf`，`direction` 区分 `hud.flash` 文案为"画质自动回升至"或"画质自动降至"。
+- **战役一#1 真实帧间隔接线**：governor/perf 在 `onRender(alpha, rdt)` 回调中调用（每真实渲染帧一次），喂 `rdt`（Time 测的真实墙上帧间隔），而非旧接线的 `onFixed(fixedStep)`（恒为 1/60 → fps 恒 60 → 自适应降级/回升全失效）。`Time.tick(onFixed, onRender)` 的 `onRender` 签名扩展为 `(alpha, delta)`，delta 为 clamped 真实帧间隔。逻辑更新（env/AI/战斗）仍在 `onFixed(fixedStep)` 保证确定性。
 
 ## 9. 环境物 InstancedMesh（P0-2，2026-10-01）
 

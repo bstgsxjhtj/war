@@ -526,21 +526,6 @@ async function bootstrap() {
     time.tick(
       (dt) => {
         const now = time.now * 0.001;
-        // P2-5 自适应画质：持续低帧率自动降级，持续高帧率自动回升（不越过用户设定上限）
-        const _qs = qualityGovernor.tick(dt);
-        if (_qs) {
-          applyQuality(_qs);
-          const _ql = _qs === 'low' ? '低' : (_qs === 'mid' ? '中' : '高');
-          hud.flash((qualityGovernor.direction === 'up' ? '性能良好：画质自动回升至' : '性能优化：画质自动降至') + _ql);
-          setTimeout(() => hud.clearHint(), 2000);
-        }
-        // F4 性能面板：FPS/帧时/drawcall/三角面/画质档位（含菜单/结算态持续刷新）
-        hud.updatePerf(dt, {
-          calls: renderer.webgl.info.render.calls,
-          triangles: renderer.webgl.info.render.triangles,
-          quality: qualityGovernor.quality,
-          enemies: (player ? 1 : 0) + ais.length + remotes.length,
-        });
         if (state.current === States.ROUND_END) {
           match.roundEndTimer -= dt;
           env.update(dt, now);
@@ -725,7 +710,26 @@ async function bootstrap() {
         lod.tick(dt);
         match.checkWin();
       },
-      () => { renderer.render(); }
+      // 战役一#1：governor/perf 移到 onRender——喂真实帧间隔（rdt），而非 onFixed 的固定步长。
+      // 旧接线在 onFixed 调 governor.tick(fixedStep) → fps 恒为 60 → 自适应降级/回升全死代码、F4 读数失真。
+      // onRender 每真实帧调用一次，governor 的帧计数器（slowFrames/recoverFrames）对应真实渲染帧。
+      (_alpha, rdt) => {
+        const _qs = qualityGovernor.tick(rdt);
+        if (_qs) {
+          applyQuality(_qs);
+          const _ql = _qs === 'low' ? '低' : (_qs === 'mid' ? '中' : '高');
+          hud.flash((qualityGovernor.direction === 'up' ? '性能良好：画质自动回升至' : '性能优化：画质自动降至') + _ql);
+          setTimeout(() => hud.clearHint(), 2000);
+        }
+        renderer.render();
+        // F4 性能面板：渲染后采样 drawcall/三角面（本帧实际值），配本帧真实帧间隔
+        hud.updatePerf(rdt, {
+          calls: renderer.webgl.info.render.calls,
+          triangles: renderer.webgl.info.render.triangles,
+          quality: qualityGovernor.quality,
+          enemies: (player ? 1 : 0) + ais.length + remotes.length,
+        });
+      }
     );
     requestAnimationFrame(loop);
   }

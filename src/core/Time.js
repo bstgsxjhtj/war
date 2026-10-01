@@ -44,6 +44,8 @@ export class Time {
       this.frame++;
       if (++steps > this._maxSteps) { this._acc = 0; break; }
     }
-    onRender(this._acc / this.fixedStep);
+    // 战役一#1：onRender 传真实帧间隔（delta），供 QualityGovernor/Perf 采样真实 fps；
+    // 旧接线把 governor 喂 fixedStep(1/60) 导致 fps 恒为 60、自适应降级全失效
+    onRender(this._acc / this.fixedStep, delta);
   }
 }
