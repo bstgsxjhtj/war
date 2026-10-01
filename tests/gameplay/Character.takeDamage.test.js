@@ -86,4 +86,22 @@ describe('Character.takeDamage 主路径', () => {
     expect(c.alive).toBe(false);
     expect(c.lastAttacker).toBe(atk);
   });
+
+  it('tryDodge 重置 _perfectDodge 允许下次完美闪避 (C1-3)', () => {
+    // 第一次完美闪避
+    c._dodgeIFrame = 0.25; c._dodgeTimer = 0.3;
+    c.takeDamage(30, false, null, 1);
+    expect(c._perfectDodge).toBe(true);
+    expect(bus.emit).toHaveBeenCalledWith(EV.FX_PERFECTDODGE, expect.objectContaining({ char: c }));
+    // 新闪避重置 _perfectDodge
+    c._dodgeTimer = 0; // 清除冷却以允许 tryDodge
+    c.tryDodge({ x: 1, y: 0, z: 0 });
+    expect(c._perfectDodge).toBe(false);
+    // 第二次完美闪避可再次触发（旧 bug 会因 _perfectDodge 永真而失败）
+    c._dodgeIFrame = 0.25; c._dodgeTimer = 0.3;
+    bus.emit.mockClear();
+    c.takeDamage(30, false, null, 1);
+    expect(c._perfectDodge).toBe(true);
+    expect(bus.emit).toHaveBeenCalledWith(EV.FX_PERFECTDODGE, expect.objectContaining({ char: c }));
+  });
 });

@@ -331,7 +331,7 @@
 |---|---|---|---|
 | C1-1 | QualityGovernor/Perf 喂真实帧间隔（从 onFixed 移到 onRender）+ Time onRender 传 delta | P0 | ✅已修 |
 | C1-2 | 攻击缓冲对齐动画时长 + 命中帧后排队连招 | P0 | ✅已修 |
-| C1-3 | 修完美闪避只触发一次（tryDodge 重置 _perfectDodge） | P0 | ⬜待做 |
+| C1-3 | 修完美闪避只触发一次（tryDodge 重置 _perfectDodge） | P0 | ✅已修 |
 | C1-4 | 相机/震屏缓动 dt 化 | P0 | ⬜待做 |
 | C1-5 | HUD setter 全部走 _write 脏检查 + MiniMap 降频 15Hz | P0 | ⬜待做 |
 | C1-6 | 菜单暂停闸门（UIStack pausesGame） | P0 | ⬜待做 |
@@ -345,5 +345,7 @@
 | 修复 | 测试文件 | 新增用例 |
 |---|---|---|
 | C1-1 | Time.test.js | 2（onRender 第二参数为真实帧间隔非 fixedStep、高帧率时接近 fixedStep 仍为真实值） |
+| C1-2 | Character.combo.test.js | 6（挥击前段不可取消、命中帧后+武器就绪取消后摇、命中帧后+冷却中不取消、弓不可取消、非攻击+未就绪 false、非攻击+就绪 true 基线） |
+| C1-3 | Character.takeDamage.test.js | 1（tryDodge 重置 _perfectDodge 允许下次完美闪避：首次触发→tryDodge 重置→第二次再次触发+FX_PERFECTDODGE 二次发射） |
 
-测试总量：1143 → 1145（+2），108 个测试文件全绿。
+测试总量：1143 → 1152（+9），108 个测试文件全绿。
