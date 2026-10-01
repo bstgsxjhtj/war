@@ -63,6 +63,31 @@ export class MainMenuUI {
     overlay.appendChild(col);
     this._continueBtn = conBtn;
 
+    // P1-3 次级入口：成就/词条/存档（不隐藏标题屏，面板叠于其上）
+    const subRow = document.createElement('div');
+    Object.assign(subRow.style, { display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'center' });
+    const mkSub = (action, text) => {
+      const b = document.createElement('button');
+      b.dataset.action = action;
+      Object.assign(b.style, {
+        fontFamily: 'inherit', cursor: 'pointer', borderRadius: '6px', padding: '6px 14px',
+        fontSize: '12px', color: '#e0d8c8', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(30,35,45,0.8)',
+        transition: 'filter .15s',
+      });
+      b.textContent = text;
+      b.addEventListener('mouseenter', () => { b.style.filter = 'brightness(1.3)'; });
+      b.addEventListener('mouseleave', () => { b.style.filter = ''; });
+      return b;
+    };
+    const achBtn = mkSub('achievements', '成就');
+    const afxBtn = mkSub('affixes', '词条');
+    const savBtn = mkSub('save', '存档');
+    achBtn.addEventListener('click', () => { if (this.opts.onOpenAchievements) this.opts.onOpenAchievements(); });
+    afxBtn.addEventListener('click', () => { if (this.opts.onOpenAffixes) this.opts.onOpenAffixes(); });
+    savBtn.addEventListener('click', () => { if (this.opts.onOpenSave) this.opts.onOpenSave(); });
+    subRow.append(achBtn, afxBtn, savBtn);
+    overlay.appendChild(subRow);
+
     const hint = document.createElement('div');
     Object.assign(hint.style, { fontSize: '11px', opacity: '0.35', marginTop: '36px', textAlign: 'center' });
     hint.textContent = '选择后进入职业选择 · 游戏中 Esc 打开菜单';

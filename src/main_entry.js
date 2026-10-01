@@ -461,6 +461,9 @@ async function bootstrap() {
     },
     onStageSelect: () => { stageSelectUI.show(); },
     onOpenSettings: () => settings.show(),
+    onOpenAchievements: () => achievementsUI.show(),
+    onOpenAffixes: () => affixesUI.show(),
+    onOpenSave: () => saveUI.show(),
   });
   stageSelectUI = new StageSelectUI({
     getCleared: () => campaign.cleared,

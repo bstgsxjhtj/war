@@ -15,6 +15,9 @@ describe('MainMenuUI 主菜单标题屏', () => {
     onContinue: vi.fn(),
     onStageSelect: vi.fn(),
     onOpenSettings: vi.fn(),
+    onOpenAchievements: vi.fn(),
+    onOpenAffixes: vi.fn(),
+    onOpenSave: vi.fn(),
   });
 
   beforeEach(() => {
@@ -78,6 +81,20 @@ describe('MainMenuUI 主菜单标题屏', () => {
     m.show();
     m.el.querySelector('[data-action="settings"]').click();
     expect(o.onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(m.el.style.display).toBe('flex');
+    m.dispose();
+  });
+
+  it('次级按钮：成就/词条/存档分别触发回调且不隐藏标题屏', () => {
+    const o = baseOpts();
+    const m = new MainMenuUI(o);
+    m.show();
+    m.el.querySelector('[data-action="achievements"]').click();
+    m.el.querySelector('[data-action="affixes"]').click();
+    m.el.querySelector('[data-action="save"]').click();
+    expect(o.onOpenAchievements).toHaveBeenCalledTimes(1);
+    expect(o.onOpenAffixes).toHaveBeenCalledTimes(1);
+    expect(o.onOpenSave).toHaveBeenCalledTimes(1);
     expect(m.el.style.display).toBe('flex');
     m.dispose();
   });

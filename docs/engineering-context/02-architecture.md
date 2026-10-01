@@ -107,3 +107,8 @@ ESM 依赖图必须保持无环（DAG）。
 - **战役选关 tab**：从 `CampaignMode.STAGES`（10 关）生成卡片网格，每卡显示关名/地图名（`MapGenerator.MAPS[mapKey].name`）/天气/目标/难度星条。`refresh()` 按 `getCleared()` 标记 `index > cleared` 的关卡为锁定（半透明 + `cursor: not-allowed` + `dataset.locked='1'`）。点击已解锁关卡 → `campaign.skipTo(index)` + `applyModeByName('战役')` + `classSelectUI.show()`。
 - **自由对战 tab**：难度 3 档按钮（简单/普通/困难，`getDifficulty` 高亮当前）+ 8 地图卡片网格（`MapGenerator.MAPS` 全量）。难度切换 → `settings.difficulty = level` + `bus.emit(SETTINGS_DIFFICULTY)`（与 SettingsMenu 同一事件，EventWiring 已处理 `assist.setBaseLevel` + `aiManager.setDifficulty`）。地图点击 → `loadMap(mapKey)` + `classSelectUI.show()`（保持当前模式，用户可 Esc 切模式）。
 - **面板返回语义**：`_selecting` 标志区分选择态与关闭态——`hide()` 在 `_selecting=false` 时调 `onBack`（Esc 关闭或返回按钮触发），`_selecting=true` 时跳过（已选关/地图，由回调自行转场 classSelectUI）。面板可关（closable 未设，默认可关），Esc 经 UIStack 关闭后自动 `onBack` 回主菜单。
+
+## 12. 菜单统一视觉 + 次级入口（P1-3，2026-10-01）
+
+- **视觉统一**：ClassSelectUI 遮罩背景从 `rgba(8,12,18,0.92)` + `fontFamily: sans-serif` 对齐为 `rgba(6,9,14,0.94)` + `Segoe UI, sans-serif`（与 MainMenuUI/StageSelectUI/GameMenu 一致）；卡片背景从 `rgba(20,28,40,0.85)` 对齐为 `rgba(30,40,55,0.9)`（与 StageSelectUI 卡片一致）。全部菜单面板现共用同一套色板：遮罩 `rgba(6,9,14,0.9x)` / 面板 `#161c26` / 边框 `#3a4a60` / 文字 `#e0d8c8` / 强调金 `#e0b050`+`#ffd070` / 字体 `Segoe UI, sans-serif`。
+- **次级入口**：MainMenuUI 主按钮列下方新增次级按钮行——成就 / 词条 / 存档。与"设置"按钮同模式：不隐藏标题屏，面板（AchievementsUI/AffixesUI/SaveUI，均 UIPanel 子类）经 `show()` 压入 UIStack 叠于标题屏之上；Esc 经 UIStack 先关栈顶面板（closable 未设，默认可关），再关标题屏（closable=false 吞 Esc 不关）。回调 `onOpenAchievements/onOpenAffixes/onOpenSave` 在 main_entry 分别委托 `achievementsUI.show()/affixesUI.show()/saveUI.show()`（三者已在 L419-420/L280 构造）。

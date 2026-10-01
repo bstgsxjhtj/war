@@ -12,9 +12,9 @@ export class ClassSelectUI {
     overlay.id = 'classSelectUI';
     Object.assign(overlay.style, {
       position: 'fixed', top: '0', left: '0', width: '100vw', height: '100vh',
-      background: 'rgba(8,12,18,0.92)', display: 'none',
+      background: 'rgba(6,9,14,0.94)', display: 'none',
       flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      zIndex: '9999', fontFamily: 'sans-serif', color: '#e0d8c8',
+      zIndex: '9999', fontFamily: 'Segoe UI, sans-serif', color: '#e0d8c8',
     });
 
     const title = document.createElement('div');
@@ -35,7 +35,7 @@ export class ClassSelectUI {
       const card = document.createElement('div');
       Object.assign(card.style, {
         width: '220px', padding: '24px 20px', borderRadius: '12px',
-        background: 'rgba(20,28,40,0.85)', border: '2px solid rgba(80,100,140,0.3)',
+        background: 'rgba(30,40,55,0.9)', border: '2px solid rgba(80,100,140,0.3)',
         cursor: 'pointer', transition: 'all 0.2s', textAlign: 'center',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
       });
