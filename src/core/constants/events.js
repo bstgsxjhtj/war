@@ -61,5 +61,11 @@ export const EV = {
   MINIMAP_SUPPLY: 'minimap.supply',
   // AI
   AI_CALLREINFORCE: 'ai.callReinforce',
-  AI_SPOTPLAYER: 'ai.spotPlayer'
+  AI_SPOTPLAYER: 'ai.spotPlayer',
+  // 辅助系统（src/aux/，解耦于 gameplay）
+  UI_NOTIFY: 'ui.notify',
+  UI_TOOLTIP: 'ui.tooltip',
+  KILLFEED_EVENT: 'killfeed.event',
+  MAP_PING: 'map.ping',
+  SCREENSHOT: 'aux.screenshot'
 };

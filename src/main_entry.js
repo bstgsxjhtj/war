@@ -80,6 +80,14 @@ import { GameClock } from './app/GameClock.js';
 import { installUIStackEscape, UIStack } from './ui/UIStack.js';
 import { EV } from './core/constants/events.js';
 import { LS } from './core/constants/storage-keys.js';
+import { Tooltip } from './auxiliary/Tooltip.js';
+import { KillFeed } from './auxiliary/KillFeed.js';
+import { NotificationSystem } from './auxiliary/NotificationSystem.js';
+import { MiniMapPing } from './auxiliary/MiniMapPing.js';
+import { FullMapPanel } from './auxiliary/FullMapPanel.js';
+import { StatsPanel } from './auxiliary/StatsPanel.js';
+import { ScreenshotMode } from './auxiliary/ScreenshotMode.js';
+import { Accessibility } from './auxiliary/Accessibility.js';
 import { EXECUTE } from './core/constants/balance.js';
 
 async function bootstrap() {
@@ -294,6 +302,35 @@ async function bootstrap() {
   progressUI.refresh();
 
   const spawner = new Spawner({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign, lod });
+
+  // 辅助系统（src/aux/，独立架构，仅通过 EventBus 通信，不依赖 gameplay 类）
+  const tooltip = new Tooltip();
+  const killFeed = new KillFeed(bus);
+  const notificationSystem = new NotificationSystem(bus);
+  const miniMapPing = new MiniMapPing(bus, { canvas: miniMap.canvas });
+  const fullMapPanel = new FullMapPanel(bus);
+  const statsPanel = new StatsPanel(bus);
+  const screenshotMode = new ScreenshotMode({ canvas });
+  const accessibility = new Accessibility({ bus });
+  screenshotMode.setBus(bus);
+  // StatsPanel 数据刷新：从存档采集中读取生涯统计
+  statsPanel._refreshFromSave = () => {
+    const c = saveOrch.capture();
+    statsPanel.setData({
+      totalKills: c.achievements?.totalKills || 0,
+      totalDeaths: c.achievements?.totalDeaths || 0,
+      totalMatches: c.achievements?.totalMatches || 0,
+      wins: c.achievements?.wins || 0,
+      bestWave: c.achievements?.bestWave || 0,
+      bestCombo: c.achievements?.bestCombo || 0,
+      bestKillStreak: c.achievements?.bestKillStreak || 0,
+      playTimeSec: c.playTimeSec || 0,
+      achievementCount: c.achievements?.unlocked?.length || 0,
+      totalAchievements: 19,
+    });
+  };
+  const _origStatsToggle = statsPanel.toggle.bind(statsPanel);
+  statsPanel.toggle = function() { if (statsPanel.el.style.display === 'none') statsPanel._refreshFromSave(); _origStatsToggle(); };
 
   function spawnRed(redLayout, { bossWave = false, modifier = null, stageDifficulty = 1, bossType = null } = {}) {
     if (envHazards) envHazards.setHazardBoost((campaign.currentStage && campaign.currentStage.hazardBoost) || 1);
@@ -625,6 +662,12 @@ async function bootstrap() {
         else hud.setWeatherForecast(null);
         if (_lastMiniMapKey !== currentMapKey) { _lastMiniMapKey = currentMapKey; miniMap.setWorldSize(MapGenerator.MAPS[currentMapKey].size[0]); }
         miniMap.update(dt);
+        // 辅助系统每帧更新（dt 单位秒）
+        killFeed.update(dt);
+        notificationSystem.update(dt);
+        miniMapPing.update(dt);
+        if (player) fullMapPanel.setRefs(player, ais, camera);
+        fullMapPanel.update(dt);
         progressUI.update(dt);
         hud.setHealth(player);
         hud.setLowHP(player.alive && player.health.ratio < 0.3);

@@ -14,6 +14,13 @@
 | 皮肤面板 | V | WeaponSkinsUI |
 | 存档面板 | H | SaveUI（#save-panel，右上 fixed，含 #save-info/#save-now/#save-reset） |
 | 结算界面 | 回合结束 | ResultScreen（评级统一用 gradeOf） |
+| KillFeed | 常驻 | 右下角战斗事件日志（8 条可见 + F5 全量面板 100 条历史） |
+| NotificationSystem | 常驻 | 分级通知（HIGH 顶部金色 / NORMAL 底部白色 / LOW 底部灰色），队列淘汰 |
+| MiniMapPing | 常驻 | 小地图 Ping 叠加层（normal/danger/assist/objective 四色） |
+| FullMapPanel | G | 全屏战场地图（700×700，玩家/敌人/Boss/补给点，10Hz 重绘） |
+| StatsPanel | P | 生涯统计（9 项：击杀/阵亡/场次/胜率/最高波/连击/连杀/时长/成就） |
+| ScreenshotMode | F12 | WebGL canvas 截图为 PNG 下载 + 200ms 快门闪光 |
+| Accessibility | 设置内 | 无障碍选项（UI 缩放 0.8-1.3 / 字体 small/medium/large / 高对比度 / hold-to-toggle / 字幕） |
 
 ## 2. 按键映射（全局唯一，新增按键前必须查此表）
 
@@ -25,6 +32,8 @@
 
 已占用合计 29 个按键：W A S D Shift Space Q F T E Tab 1 2 3 4 K I M N Escape R , C D J V H F3 F4。
 **F3/F4 为 HUD 诊断面板专用键**（不走 KeyBindings 可重绑体系，固定于 document keydown 监听）：F3 切错误日志面板，F4 切性能（FPS/drawcall/档位）面板；两者默认关闭、互不干扰，面板关闭时 updatePerf 仅做极轻量 FPS 指数平滑采样（0.9*旧+0.1*新）不写 DOM。
+**辅助系统按键**（`src/auxiliary/`，不走 KeyBindings 体系，固定于 document keydown）：F5（KillFeed 全量面板切换）、G（FullMapPanel 全屏地图开关）、P（StatsPanel 生涯统计开关）、F12（ScreenshotMode 截图）。F5/G/P/F12 面板均设 `pausesGame=true`，打开时冻结 gameplay（C1-6 闸门）。
+已占用合计 33 个按键（+F5 G P F12）。
 面板开关键（I/J/V/H/K）由**面板组件在 document 自监听**，main_entry 不重复绑定。
 **新手引导（Tutorial）读 KeyBindings**（P0-3，2026-09-28）：步骤匹配与文案由 `kb.get(action)` 反查当前键码（dodge/ultimate/execute/lock/weapon1-4/移动），重绑后不再卡死；`kb=null` 回退 DEFAULT_BINDINGS。
 **UI 快捷键纳入 KeyBindings**（P2-2，2026-09-28）：新增 skilltree(K)/affix(I)/mode(M)/weather(N)/settings(Esc) 5 个可重绑动作（共 20 项）。InputRouter 读 `kb.get('mode'/'weather'/'settings')` 替代硬编码 KeyM/KeyN/Escape；UIPanel 接受可选 `kb+action` 参数、AffixesUI 透传；SkillTreeUI 接受 `kb` 读 skilltree 键；Tutorial ⑪⑫步改 `actions` 驱动、_renderFinal 全键位动态化。无 kb 时回退默认键码（向后兼容）。

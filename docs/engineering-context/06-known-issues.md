@@ -354,3 +354,26 @@
 | C1-8 | TextureFactory.test.js（新建）/ disposeUtils.test.js | 9（noise/normal/rough/brick 同参数返回同一实例、不同 repeat/base 不同实例、_shared 标记、repeat 正确、canvas 包装）+ 2（共享纹理不 dispose、非共享仍 dispose） |
 
 测试总量：1143 → 1181（+38），110 个测试文件全绿。
+
+---
+
+### 第十五轮：辅助功能独立架构 `src/auxiliary/`（2026-10-01）
+
+专家对标 6 款成熟游戏（Hades/Diablo IV/LoL/Total War/M&B/Hades 辅助功能）后实施 8 个解耦模块：
+
+| 模块 | 文件 | 说明 |
+|---|---|---|
+| A1 Tooltip | `auxiliary/Tooltip.js` | 通用悬停提示：register(el, getContent)，300ms 延迟，follow/top/bottom 定位 |
+| A2 KillFeed | `auxiliary/KillFeed.js` | 右下角战斗事件日志（8 事件订阅），F5 全量面板，8s 淡出，历史 100 条 |
+| A3 NotificationSystem | `auxiliary/NotificationSystem.js` | 分级通知（HIGH/NORMAL/LOW），队列淘汰，三阶段淡入/保持/淡出 |
+| A4 MiniMapPing | `auxiliary/MiniMapPing.js` | 小地图 Ping 叠加 canvas，四色标记，扩散圆环动画 |
+| A5 FullMapPanel | `auxiliary/FullMapPanel.js` | G 键全屏地图，700×700 canvas，10Hz 重绘，pausesGame |
+| A6 StatsPanel | `auxiliary/StatsPanel.js` | P 键生涯统计，9 项数据，saveOrch.capture 刷新 |
+| A7 ScreenshotMode | `auxiliary/ScreenshotMode.js` | F12 截图，PNG 下载，200ms 快门闪光 |
+| A8 Accessibility | `auxiliary/Accessibility.js` | UI 缩放/字体大小/高对比度/hold-to-toggle/字幕，localStorage 持久化 |
+
+新事件常量：`UI_NOTIFY`/`UI_TOOLTIP`/`KILLFEED_EVENT`/`MAP_PING`/`SCREENSHOT`。
+按键占用 +4（F5 G P F12），总计 33 键。
+接线：`killFeed/notificationSystem/miniMapPing/fullMapPanel.update(dt)` 加入主循环。
+
+测试总量：1181 → 1239（+58），118 个测试文件全绿。

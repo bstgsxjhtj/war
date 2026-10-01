@@ -165,3 +165,24 @@ ESM 依赖图必须保持无环（DAG）。
 - **共享标记**：缓存纹理设 `t._shared = true`。`disposeUtils.disposeMaterial` 检查 `!t._shared` 跳过 dispose——角色 dispose 后其他角色仍引用同一纹理。
 - **deepDispose 安全**：`deepDispose` 遍历材质时，`_shared=true` 的纹理不被 dispose；`_shared` 未设（falsy）的纹理照常 dispose（向后兼容）。
 - **缓存生命周期**：`_textureCache` 为模块级 Map，无淘汰策略。实际键数极少（noise 256x256 #4a4a4a amp18 r4 × 1、normal 256x256 0.4 × 1、rough 256x256 0.5 × 1、terrain noise × 2、boss noise 128x128 × 1、brick 256x256 × 1 ≈ 7 条），内存可忽略。
+
+## 17. 辅助功能独立架构 `src/auxiliary/`（2026-10-01）
+
+**设计原则**：辅助功能（非玩法 UI/系统）独立成层，不与 gameplay 耦合。`src/auxiliary/` 下的模块仅通过 EventBus 通信，不导入任何 gameplay 类（Character/Player/AIController/CombatSystem…），仅导入 `UIStack`（面板栈）和 `EV`（事件常量）。
+
+**模块清单**：
+
+| 模块 | 文件 | 通信方式 | 职责 |
+|---|---|---|---|
+| Tooltip | `auxiliary/Tooltip.js` | 纯 DOM，无 bus | 通用悬停提示：`register(el, getContent)` 注册元素，mouseenter 延迟 300ms 显示，follow/top/bottom 定位，视口裁剪。单例 `tooltip`。 |
+| KillFeed | `auxiliary/KillFeed.js` | `bus.on` 8 个战斗事件 | 右下角战斗事件日志：击杀/背刺/完美格挡/闪避/处决/骑兵击杀/成就解锁/Boss 出现。F5 切全量滚动面板。条目 8s 淡出，历史 100 条。 |
+| NotificationSystem | `auxiliary/NotificationSystem.js` | `bus.on(EV.UI_NOTIFY)` | 分级通知队列：HIGH(顶部金色)/NORMAL(底部白色)/LOW(底部灰色)。maxVisible 队列淘汰，三阶段淡入/保持/淡出。 |
+| MiniMapPing | `auxiliary/MiniMapPing.js` | `bus.on(EV.MAP_PING)` | 小地图标记/Ping：叠加 canvas 覆盖在 MiniMap 上，扩散圆环动画。normal(黄)/danger(红)/assist(蓝)/objective(绿) 四类。 |
+| FullMapPanel | `auxiliary/FullMapPanel.js` | `bus.on(EV.MAP_PING/MINIMAP_SUPPLY)` | 全屏战场地图：G 键展开，700×700 canvas，绘制玩家/敌人/Boss/补给点。pausesGame=true。10Hz 重绘。 |
+| StatsPanel | `auxiliary/StatsPanel.js` | 纯 UIStack | 生涯统计面板：P 键开关，9 项生涯数据（总击杀/阵亡/场次/胜率/最高波数/连击/连杀/时长/成就进度）。pausesGame=true。 |
+| ScreenshotMode | `auxiliary/ScreenshotMode.js` | 纯 DOM + 可选 bus | 截图模式：F12 键捕获 WebGL canvas 为 PNG 下载，200ms 白色快门闪光，`toDataURL` 空白检测。 |
+| Accessibility | `auxiliary/Accessibility.js` | 纯 DOM + 可选 bus | 无障碍选项：UI 缩放(0.8-1.3)/字体大小(small/medium/large)/高对比度/hold-to-toggle/字幕。localStorage 持久化。 |
+
+**接线**（`main_entry.js`）：实例化后，`killFeed/notificationSystem/miniMapPing/fullMapPanel` 的 `update(dt)` 加入主循环 `onFixed`，紧随 `miniMap.update(dt)` 之后。`fullMapPanel.setRefs(player, ais, camera)` 每帧注入引用（纯数据读取，不导入类）。`statsPanel.toggle` 包装为打开时先 `saveOrch.capture()` 刷新数据。`screenshotMode` 注入 `canvas` + `bus`。
+
+**新事件常量**（`events.js`）：`UI_NOTIFY`/`UI_TOOLTIP`/`KILLFEED_EVENT`/`MAP_PING`/`SCREENSHOT`。
