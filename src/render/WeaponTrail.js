@@ -31,7 +31,7 @@ export class WeaponTrail {
 
   activate(weaponMesh) {
     const trail = weaponMesh.userData._trail;
-    if (trail) { trail.active = true; trail.head = 0; trail.count = 0; }
+    if (trail) { trail.active = true; trail.head = 0; trail.count = 0; trail.deactivateTimer = 0.5; }
   }
 
   deactivate(weaponMesh) {
@@ -76,6 +76,9 @@ export class WeaponTrail {
           continue;
         }
       } else {
+        trail.deactivateTimer -= dt;
+        if (trail.deactivateTimer <= 0) { trail.active = false; }
+        else {
         trail.head = (trail.head - 1 + this._maxSeg) % this._maxSeg;
         if (trail.count < this._maxSeg) trail.count++;
         const slot = trail.history[trail.head];
@@ -84,6 +87,7 @@ export class WeaponTrail {
         const mw = weapon.matrixWorld;
         slot.tail.copy(tmpT.set(0, 0, -0.6).applyMatrix4(mw));
         slot.tip.copy(tmpP.set(0, 0, 0.8).applyMatrix4(mw));
+        }
       }
       const segs = Math.min(trail.count - 1, this._maxSeg - 1);
       const bc = trail.baseColor;

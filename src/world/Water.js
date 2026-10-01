@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { deepDispose } from '../render/disposeUtils.js';
+import { PALETTE } from '../core/constants/palette.js';
 
 // 水面：法线波动 + 折射色 + 透明，覆盖河流区域
 export class Water {
@@ -13,9 +14,9 @@ export class Water {
         transparent: true,
         uniforms: {
           uTime: { value: 0 },
-          uShallow: { value: new THREE.Color(0x6a9ab8) },
-          uDeep: { value: new THREE.Color(0x2a4a6a) },
-          uSky: { value: new THREE.Color(0x9ab8d0) }
+          uShallow: { value: new THREE.Color(PALETTE.WATER.SHALLOW) },
+          uDeep: { value: new THREE.Color(PALETTE.WATER.DEEP) },
+          uSky: { value: new THREE.Color(PALETTE.WATER.SKY) }
         },
         vertexShader: `uniform float uTime; varying vec2 vUv; varying vec3 vNormal; varying vec3 vViewDir; void main(){ vUv=uv; vec3 p=position; float wz=sin(p.x*0.3+uTime*1.5)*0.15 + sin(p.y*0.5+uTime*2.0)*0.08; p.z += wz; vec3 n=normalize(vec3(-sin(p.x*0.3+uTime*1.5)*0.3*0.15,1.0,0.0)); vNormal=normalize(normalMatrix*n); vec4 mv=modelViewMatrix*vec4(p,1.0); vViewDir=normalize(-mv.xyz); gl_Position=projectionMatrix*mv;} `,
         fragmentShader: `uniform vec3 uShallow; uniform vec3 uDeep; uniform vec3 uSky; varying vec2 vUv; varying vec3 vNormal; varying vec3 vViewDir; void main(){ float t=clamp(vUv.y*2.0,0.0,1.0); vec3 c=mix(uDeep,uShallow,t); float n=sin(vUv.x*60.0)*sin(vUv.y*30.0)*0.06; float fres=pow(1.0-abs(dot(vNormal,vViewDir)),3.0); c=mix(c,uSky,fres*0.6)+n; float a=0.72+fres*0.2; gl_FragColor=vec4(c,clamp(a,0.6,0.95));} `
@@ -38,7 +39,7 @@ export class Water {
   }
   async init() {
     try {
-      this.reflector = new Reflector(new THREE.PlaneGeometry(this.width, this.depth), { clipBias: 0.003, textureWidth: 1024, textureHeight: 1024, color: 0x8899aa });
+      this.reflector = new Reflector(new THREE.PlaneGeometry(this.width, this.depth), { clipBias: 0.003, textureWidth: 1024, textureHeight: 1024, color: PALETTE.WATER.REFLECTOR });
       this.reflector.rotation.x = -Math.PI / 2;
       this.reflector.position.y = 0.05;
       this.mesh.add(this.reflector);
@@ -68,7 +69,7 @@ export class Water {
       const rt = this.reflector.getRenderTarget && this.reflector.getRenderTarget();
       if (rt && typeof rt.dispose === 'function') rt.dispose();
       if (this.reflector.geometry) this.reflector.geometry.dispose();
-      this.reflector = new Reflector(new THREE.PlaneGeometry(width, this.depth), { clipBias: 0.003, textureWidth: 1024, textureHeight: 1024, color: 0x8899aa });
+      this.reflector = new Reflector(new THREE.PlaneGeometry(width, this.depth), { clipBias: 0.003, textureWidth: 1024, textureHeight: 1024, color: PALETTE.WATER.REFLECTOR });
       this.reflector.rotation.x = -Math.PI / 2;
       this.reflector.position.y = 0.05;
       this.mesh.add(this.reflector);

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
 import { WEAPON_STATS } from '../../core/constants/balance.js';
+import { PALETTE } from '../../core/constants/palette.js';
 
 // 重锤：破盾高伤慢攻，无视格挡
 export class Warhammer extends Weapon {
@@ -22,7 +23,7 @@ export class Warhammer extends Weapon {
     const g = new THREE.Group();
     const handleMat = new THREE.MeshStandardMaterial({ color: 0x3a2a18, roughness: 0.8 });
     const leatherMat = new THREE.MeshStandardMaterial({ color: 0x2a1808, roughness: 0.9 });
-    const metalMat = new THREE.MeshStandardMaterial({ color: 0x7a7a82, metalness: 0.85, roughness: 0.35, emissive: 0x101018, emissiveIntensity: 0.1 });
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x7a7a82, metalness: 0.85, roughness: 0.35, emissive: PALETTE.WEAPON.BLADE_EMISSIVE, emissiveIntensity: 0.4 });
     const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x5a5a62, metalness: 0.9, roughness: 0.3 });
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4b25a, metalness: 0.8, roughness: 0.35 });
 

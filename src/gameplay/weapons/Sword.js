@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
 import { WEAPON_STATS } from '../../core/constants/balance.js';
+import { PALETTE } from '../../core/constants/palette.js';
 
 // 刀：三段连击，cooldown 调优消除冷却死区，突进降防穿模
 export class Sword extends Weapon {
@@ -18,7 +19,7 @@ export class Sword extends Weapon {
 
   createMesh() {
     const g = new THREE.Group();
-    const bladeMat = new THREE.MeshStandardMaterial({ color: 0xdfe7ee, metalness: 0.85, roughness: 0.25, emissive: 0x1a2030, emissiveIntensity: 0.12 });
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0xdfe7ee, metalness: 0.85, roughness: 0.25, emissive: PALETTE.WEAPON.BLADE_EMISSIVE, emissiveIntensity: PALETTE.WEAPON.BLADE_EMISSIVE_INTENSITY });
     const hiltMat = new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 0.9 });
     const guardMat = new THREE.MeshStandardMaterial({ color: 0xd4b25a, metalness: 0.8, roughness: 0.35 });
     const shape = new THREE.Shape();

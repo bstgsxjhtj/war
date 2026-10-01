@@ -8,13 +8,17 @@
 
 ## 2. localStorage 键登记
 
-**键名常量化**：全部 localStorage 键收敛于 `src/core/constants/storage-keys.js`（`LS.XXX`，当前 14 个键），代码中禁止再写键名字符串字面量。
+**键名常量化**：全部 localStorage 键收敛于 `src/core/constants/storage-keys.js`（`LS.XXX`，当前 19 个键），代码中禁止再写键名字符串字面量。
 
 | 键 | 属主 |
 |---|---|
-| savegame_v1 | SaveManager（游戏进度唯一事实来源：mode/stage/campaignCleared/progressionFull/score/kills/bestGrade/affixSlots/affixInventory/skillPoints/skillTree/achievements/daily/skins/playTime） |
-| savegame_v1_bak | SaveManager（损坏备份恢复） |
-| ~~progression_v1 / skilltree_v1 / campaign_cleared / achievements / affixes / daily_challenge / weapon_skins~~ | 旧键，仅启动时一次性迁移到 savegame_v1 后删除 |
+| savegame_v2_slot_{N}（N=0..2） | SaveManager（多档游戏进度唯一事实来源，键模板 `LS.SAVEGAME_SLOT_PREFIX + N`；字段同下） |
+| savegame_v2_slot_bak_{N} | SaveManager（各槽损坏备份恢复） |
+| savegame_active_slot | SaveManager（当前活动槽索引，开机 `getActiveSlot` 读取） |
+| savegame_v1 | SaveManager（遗留 v2 单槽；槽 0 空时一次性迁移为 v3 后保留） |
+| savegame_v1_bak | SaveManager（遗留单槽备份，仅作迁移/恢复源） |
+| 进度字段 | mode/stage/slot/campaignCleared/progressionFull/score/kills/bestGrade/affixSlots/affixInventory/skillPoints/skillTree/achievements/daily/skins/playTime |
+| ~~progression_v1 / skilltree_v1 / campaign_cleared / achievements / affixes / daily_challenge / weapon_skins~~ | 旧键，仅启动时一次性迁移到存档后删除 |
 | settings | SettingsMenu（UI 偏好，独立保留） |
 | keybindings | KeyBindings（键位重绑，独立保留） |
 | audio_volume | AudioEngine（音量，独立保留，05 §5 "音量只留 AudioEngine 一处"） |

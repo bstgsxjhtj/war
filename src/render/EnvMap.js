@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PALETTE } from '../core/constants/palette.js';
 
 // 程序化环境反射 CubeTexture（天空+地面渐变）
 export class EnvMap {
@@ -10,9 +11,9 @@ export class EnvMap {
       const g = x.createLinearGradient(0, 0, 0, 64);
       const isSky = i === 2;
       const isGround = i === 3;
-      if (isSky) { g.addColorStop(0, '#4a6a9a'); g.addColorStop(1, '#8aaacc'); }
-      else if (isGround) { g.addColorStop(0, '#5a4a3a'); g.addColorStop(1, '#3a2a1a'); }
-      else { g.addColorStop(0, '#6a7a8a'); g.addColorStop(1, '#4a5a4a'); }
+      if (isSky) { g.addColorStop(0, PALETTE.ENVMAP.SKY_TOP); g.addColorStop(1, PALETTE.ENVMAP.SKY_BOTTOM); }
+      else if (isGround) { g.addColorStop(0, PALETTE.ENVMAP.GROUND_TOP); g.addColorStop(1, PALETTE.ENVMAP.GROUND_BOTTOM); }
+      else { g.addColorStop(0, PALETTE.ENVMAP.SIDE_TOP); g.addColorStop(1, PALETTE.ENVMAP.SIDE_BOTTOM); }
       x.fillStyle = g; x.fillRect(0, 0, 64, 64);
       for (let j = 0; j < 30; j++) {
         x.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`;

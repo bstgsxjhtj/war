@@ -189,7 +189,9 @@ async function bootstrap() {
   const skills = new SkillTree();
   const keyBindings = new KeyBindings();
   const skillUI = new SkillTreeUI(bus, skills, keyBindings);
-  const saveManager = new SaveManager();
+  const saveManager = new SaveManager(SaveManager.getActiveSlot());
+  // 每帧复用的 AI 邻居空间哈希：所有 AI 共享一次构建结果（避免 N 个 AI 各自重建 O(N) 网格）
+  const aiSpatialHash = new SpatialHash(10);
   const audio = new AudioEngine();
   wireAchievements(bus, { achievements, getSkills: () => skills, getAffixes: () => affixes, getSkins: () => skins, hud, audio });
   const weather = new WeatherSystem(scene.scene, scene.sun || null, scene.hemi || null, audio);
@@ -583,6 +585,8 @@ async function bootstrap() {
         // 打开时冻结 gameplay（AI/战斗/玩家更新全跳过），仅保留环境氛围动画
         if (UIStack.pausing) { env.update(dt, now); return; }
 
+        hud.beginFrame();
+
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
         const _freeze = (!_reducedMotion && combat.hitstop > 0 && !hitStop.active) || deathFeedback.paused;
         const ldt = _freeze ? 0 : ((!_reducedMotion && hitStop.active) ? hitStop.timeScale * dt : dt);
@@ -611,9 +615,11 @@ async function bootstrap() {
         for (const ai of ais) ai._weatherEffects = weatherFx;
         combat._weatherEffects = weatherFx;
         player.update(ldt, terrain, combat, now);
-        // 每帧只构造一次敌人视图，避免 N 个 AI 各自分配数组（E8）
+        // 每帧只构造一次敌人视图 + 空间哈希，避免 N 个 AI 各自分配数组/重建网格（E8/#21）
         const _all = getEnemies();
-        for (const a of ais) a.update(ldt, terrain, combat, _all, now);
+        aiSpatialHash.clear();
+        for (let _i = 0; _i < _all.length; _i++) aiSpatialHash.insert(_all[_i]);
+        for (const a of ais) a.update(ldt, terrain, combat, _all, now, aiSpatialHash);
         for (const rp of remotes) rp.update(ldt, terrain, combat, now);
         combat.update(ldt, terrain, now);
         gameClock.update(ldt);
@@ -716,6 +722,7 @@ async function bootstrap() {
         if (mode.name === '波次' || mode.name === '无尽' || mode.name === '战场') {
           hud.setWave(mode.wave, WaveMode.loadBest(), mode.endless, { current: mode.modifier, next: mode.nextModifier }, mode.targetWave);
         }
+        hud.commitFrame();
         const _isWaveMode = mode.name === '波次' || mode.name === '无尽';
         const _isFieldWave = mode.name === '战场' && !mode.isSiege;
         const _waveCleared = ais.length > 0 && !ais.some(a => a.alive);

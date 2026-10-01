@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { deepDispose } from '../render/disposeUtils.js';
+import { PALETTE } from '../core/constants/palette.js';
 
 // 程序化环境：树/石/旗(顶点波动)/篝火(粒子火苗+烟)/帐篷/残骸/血迹/烟柱
 // 尘埃用 ShaderMaterial uTime 位移(CPU 0 上传)
@@ -32,8 +33,8 @@ export class Environment {
     }
     this._scatterTrees(34);
     this._scatterRocks(24);
-    this._flag(-30, 0, 0x2f5fa8);
-    this._flag(30, 0, 0xa83030);
+    this._flag(-30, 0, PALETTE.TEAM.BLUE.PRIMARY);
+    this._flag(30, 0, PALETTE.TEAM.RED.PRIMARY);
     this._campfire(0, 0);
     this._campfire(-42, 26);
     this._campfire(42, -26);
@@ -191,12 +192,12 @@ export class Environment {
     const tentMat = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, side: THREE.DoubleSide });
     for (let i = 0; i < 4; i++) {
       const x = -18 - i * 3, z = -8 + (i % 2) * 5, y = this.terrain.heightAt(x, z);
-      const t = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.2, 6), tentMat(0x2f5fa8));
+      const t = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.2, 6), tentMat(PALETTE.TEAM.BLUE.PRIMARY));
       t.position.set(x, y + 1.1, z); t.castShadow = true; this.group.add(t);
     }
     for (let i = 0; i < 4; i++) {
       const x = 22 + i * 3, z = 8 + (i % 2) * 5, y = this.terrain.heightAt(x, z);
-      const t = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.2, 6), tentMat(0xa83030));
+      const t = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.2, 6), tentMat(PALETTE.TEAM.RED.PRIMARY));
       t.position.set(x, y + 1.1, z); t.castShadow = true; this.group.add(t);
     }
   }
@@ -249,7 +250,7 @@ export class Environment {
   }
 
   _tents(n) {
-    const clothMat = new THREE.MeshStandardMaterial({ color: 0x6a5a3a, roughness: 1, side: THREE.DoubleSide });
+    const clothMat = new THREE.MeshStandardMaterial({ color: PALETTE.TEAM.NEUTRAL, roughness: 1, side: THREE.DoubleSide });
     for (let i = 0; i < n; i++) {
       const ang = Math.random() * Math.PI * 2, r = 24 + Math.random() * 16;
       const x = Math.cos(ang) * r, z = Math.sin(ang) * r, y = this.terrain.heightAt(x, z);

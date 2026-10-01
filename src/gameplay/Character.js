@@ -12,6 +12,7 @@ import { Skeleton } from './Skeleton.js';
 import { EV } from '../core/constants/events.js';
 
 import { COMBAT, EXECUTE, POSTURE } from '../core/constants/balance.js';
+import { PALETTE } from '../core/constants/palette.js';
 
 function applyFresnelRim(mat, rimColor, intensity) {
   const c = new THREE.Color(rimColor);
@@ -83,7 +84,7 @@ export class Character {
     this._vTarget = new THREE.Vector3();
     this._vUp = new THREE.Vector3(0, 1, 0);
     this._vTmp = new THREE.Vector3();
-    this._capsule = { center: new THREE.Vector3(), radius: 0.5, halfHeight: 1.0 };
+    this._capsule = { center: new THREE.Vector3(), radius: 0.5, halfHeight: 0.8 };
 
     this._footstepTimer = 0;
     this._build();
@@ -109,32 +110,32 @@ export class Character {
   get canBeExecuted() { return this.alive && (this.health.ratio < COMBAT.EXECUTE_HP_RATIO + (this._runExecBonus || 0) || this._postureBroken > 0); }
 
   _build() {
-    const teamColor = this.team === 0 ? 0x2f5fa8 : 0xa83030;
-    const armor = this.team === 0 ? 0x3a6fd0 : 0xd03a3a;
-    const trim = this.team === 0 ? 0xd4b25a : 0xe0c060;
-    const skin = 0xc89060;
+    const teamColor = this.team === 0 ? PALETTE.TEAM.BLUE.PRIMARY : PALETTE.TEAM.RED.PRIMARY;
+    const armor = this.team === 0 ? PALETTE.TEAM.BLUE.ARMOR : PALETTE.TEAM.RED.ARMOR;
+    const trim = PALETTE.TEAM.TRIM;
+    const skin = PALETTE.TEAM.SKIN;
     this.root = new THREE.Group();
     const matBody = new THREE.MeshStandardMaterial({ color: teamColor, roughness: 0.55, metalness: 0.35, emissive: teamColor, emissiveIntensity: 0.12 });
     const matArmor = new THREE.MeshStandardMaterial({ color: armor, map: TextureFactory.noise(256, 256, '#4a4a4a', 18, 4), normalMap: TextureFactory.normal(256, 256, 0.4), normalScale: new THREE.Vector2(0.6, 0.6), roughnessMap: TextureFactory.rough(256, 256, 0.5), roughness: 0.4, metalness: 0.6 });
     const matTrim = new THREE.MeshStandardMaterial({ color: trim, roughness: 0.5, metalness: 0.7 });
     applyFresnelRim(matArmor, 0xffb060, 0.5); applyFresnelRim(matTrim, 0xffb060, 0.6);
     const matSkin = new THREE.MeshStandardMaterial({ color: skin, roughness: 0.8 });
-    const matHelm = new THREE.MeshStandardMaterial({ color: this.team === 0 ? 0x7a9fd0 : 0x4a4a52, roughness: 0.3, metalness: 0.85 });
+    const matHelm = new THREE.MeshStandardMaterial({ color: this.team === 0 ? PALETTE.TEAM.BLUE.HELM : PALETTE.TEAM.RED.HELM, roughness: 0.3, metalness: 0.85 });
     applyFresnelRim(matHelm, 0xaaccff, 0.5);
     const matEyeW = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const matEyeP = new THREE.MeshBasicMaterial({ color: 0x111111 });
     this._eyeMats = [matEyeW, matEyeP];
     this._mats = [matBody, matArmor, matTrim, matSkin, matHelm];
 
-    const legGeo = new THREE.CapsuleGeometry(0.20, 0.40, 4, 12);
+    const legGeo = new THREE.CapsuleGeometry(0.20, 0.18, 4, 12);
     this.rLeg = new THREE.Mesh(legGeo, matArmor); this.rLeg.position.set(0.2, 0.5, 0); this.rLeg.castShadow = true;
     this.lLeg = new THREE.Mesh(legGeo, matArmor); this.lLeg.position.set(-0.2, 0.5, 0); this.lLeg.castShadow = true;
-    this.torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.50, 0.50, 6, 16), matArmor); this.torso.position.y = 1.35; this.torso.castShadow = true;
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.15, 12), matTrim); belt.position.y = 0.85;
-    const shoGeo = new THREE.IcosahedronGeometry(0.32, 1);
+    this.torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 0.22, 6, 16), matArmor); this.torso.position.y = 1.35; this.torso.castShadow = true;
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.12, 12), matTrim); belt.position.y = 0.85;
+    const shoGeo = new THREE.IcosahedronGeometry(0.28, 1);
     this.rSho = new THREE.Mesh(shoGeo, matArmor); this.rSho.position.set(0.5, 1.65, 0); this.rSho.castShadow = true;
     this.lSho = new THREE.Mesh(shoGeo, matArmor); this.lSho.position.set(-0.5, 1.65, 0); this.lSho.castShadow = true;
-    const armGeo = new THREE.CapsuleGeometry(0.16, 0.30, 4, 12);
+    const armGeo = new THREE.CapsuleGeometry(0.16, 0.12, 4, 12);
     this.rArm = new THREE.Mesh(armGeo, matBody); this.rArm.position.set(0.5, 1.3, 0); this.rArm.castShadow = true;
     this.lArm = new THREE.Mesh(armGeo, matBody); this.lArm.position.set(-0.5, 1.3, 0); this.lArm.castShadow = true;
     this.head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 2), matSkin); this.head.position.y = 2.1; this.head.castShadow = true;
@@ -201,7 +202,7 @@ export class Character {
     const factionFlag = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.4), new THREE.MeshStandardMaterial({ color: teamColor, roughness: 0.6, side: THREE.DoubleSide, emissive: teamColor, emissiveIntensity: 0.2 }));
     factionFlag.position.set(0, 1.8, -0.5); factionFlag.castShadow = true;
     this.cape = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.7, 1.1, 4, 10),
+      new THREE.PlaneGeometry(0.6, 0.8, 4, 10),
       new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
         uniforms: { uTime: { value: 0 }, uMove: { value: 0 }, uColor: { value: new THREE.Color(teamColor) } },
@@ -217,23 +218,23 @@ export class Character {
     this._hpBar = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xff3030, transparent: true, opacity: 0.9, depthTest: false }));
     this._hpBarBg = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x111111, transparent: true, opacity: 0.7, depthTest: false }));
     this._hpBar.scale.set(0.9, 0.09, 1); this._hpBarBg.scale.set(0.94, 0.13, 1);
-    this._hpBar.position.y = 2.8; this._hpBarBg.position.y = 2.8;
+    this._hpBar.position.y = 2.20; this._hpBarBg.position.y = 2.20;
     this._hpBar.renderOrder = 999; this._hpBarBg.renderOrder = 998;
     this._postureBar = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xc8a060, transparent: true, opacity: 0, depthTest: false }));
     this._postureBarBg = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x111111, transparent: true, opacity: 0.6, depthTest: false }));
     this._postureBar.scale.set(0.9, 0.05, 1); this._postureBarBg.scale.set(0.94, 0.09, 1);
-    this._postureBar.position.y = 2.95; this._postureBarBg.position.y = 2.95;
+    this._postureBar.position.y = 2.35; this._postureBarBg.position.y = 2.35;
     this._postureBar.renderOrder = 1005; this._postureBarBg.renderOrder = 1004;
     // 锁定标记
     this._lockMark = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffd070, transparent: true, opacity: 0, depthTest: false }));
-    this._lockMark.scale.set(0.5, 0.5, 1); this._lockMark.position.y = 3.10; this._lockMark.renderOrder = 1001;
+    this._lockMark.scale.set(0.5, 0.5, 1); this._lockMark.position.y = 2.50; this._lockMark.renderOrder = 1001;
     // 色弱模式：头顶形状标记（友军圆环 / 敌军方块），非本地单位默认隐藏，由 setColorblind 控制
     const markGeo = this.team === 0 ? new THREE.TorusGeometry(0.16, 0.045, 6, 14) : new THREE.BoxGeometry(0.24, 0.24, 0.24);
     this._teamMark = new THREE.Mesh(
       markGeo,
       new THREE.MeshBasicMaterial({ color: this.team === 0 ? 0x66aaff : 0xff6666, transparent: true, opacity: 0.9, depthTest: false })
     );
-    this._teamMark.position.y = 3.35; this._teamMark.renderOrder = 1002; this._teamMark.visible = false;
+    this._teamMark.position.y = 2.75; this._teamMark.renderOrder = 1002; this._teamMark.visible = false;
     const showBar = !this.isLocal;
     this._hpBar.visible = showBar; this._hpBarBg.visible = showBar; this._postureBar.visible = showBar; this._postureBarBg.visible = showBar;
     this.skeleton = new Skeleton(this.root);
@@ -243,6 +244,7 @@ export class Character {
       head: this.head, helm, visor, cape: this.cape, weaponPivot: this.weaponPivot,
       rPauldron, lPauldron, rKneeguard, lKneeguard, chestplate, emblem, factionFlag
     });
+    this.skeleton.bones.head.scale.set(1.3, 1.3, 1.3);
     if (this._bossType) this._customizeBoss(this._bossType);
     if (this._isElite) this._customizeElite();
     if (this._classType) this._customizeClass(this._classType);
@@ -962,7 +964,7 @@ export class Character {
   }
   jump() { if (this.onGround && this.alive && this._dodgeTimer <= 0) { this.vy = 8.2; this.onGround = false; } }
   get capsule() {
-    this._capsule.center.copy(this.position).addScaledVector(this._vUp, 1.3);
+    this._capsule.center.copy(this.position).addScaledVector(this._vUp, 1.0);
     return this._capsule;
   }
 }

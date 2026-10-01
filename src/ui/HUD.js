@@ -84,6 +84,7 @@ export class HUD {
     this._kill = this.el.querySelector('#kill');
     this._buffbar = this.el.querySelector('#buffbar');
     this._bossbar = this.el.querySelector('#bossbar');
+    this._bossName = this.el.querySelector('#bossName');
     this._bossFill = this.el.querySelector('#bossFill');
     this._bossPips = this.el.querySelector('#bossPips');
     this._lowhp = this.el.querySelector('#lowhp');
@@ -304,16 +305,23 @@ export class HUD {
 
   setRefs(player, ais, camera) { this._player = player; this._ais = ais; this._camera = camera; }
 
+  beginFrame() { this._framePending = []; }
+  commitFrame() { for (const p of this._framePending) { p.apply(); } this._framePending = null; }
+
   _write(el, prop, value) {
     if (!this._domCache) { this._domCache = new WeakMap(); this._writeCount = 0; }
     let m = this._domCache.get(el);
     if (!m) { m = {}; this._domCache.set(el, m); }
     if (m[prop] === value) return;
     m[prop] = value;
-    this._writeCount++;
-    if (prop === 'textContent') el.textContent = value;
-    else if (prop === 'innerHTML') el.innerHTML = value;
-    else el.style[prop] = value;
+    const flush = () => {
+      this._writeCount++;
+      if (prop === 'textContent') el.textContent = value;
+      else if (prop === 'innerHTML') el.innerHTML = value;
+      else el.style[prop] = value;
+    };
+    if (this._framePending) this._framePending.push(flush);
+    else flush();
   }
 
   setHealth(c) { this._write(this._hp, 'width', `${Math.max(0, c.health.ratio) * 100}%`); }
@@ -373,47 +381,50 @@ export class HUD {
     else this._write(this._buffbar, 'display', 'none');
   }
   showBoss(name) {
-    this._bossbar.querySelector('#bossName').textContent = name;
-    this._bossbar.style.display = 'flex';
+    this._write(this._bossName, 'textContent', name);
+    this._write(this._bossbar, 'display', 'flex');
   }
   setBossHP(ratio) {
-    this._bossFill.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
+    this._write(this._bossFill, 'width', `${Math.max(0, Math.min(1, ratio)) * 100}%`);
   }
   setBossPhase(phase = 1, isMini = false) {
     const total = isMini ? 2 : 3;
     const p = Math.max(1, Math.min(total, phase));
     let s = '';
     for (let i = 0; i < total; i++) s += i < p ? '●' : '○';
-    this._bossPips.textContent = s;
+    this._write(this._bossPips, 'textContent', s);
   }
-  hideBoss() { this._bossbar.style.display = 'none'; }
-  setLowHP(active) { this._lowhp.style.display = active ? 'block' : 'none'; this._lowhp.style.animation = (active && this._reducedMotion) ? 'none' : ''; }
+  hideBoss() { this._write(this._bossbar, 'display', 'none'); }
+  setLowHP(active) {
+    this._write(this._lowhp, 'display', active ? 'block' : 'none');
+    this._write(this._lowhp, 'animation', (active && this._reducedMotion) ? 'none' : '');
+  }
   setReducedMotion(v) { this._reducedMotion = !!v; }
   flashHitVignette() { if (this._reducedMotion) { this._hitvignette.style.opacity = '0'; return; } this._hitVigTimer = 0.35; this._hitvignette.style.opacity = '0.6'; }
   flashComboPulse(tier = 0) { if (this._reducedMotion) { this._combopulse.style.opacity = '0'; return; } this._comboPulseTimer = 0.3; this._combopulse.style.opacity = String(Math.min(0.6, 0.25 + tier * 0.1)); }
   flashBossPhase(phase = 2) { this._bossPhaseTimer = 1.5; this._bossphase.textContent = phase >= 3 ? '⚔ Boss 狂暴！' : 'Boss 激怒！'; this._bossphase.style.opacity = '1'; }
   flashExecute() { this._execBannerTimer = 1.0; this._execute.textContent = '⚔ 处决！'; this._execute.style.opacity = '1'; }
   flashParry() { if (this._reducedMotion) { this._parryTimer = 0; this._parryflash.style.opacity = '0'; this._parryglow.style.opacity = '0'; return; } this._parryTimer = 0.8; this._parryflash.textContent = '🛡 弹反！'; this._parryflash.style.opacity = '1'; this._parryglow.style.opacity = '0.8'; }
-  setScore(b, r) { this._score.textContent = `蓝方 ${b}  |  ${r} 红方`; }
-  setRound(b, r, target) { this._round.textContent = `局比分 ${b} - ${r}（先到 ${target} 胜）`; }
+  setScore(b, r) { this._write(this._score, 'textContent', `蓝方 ${b}  |  ${r} 红方`); }
+  setRound(b, r, target) { this._write(this._round, 'textContent', `局比分 ${b} - ${r}（先到 ${target} 胜）`); }
   setWave(wave, best, endless, modifierInfo, target = 10) {
     let txt = '第 ' + wave + ' 波' + (endless ? '' : ' / ' + target);
     if (best > 0) txt += '  ·  最高 ' + best + ' 波';
     if (modifierInfo && modifierInfo.current) txt += '  ·  当前：' + modifierInfo.current.name;
     if (modifierInfo && modifierInfo.next) txt += '  ·  下一：' + modifierInfo.next.name;
-    this._round.textContent = txt;
+    this._write(this._round, 'textContent', txt);
   }
   setMode(name, stageInfo) {
     if (stageInfo) {
-      this._modeName.textContent = '模式：' + name + ' · ' + stageInfo.name + ' (' + (stageInfo.index + 1) + '/' + stageInfo.total + ')';
+      this._write(this._modeName, 'textContent', '模式：' + name + ' · ' + stageInfo.name + ' (' + (stageInfo.index + 1) + '/' + stageInfo.total + ')');
     } else {
-      this._modeName.textContent = '模式：' + name;
+      this._write(this._modeName, 'textContent', '模式：' + name);
     }
-    this._dom.style.display = name === '据点' ? 'block' : 'none';
+    this._write(this._dom, 'display', name === '据点' ? 'block' : 'none');
   }
   setWeatherForecast(text) {
-    if (text) { this._wforecast.textContent = text; this._wforecast.style.display = 'block'; }
-    else { this._wforecast.style.display = 'none'; }
+    if (text) { this._write(this._wforecast, 'textContent', text); this._write(this._wforecast, 'display', 'block'); }
+    else { this._write(this._wforecast, 'display', 'none'); }
   }
   _renderChallenges() {
     if (!this._daily) { this._challengeEl.innerHTML = ''; return; }
@@ -429,13 +440,13 @@ export class HUD {
     if (!mode.points) return;
     const colors = ['#888', '#3af', '#f55'];
     const labels = mode.points.map((p, i) => `<span style="color:${colors[p.team + 1] || '#888'}">●${Math.floor(p.progress * 100)}%</span>`).join(' ');
-    this._dom.innerHTML = `${labels} | 蓝方${mode.scoreB} 红方${mode.scoreR} / ${mode.targetScore}`;
+    this._write(this._dom, 'innerHTML', `${labels} | 蓝方${mode.scoreB} 红方${mode.scoreR} / ${mode.targetScore}`);
   }
   setWeapon(idx, count) {
     const names = this._player ? this._player.weapons.map(w => w.name) : ['刀', '弓', '枪', '锤'];
     let html = '';
     for (let i = 0; i < count; i++) html += (i === idx ? `<b style="color:#ffd070;">[${i + 1}] ${names[i] || '武'}</b> ` : `[${i + 1}] ${names[i] || '武'} `);
-    this._weapon.innerHTML = html;
+    this._write(this._weapon, 'innerHTML', html);
   }
   setCharge(c) {
     if (c > 0.01) {
@@ -499,52 +510,52 @@ export class HUD {
       const s = this._skillEls[i];
       if (!s) continue;
       const r = ws.cdRemaining(i);
-      if (r > 0) { s.cd.style.display = 'flex'; s.cd.textContent = Math.ceil(r); }
-      else { s.cd.style.display = 'none'; }
+      if (r > 0) { this._write(s.cd, 'display', 'flex'); this._write(s.cd, 'textContent', Math.ceil(r)); }
+      else { this._write(s.cd, 'display', 'none'); }
     }
   }
 
   update(dt) {
     if (this._errTimer > 0) {
       this._errTimer -= dt;
-      if (this._errTimer < 0.5) this._errEl.style.opacity = (this._errTimer / 0.5).toString();
-      if (this._errTimer <= 0) this._errEl.style.display = 'none';
+      if (this._errTimer < 0.5) this._write(this._errEl, 'opacity', (this._errTimer / 0.5).toString());
+      if (this._errTimer <= 0) this._write(this._errEl, 'display', 'none');
     }
-    if (this._killTimer > 0) { this._killTimer -= dt; if (this._killTimer <= 0) this._kill.style.opacity = '0'; }
+    if (this._killTimer > 0) { this._killTimer -= dt; if (this._killTimer <= 0) this._write(this._kill, 'opacity', '0'); }
     if (this._hitVigTimer > 0) {
       this._hitVigTimer -= dt;
-      if (this._hitVigTimer <= 0) { this._hitVigTimer = 0; this._hitvignette.style.opacity = '0'; }
-      else this._hitvignette.style.opacity = (0.6 * (this._hitVigTimer / 0.35)).toString();
+      if (this._hitVigTimer <= 0) { this._hitVigTimer = 0; this._write(this._hitvignette, 'opacity', '0'); }
+      else this._write(this._hitvignette, 'opacity', (0.6 * (this._hitVigTimer / 0.35)).toString());
     }
     if (this._comboPulseTimer > 0) {
       this._comboPulseTimer -= dt;
-      if (this._comboPulseTimer <= 0) { this._comboPulseTimer = 0; this._combopulse.style.opacity = '0'; }
-      else this._combopulse.style.opacity = (0.6 * (this._comboPulseTimer / 0.3)).toString();
+      if (this._comboPulseTimer <= 0) { this._comboPulseTimer = 0; this._write(this._combopulse, 'opacity', '0'); }
+      else this._write(this._combopulse, 'opacity', (0.6 * (this._comboPulseTimer / 0.3)).toString());
     }
     if (this._bossPhaseTimer > 0) {
       this._bossPhaseTimer -= dt;
-      if (this._bossPhaseTimer <= 0) { this._bossPhaseTimer = 0; this._bossphase.style.opacity = '0'; }
-      else this._bossphase.style.opacity = (this._bossPhaseTimer / 1.5).toString();
+      if (this._bossPhaseTimer <= 0) { this._bossPhaseTimer = 0; this._write(this._bossphase, 'opacity', '0'); }
+      else this._write(this._bossphase, 'opacity', (this._bossPhaseTimer / 1.5).toString());
     }
     if (this._execBannerTimer > 0) {
       this._execBannerTimer -= dt;
-      if (this._execBannerTimer <= 0) { this._execBannerTimer = 0; this._execute.style.opacity = '0'; }
-      else this._execute.style.opacity = this._execBannerTimer.toString();
+      if (this._execBannerTimer <= 0) { this._execBannerTimer = 0; this._write(this._execute, 'opacity', '0'); }
+      else this._write(this._execute, 'opacity', this._execBannerTimer.toString());
     }
     if (this._parryTimer > 0) {
       this._parryTimer -= dt;
-      if (this._parryTimer <= 0) { this._parryTimer = 0; this._parryflash.style.opacity = '0'; this._parryglow.style.opacity = '0'; }
-      else { this._parryflash.style.opacity = this._parryTimer.toString(); this._parryglow.style.opacity = (this._parryTimer / 0.8).toString(); }
+      if (this._parryTimer <= 0) { this._parryTimer = 0; this._write(this._parryflash, 'opacity', '0'); this._write(this._parryglow, 'opacity', '0'); }
+      else { this._write(this._parryflash, 'opacity', this._parryTimer.toString()); this._write(this._parryglow, 'opacity', (this._parryTimer / 0.8).toString()); }
     }
     if (this._counterTimer > 0) {
       this._counterTimer -= dt;
-      if (this._counterTimer < 0.5) this._counterEl.style.opacity = (this._counterTimer / 0.5).toString();
-      if (this._counterTimer <= 0) { this._counterEl.style.display = 'none'; }
+      if (this._counterTimer < 0.5) this._write(this._counterEl, 'opacity', (this._counterTimer / 0.5).toString());
+      if (this._counterTimer <= 0) { this._write(this._counterEl, 'display', 'none'); }
     }
     if (this._comboTimer > 0) {
       this._comboTimer -= dt;
-      if (this._comboTimer < 0.5) this._comboEl.style.opacity = (this._comboTimer / 0.5).toString();
-      if (this._comboTimer <= 0) this._comboEl.style.display = 'none';
+      if (this._comboTimer < 0.5) this._write(this._comboEl, 'opacity', (this._comboTimer / 0.5).toString());
+      if (this._comboTimer <= 0) this._write(this._comboEl, 'display', 'none');
     }
   }
 

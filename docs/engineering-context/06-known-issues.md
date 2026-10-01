@@ -338,7 +338,20 @@
 | C1-7 | 会话闭环：退出到主菜单 + 结算屏三键（重试/换模式/回主菜单） | P0 | ✅已修 |
 | C1-8 | 角色纹理/材质共享缓存消除换波尖峰 | P0 | ✅已修 |
 | C2 | 画面调通（雾效/Bloom/水面/打击特效）+ 内容可达（模式/进度入口） | P1 | ✅已修 |
-| C3 | 画面提质（Q版比例/色调/刀光）+ 深度优化（多档存档/空间哈希/UI令牌） | P2 | ⬜待做 |
+| C3 | 画面提质（Q版比例/色调/刀光）+ 深度优化（多档存档/空间哈希/UI令牌） | P2 | ✅已修 |
+
+### 第十五轮（2026-10-01）战役三：画面提质 + 深度优化
+
+| # | 主题 | 文件 | 说明 |
+|---|---|---|---|
+| C3-17 | Q版角色比例（1/3→1/2） | Character.js/Skeleton.js | 几何缩短 + 骨骼偏移压缩 + 头 1.3× + 胶囊 halfHeight 0.8 |
+| C3-18 | 中央色板统色调 | core/constants/palette.js（新建） | PALETTE 单一事实来源；水面/EnvMap 暖化、阵营色与金统一 |
+| C3-19 | 刀光增强 | weapons/*, WeaponTrail.js, EventWiring.js | emissive 提升 + AI 激活 + 0.5s 自动停用 |
+| C3-20 | 多档存档 | SaveManager.js/storage-keys.js/SaveUI.js/main_entry.js | 键模板 savegame_v2_slot_{N}、CURRENT_VERSION 2→3、槽位列表 UI |
+| C3-21 | 空间哈希 | core/SpatialHash.js（新建）/CombatSystem.js/AIController.js/main_entry.js | 网格查询替代 O(N²)，AI 共享每帧单次构建 |
+| C3-22 | HUD 帧批量 | HUD.js/main_entry.js | beginFrame/commitFrame 合并帧内写入 |
+
+回归：`npx vitest run` 1265/1265 通过（新增 SaveManager.slots(7)/SpatialHash(9) 用例）。
 
 ### 第十四轮回归测试
 

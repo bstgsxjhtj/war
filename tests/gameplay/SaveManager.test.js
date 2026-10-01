@@ -7,8 +7,9 @@ describe('SaveManager', () => {
   it('save 字段完整（含 campaignCompleted/skillTree）', () => {
     const sm = new SaveManager();
     const d = sm.save({ mode: '战役', stage: 3, score: 1200, kills: 45, bestGrade: 'A', campaignCompleted: true, skillTree: { points: 5, skills: { power: 2 } }, affixSlots: { SWORD: [{ type: '锋锐', tier: 2 }] }, skillPoints: 5, playTime: 3600 });
-    expect(d.version).toBe(2);
+    expect(d.version).toBe(3);
     expect(typeof d.savedAt).toBe('number');
+    expect(d.slot).toBe(0);
     expect(d.mode).toBe('战役');
     expect(d.stage).toBe(3);
     expect(d.campaignCompleted).toBe(true);
@@ -19,7 +20,7 @@ describe('SaveManager', () => {
     expect(d.affixSlots.SWORD).toEqual([{ type: '锋锐', tier: 2 }]);
     expect(d.skillPoints).toBe(5);
     expect(d.playTime).toBe(3600);
-    expect(JSON.parse(localStorage.getItem('savegame_v1'))).toEqual(d);
+    expect(JSON.parse(localStorage.getItem('savegame_v2_slot_0'))).toEqual(d);
   });
 
   it('load：无存档 → null', () => {

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
 import { WEAPON_STATS } from '../../core/constants/balance.js';
+import { PALETTE } from '../../core/constants/palette.js';
 
 // 匕首：快速近战，低伤害高频次，影刃突进技能
 export class Dagger extends Weapon {
@@ -20,7 +21,7 @@ export class Dagger extends Weapon {
 
   createMesh() {
     const g = new THREE.Group();
-    const bladeMat = new THREE.MeshStandardMaterial({ color: 0xc0c8d0, metalness: 0.9, roughness: 0.15, emissive: 0x0a0a0a, emissiveIntensity: 0.05 });
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0xc0c8d0, metalness: 0.9, roughness: 0.15, emissive: PALETTE.WEAPON.BLADE_EMISSIVE, emissiveIntensity: PALETTE.WEAPON.BLADE_EMISSIVE_INTENSITY });
     const hiltMat = new THREE.MeshStandardMaterial({ color: 0x1a1208, roughness: 0.8 });
     const guardMat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, metalness: 0.7, roughness: 0.3 });
 

@@ -434,3 +434,92 @@ describe('HUD F4 性能面板', () => {
     expect(hud._perfVisible).toBe(false);
   });
 });
+
+describe('HUD 脏检查与帧批量', () => {
+  it('_write 相同值跳过 DOM 写（已有行为）', () => {
+    const hud = mkHud();
+    hud.setHealth({ health: { ratio: 0.5 } });
+    const base = hud._writeCount;
+    hud.setHealth({ health: { ratio: 0.5 } });
+    hud.setHealth({ health: { ratio: 0.5 } });
+    expect(hud._writeCount).toBe(base);
+    hud.setHealth({ health: { ratio: 0.6 } });
+    expect(hud._writeCount).toBe(base + 1);
+  });
+
+  it('beginFrame/commitFrame 批量：commit 前 DOM 不更新', () => {
+    const hud = mkHud();
+    hud.beginFrame();
+    hud.setScore(2, 3);
+    expect(hud._score.textContent).toBe('蓝方 0  |  0 红方');
+    hud.commitFrame();
+    expect(hud._score.textContent).toBe('蓝方 2  |  3 红方');
+  });
+
+  it('beginFrame/commitFrame 批量：commit 前 _writeCount 不增加', () => {
+    const hud = mkHud();
+    hud.setScore(0, 0);
+    const base = hud._writeCount;
+    hud.beginFrame();
+    hud.setScore(2, 3);
+    expect(hud._writeCount).toBe(base);
+    hud.commitFrame();
+    expect(hud._writeCount).toBe(base + 1);
+  });
+
+  it('批量帧内多次写同一属性：commit 后落到最终值', () => {
+    const hud = mkHud();
+    hud.beginFrame();
+    hud.setScore(2, 3);
+    hud.setScore(4, 5);
+    hud.commitFrame();
+    expect(hud._score.textContent).toBe('蓝方 4  |  5 红方');
+  });
+
+  it('_writeCount 跟踪实际 DOM 写', () => {
+    const hud = mkHud();
+    hud.setScore(1, 0);
+    const base = hud._writeCount;
+    hud.setScore(1, 0);
+    expect(hud._writeCount).toBe(base);
+    hud.setScore(2, 0);
+    expect(hud._writeCount).toBe(base + 1);
+  });
+
+  it('setScore/setWave 使用 _write：相同值不增加写计数（二者均写 _round，须分开断言）', () => {
+    const hud = mkHud();
+    hud.setScore(2, 3);
+    hud.setWave(5, 10, false);
+    const base = hud._writeCount;
+    hud.setScore(2, 3);
+    hud.setWave(5, 10, false);
+    expect(hud._writeCount).toBe(base);
+  });
+
+  it('setRound 使用 _write：相同值不增加写计数', () => {
+    const hud = mkHud();
+    hud.setRound(1, 0, 3);
+    const base = hud._writeCount;
+    hud.setRound(1, 0, 3);
+    expect(hud._writeCount).toBe(base);
+  });
+
+  it('setSkillCooldowns 使用 _write：相同剩余不增加写计数', () => {
+    const hud = mkHud();
+    const ws = { cdRemaining: (i) => (i === 0 ? 2.3 : 0) };
+    hud.setSkillCooldowns(ws);
+    const base = hud._writeCount;
+    hud.setSkillCooldowns(ws);
+    expect(hud._writeCount).toBe(base);
+  });
+
+  it('update 衰减 opacity 走 _write 且归零后不再重复写', () => {
+    const hud = mkHud();
+    hud.flashHitVignette();
+    hud.update(hud._hitVigTimer);
+    expect(parseFloat(hud._hitvignette.style.opacity)).toBe(0);
+    const base = hud._writeCount;
+    hud.update(0.016);
+    expect(hud._writeCount).toBe(base);
+  });
+});

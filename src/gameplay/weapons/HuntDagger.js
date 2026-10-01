@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
 import { WEAPON_STATS } from '../../core/constants/balance.js';
+import { PALETTE } from '../../core/constants/palette.js';
 
 // 猎手匕首：弓箭手近身应急，弯曲刃+皮绳孔
 export class HuntDagger extends Weapon {
@@ -20,7 +21,7 @@ export class HuntDagger extends Weapon {
 
   createMesh() {
     const g = new THREE.Group();
-    const bladeMat = new THREE.MeshStandardMaterial({ color: 0xb0c8a0, metalness: 0.85, roughness: 0.2, emissive: 0x224422, emissiveIntensity: 0.08 });
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0xb0c8a0, metalness: 0.85, roughness: 0.2, emissive: PALETTE.WEAPON.BLADE_EMISSIVE, emissiveIntensity: PALETTE.WEAPON.BLADE_EMISSIVE_INTENSITY });
     const edgeMat = new THREE.MeshStandardMaterial({ color: 0x88cc66, metalness: 0.6, roughness: 0.15, emissive: 0x448844, emissiveIntensity: 0.2 });
     const guardMat = new THREE.MeshStandardMaterial({ color: 0x5a4a2a, metalness: 0.6, roughness: 0.4 });
     const leatherMat = new THREE.MeshStandardMaterial({ color: 0x3a2008, roughness: 0.9 });

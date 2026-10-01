@@ -31,9 +31,9 @@ export function wireCoreHandlers(bus, deps) {
     }
     if (attacker && attacker.isLocal) {
       hitStop.trigger(heavy ? 0.12 : 0.06, 0.05);
-      weaponTrail.activate(attacker._weaponMesh);
       match.playerDamage += damage || 0;
     }
+    if (attacker && attacker._weaponMesh) weaponTrail.activate(attacker._weaponMesh);
     if (victim && victim.isLocal) match.playerTaken += damage || 0;
     if (backstab) { daily.track('backstab'); if (attacker && attacker.isLocal) bus.emit(EV.COMBAT_BACKSTAB, { attacker, victim }); }
     bus.emit(EV.DAILY_UPDATE, daily.challenges);

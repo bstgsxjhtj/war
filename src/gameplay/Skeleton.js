@@ -11,20 +11,20 @@ export class Skeleton {
 
   _createBones() {
     const defs = {
-      hips:       { pos: [0, 0.85, 0], parent: null },
-      spine:      { pos: [0, 0.25, 0], parent: 'hips' },
-      chest:      { pos: [0, 0.25, 0], parent: 'spine' },
-      head:       { pos: [0, 0.75, 0], parent: 'chest' },
-      shoulderR:  { pos: [0.5, 0.3, 0], parent: 'chest' },
-      elbowR:     { pos: [0, -0.35, 0], parent: 'shoulderR' },
-      handR:      { pos: [0, -0.35, 0], parent: 'elbowR' },
-      shoulderL:  { pos: [-0.5, 0.3, 0], parent: 'chest' },
-      elbowL:     { pos: [0, -0.35, 0], parent: 'shoulderL' },
-      handL:      { pos: [0, -0.35, 0], parent: 'elbowL' },
+      hips:       { pos: [0, 0.70, 0], parent: null },
+      spine:      { pos: [0, 0.18, 0], parent: 'hips' },
+      chest:      { pos: [0, 0.18, 0], parent: 'spine' },
+      head:       { pos: [0, 0.55, 0], parent: 'chest' },
+      shoulderR:  { pos: [0.5, 0.25, 0], parent: 'chest' },
+      elbowR:     { pos: [0, -0.22, 0], parent: 'shoulderR' },
+      handR:      { pos: [0, -0.22, 0], parent: 'elbowR' },
+      shoulderL:  { pos: [-0.5, 0.25, 0], parent: 'chest' },
+      elbowL:     { pos: [0, -0.22, 0], parent: 'shoulderL' },
+      handL:      { pos: [0, -0.22, 0], parent: 'elbowL' },
       upperLegR:  { pos: [0.2, 0, 0], parent: 'hips' },
-      lowerLegR:  { pos: [0, -0.35, 0], parent: 'upperLegR' },
+      lowerLegR:  { pos: [0, -0.22, 0], parent: 'upperLegR' },
       upperLegL:  { pos: [-0.2, 0, 0], parent: 'hips' },
-      lowerLegL:  { pos: [0, -0.35, 0], parent: 'upperLegL' },
+      lowerLegL:  { pos: [0, -0.22, 0], parent: 'upperLegL' },
     };
     for (const [name, def] of Object.entries(defs)) {
       const bone = new THREE.Object3D();
@@ -41,8 +41,8 @@ export class Skeleton {
   }
 
   bindParts(p) {
-    if (p.rLeg) { this.bones.upperLegR.add(p.rLeg); p.rLeg.position.set(0, -0.45, 0); }
-    if (p.lLeg) { this.bones.upperLegL.add(p.lLeg); p.lLeg.position.set(0, -0.45, 0); }
+    if (p.rLeg) { this.bones.upperLegR.add(p.rLeg); p.rLeg.position.set(0, -0.30, 0); }
+    if (p.lLeg) { this.bones.upperLegL.add(p.lLeg); p.lLeg.position.set(0, -0.30, 0); }
     if (p.torso) { this.bones.chest.add(p.torso); p.torso.position.set(0, 0, 0); }
     if (p.belt) { this.bones.hips.add(p.belt); p.belt.position.set(0, 0, 0); }
     if (p.rSho) { this.bones.shoulderR.add(p.rSho); p.rSho.position.set(0, 0, 0); }
@@ -50,10 +50,10 @@ export class Skeleton {
     if (p.rArm) { this.bones.elbowR.add(p.rArm); p.rArm.position.set(0, 0, 0); }
     if (p.lArm) { this.bones.elbowL.add(p.lArm); p.lArm.position.set(0, 0, 0); }
     if (p.head) { this.bones.head.add(p.head); p.head.position.set(0, 0, 0); }
-    if (p.helm) { this.bones.head.add(p.helm); p.helm.position.set(0, 0.18, 0); }
-    if (p.visor) { this.bones.head.add(p.visor); p.visor.position.set(0, 0.16, 0.32); }
-    if (p.cape) { this.bones.spine.add(p.cape); p.cape.position.set(0, 0.25, -0.42); }
-    if (p.weaponPivot) { this.bones.handR.add(p.weaponPivot); p.weaponPivot.position.set(0, 0.35, 0.15); }
+    if (p.helm) { this.bones.head.add(p.helm); p.helm.position.set(0, 0.20, 0); }
+    if (p.visor) { this.bones.head.add(p.visor); p.visor.position.set(0, 0.18, 0.38); }
+    if (p.cape) { this.bones.spine.add(p.cape); p.cape.position.set(0, 0.20, -0.35); }
+    if (p.weaponPivot) { this.bones.handR.add(p.weaponPivot); p.weaponPivot.position.set(0, 0.25, 0.15); }
   }
 
   static KEYFRAMES = {

@@ -199,3 +199,16 @@ ESM 依赖图必须保持无环（DAG）。
 | C2-12 | 水面 Fresnel | `world/Water.js` | 顶点着色器加 vNormal/vViewDir varying；片元着色器 `fres=pow(1.0-abs(dot(vNormal,vViewDir)),3.0)` 视角依赖反射，与 uSky(0x9ab8d0) 混合。Reflector 颜色 0x4a4038(暖棕)→0x8899aa(天蓝) 修正反射底色。 |
 | C2-13 | 武器拖尾顶点色渐变 | `render/WeaponTrail.js` | attach() 加 colors Float32Array + baseColor + `vertexColors:true` 材质；update() 内循环按段龄写色：头部（i=0）= full baseColor，尾部（i=segs-1）→ 黑。fadeA=1-i/segs, fadeB=1-(i+1)/segs。此前单色 LineBasicMaterial 无渐变。 |
 | C2-14 | 环境死代码激活 | `world/Environment.js` | `_ruins()` + `_landmarks()` 原为死代码（定义但 `_build()`/`_buildFromLayout()` 从不调用）。现两处构建末尾均调用，废墟/地标实际出现在场景中。 |
+
+## 19. 战役三：画面提质 + 深度优化（2026-10-01）
+
+> 画面提质（Q版比例/色调统一/刀光）+ 三项深度优化（多档存档/空间哈希/UI 令牌帧批量）。新增 2 个模块：`core/constants/palette.js`（中央色板）、`core/SpatialHash.js`（邻居查询网格）。
+
+| # | 主题 | 文件 | 内容 |
+|---|---|---|---|
+| C3-17 | Q版角色比例 | `gameplay/Character.js`、`gameplay/Skeleton.js` | 头/身比由 1/3 提升至约 1/2：四肢/躯干 CapsuleGeometry 缩短（leg 0.40→0.18、torso 0.50→0.22、arm 0.30→0.12），骨骼偏移同步压缩（hips 0.85→0.70、head +0.75→+0.55、肘/膝 -0.35→-0.22），头部放大 1.3×；HP/姿态/锁定标记 y 下移，胶囊体 halfHeight 1.0→0.8。 |
+| C3-18 | 色调统一（中央色板） | `core/constants/palette.js`（新建）+ `world/Water.js`/`world/Environment.js`/`render/EnvMap.js` | 新建单一事实来源 `PALETTE`（SCENE/WATER/ENVMAP/TEAM/TERRAIN/ENV/WEAPON）。水面浅/深/天空与 Reflector 冷蓝→暖色，EnvMap 天/地由冷蓝暖化，阵营色与描边金统一（TRIM 0xd4b25a）。消除散落硬编码。 |
+| C3-19 | 刀光增强 | `gameplay/weapons/*`、`render/WeaponTrail.js`、`app/EventWiring.js` | 6 把武器刀刃 emissive 统一走 `PALETTE.WEAPON.BLADE_EMISSIVE`（剑/匕首满 1.0，矛 0.5，锤 0.4）；拖尾激活移出 `isLocal` 分支（AI 也有刀光）；`activate` 加 `deactivateTimer=0.5`，`update` 到点自动停用，避免拖尾常驻。 |
+| C3-20 | 多档存档 | `gameplay/SaveManager.js`、`core/constants/storage-keys.js`、`ui/SaveUI.js`、`main_entry.js` | SaveManager 参数化槽位（`new SaveManager(slot)`），键模板 `savegame_v2_slot_{N}` + 备份 `savegame_v2_slot_bak_{N}`，`CURRENT_VERSION` 2→3（v2→v3 迁移：登记 slot 字段）。静态 `listSlots/peek/getActiveSlot/setActiveSlot`；槽 0 空时一次性迁移遗留 `savegame_v1`（v2）。SaveUI 渲染槽位列表（写入/清除），开机 `new SaveManager(SaveManager.getActiveSlot())`。 |
+| C3-21 | 空间哈希邻居查询 | `core/SpatialHash.js`（新建）、`gameplay/CombatSystem.js`、`gameplay/AIController.js`、`main_entry.js` | 均匀网格 cellSize=10，`queryRadius`（复用结果数组）/`queryNearest`（环形扩张+早停）替代 O(N²) 暴力扫描，应用于近战/AOE/大招/箭矢/AI 选目标。`_ensureSpatial(now)` 按帧时间戳 memo 化，每帧仅重建一次。`main_entry` 每帧构建一次 `aiSpatialHash` 并传给全部 AI，避免 N 个 AI 各自重建网格。 |
+| C3-22 | HUD 帧批量写入 | `ui/HUD.js`、`main_entry.js` | 新增 `beginFrame/commitFrame`：帧内活跃时 `_write` 入队闭包，帧末统一提交，减少逐 setter 的 DOM 抖动；20+ 方法收编到 `_write`（含 8 个计时器 opacity）。 |

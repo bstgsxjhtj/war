@@ -4,6 +4,10 @@ import { EV } from '../core/constants/events.js';
 import { ENEMY_MODS, POSTURE } from '../core/constants/balance.js';
 import { TelegraphIndicator } from '../render/TelegraphIndicator.js';
 import { applyEnemyBehaviors } from './AffixBehavior.js';
+import { SpatialHash } from '../core/SpatialHash.js';
+
+const AI_FOCUS_RADIUS = 60;
+const AI_ALLY_RADIUS = 30;
 
 export class AIController extends Character {
   constructor({ team = 1, passive = false, maxHp = 90, classType = null, classColor = null, speed = 6.2, sprintMul = 1.7, maxStamina = 100 } = {}) {
@@ -44,6 +48,7 @@ export class AIController extends Character {
     this._perfectBlockCount = 0;
     this._perfectBlockDecay = 0;
     this._adaptRetreat = 0;
+    this._spatialHash = new SpatialHash(10);
     this._pickPatrol();
   }
 
@@ -107,12 +112,17 @@ export class AIController extends Character {
     if (this._telegraph) this._telegraph.hide();
   }
 
-  update(dt, terrain, combat, enemies, now) {
+  update(dt, terrain, combat, enemies, now, spatialHash = null) {
     if (!this.alive) {
       if (this._windupTimer > 0) { this._windupTimer = 0; if (this._telegraph) this._telegraph.hide(); }
       super.update(dt, terrain, combat, now); return;
     }
     if (this._passive) { this.setMove(0, 0); this.setSprint(false); super.update(dt, terrain, combat, now); return; }
+    const hash = spatialHash || this._spatialHash;
+    if (!spatialHash) {
+      hash.clear();
+      for (let i = 0; i < enemies.length; i++) hash.insert(enemies[i]);
+    }
     this._strafePhase += dt * 1.2;
     if (this._swordReactTimer > 0) this._swordReactTimer -= dt;
     this._focusTimer -= dt;
@@ -156,8 +166,9 @@ export class AIController extends Character {
 
     if (this._focusTimer <= 0) {
       this._focusTimer = 2;
+      const focusCandidates = hash.queryRadius(this.position, AI_FOCUS_RADIUS);
       let best = null, minHp = Infinity;
-      for (const e of enemies) {
+      for (const e of focusCandidates) {
         if (!e.alive || e.team === this.team) continue;
         if (e.health.ratio < minHp) { minHp = e.health.ratio; best = e; }
       }
@@ -167,12 +178,7 @@ export class AIController extends Character {
     if (this.health.ratio < 0.3) {
       this._state = 'retreat';
       if (this._windupTimer > 0) { this._windupTimer = 0; if (this._telegraph) this._telegraph.hide(); }
-      let nearest = null, minD = Infinity;
-      for (const e of enemies) {
-        if (!e.alive || e.team === this.team) continue;
-        const d = e.position.distanceTo(this.position);
-        if (d < minD) { minD = d; nearest = e; }
-      }
+      const nearest = hash.queryNearest(this.position, (e) => e.alive && e.team !== this.team);
       if (nearest) {
         this._vDir.subVectors(this.position, nearest.position).setY(0).normalize();
         this.setLook(Math.atan2(this._vDir.x, this._vDir.z));
@@ -188,12 +194,7 @@ export class AIController extends Character {
       this._adaptRetreat -= dt;
       this._state = 'retreat';
       if (this._windupTimer > 0) { this._windupTimer = 0; if (this._telegraph) this._telegraph.hide(); }
-      let nearest = null, minD = Infinity;
-      for (const e of enemies) {
-        if (!e.alive || e.team === this.team) continue;
-        const d = e.position.distanceTo(this.position);
-        if (d < minD) { minD = d; nearest = e; }
-      }
+      const nearest = hash.queryNearest(this.position, (e) => e.alive && e.team !== this.team);
       if (nearest) {
         this._vDir.subVectors(this.position, nearest.position).setY(0).normalize();
         this.setLook(Math.atan2(this._vDir.x, this._vDir.z));
@@ -207,11 +208,8 @@ export class AIController extends Character {
     let target = this._focusTarget && this._focusTarget.alive ? this._focusTarget : null;
     let minDist = target ? target.position.distanceTo(this.position) : Infinity;
     if (!target) {
-      for (const e of enemies) {
-        if (!e.alive || e.team === this.team) continue;
-        const d = e.position.distanceTo(this.position);
-        if (d < minDist) { minDist = d; target = e; }
-      }
+      const nearest = hash.queryNearest(this.position, (e) => e.alive && e.team !== this.team);
+      if (nearest) { target = nearest; minDist = nearest.position.distanceTo(this.position); }
     }
 
     const w = this.weapon;
@@ -280,7 +278,8 @@ export class AIController extends Character {
           } else {
             if (!this._allyBuf) this._allyBuf = [];
             this._allyBuf.length = 0;
-            for (const e of enemies) { if (e.team === this.team) this._allyBuf.push(e); }
+            const allyCandidates = hash.queryRadius(target.position, AI_ALLY_RADIUS);
+            for (const e of allyCandidates) { if (e.team === this.team) this._allyBuf.push(e); }
             const flank = this._calcFlankDir(target, this._allyBuf);
             this.setMove(flank.dot(this.forward) > 0 ? 1 : 0.3, Math.sin(this._strafePhase) * 0.4);
             this.setSprint(false);

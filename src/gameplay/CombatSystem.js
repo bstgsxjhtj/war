@@ -1,8 +1,9 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { ParticleFX } from '../render/ParticleFX.js';
 import { EV } from '../core/constants/events.js';
 import { COMBAT, ENEMY_MODS } from '../core/constants/balance.js';
 import { applyEnemyBehaviors } from './AffixBehavior.js';
+import { SpatialHash } from '../core/SpatialHash.js';
 
 // 克制矩阵：attacker.weaponClass -> victim.weaponClass -> 倍率（导出供单测引用，构造时复用同一引用）
 export const COUNTER_MATRIX = {
@@ -13,6 +14,7 @@ export const COUNTER_MATRIX = {
 };
 
 const ARROW_POOL_MAX = 64;
+const MAX_HIT_RADIUS = 2;
 
 // 战斗判定 + 池化特效 + hitstop + 克制矩阵 + AOE + 方向推力
 export class CombatSystem {
@@ -25,6 +27,8 @@ export class CombatSystem {
     this.hitstop = 0;
     this._lastAffixCrit = false;
     this._weatherEffects = null;
+    this._spatialHash = new SpatialHash(10);
+    this._spatialStamp = NaN;
     this._tmpOrigin = new THREE.Vector3();
     this._tmpTo = new THREE.Vector3();
     this._tmpAim = new THREE.Vector3();
@@ -78,6 +82,14 @@ export class CombatSystem {
   }
 
   register(c) { this.characters.push(c); if (c.setBus) c.setBus(this.bus); }
+
+  _ensureSpatial(now) {
+    if (this._spatialStamp === now) return;
+    const h = this._spatialHash;
+    h.clear();
+    for (let i = 0; i < this.characters.length; i++) h.insert(this.characters[i]);
+    this._spatialStamp = now;
+  }
   // 池化：复用 arrow 对象（mesh + pos/vel 向量），避免每次发射重复分配
   _acquireArrow() {
     const a = this._arrowPool.pop() || { mesh: null, pos: new THREE.Vector3(), vel: new THREE.Vector3() };
@@ -107,6 +119,8 @@ export class CombatSystem {
     for (const k in this._projMatCache) this._projMatCache[k].dispose();
     this._projMatCache = {};
     this.characters.length = 0;
+    this._spatialHash.clear();
+    this._spatialStamp = NaN;
   }
 
   dispose() {
@@ -245,7 +259,9 @@ export class CombatSystem {
     const knock = weapon.comboKnock ? (weapon.comboKnock[combo] ?? 1) : 1;
     const launch = weapon.comboLaunch ? weapon.comboLaunch[combo] : null;
     const heavy = combo === 2;
-    for (const c of this.characters) {
+    this._ensureSpatial(now);
+    const nearby = this._spatialHash.queryRadius(attacker.position, weapon.range);
+    for (const c of nearby) {
       if (!c.alive || c.team === attacker.team) continue;
       const dx = c.position.x - attacker.position.x;
       const dz = c.position.z - attacker.position.z;
@@ -312,7 +328,9 @@ export class CombatSystem {
   }
 
   _resolveAoE(origin, radius, damage, attacker, now) {
-    for (const c of this.characters) {
+    this._ensureSpatial(now);
+    const nearby = this._spatialHash.queryRadius(origin, radius);
+    for (const c of nearby) {
       if (!c.alive || c.team === attacker.team) continue;
       const d = c.position.distanceTo(origin);
       if (d <= radius) {
@@ -380,7 +398,9 @@ export class CombatSystem {
 
   // 全向大招：360° 范围多段伤害
   ultimateMelee(attacker, arc, range, dmg, now = 0) {
-    for (const c of this.characters) {
+    this._ensureSpatial(now);
+    const nearby = this._spatialHash.queryRadius(attacker.position, range);
+    for (const c of nearby) {
       if (!c.alive || c.team === attacker.team || c === attacker) continue;
       const dist = c.position.distanceTo(attacker.position);
       if (dist > range) continue;
@@ -401,7 +421,9 @@ export class CombatSystem {
   // 直线贯穿大招：沿 dir 的矩形走廊判定（宽 1.6）
   ultimateLine(origin, dir, length, dmg, attacker, now = 0) {
     const d = this._tmpTo.copy(dir).setY(0).normalize();
-    for (const c of this.characters) {
+    this._ensureSpatial(now);
+    const nearby = this._spatialHash.queryRadius(origin, length + 1);
+    for (const c of nearby) {
       if (!c.alive || c.team === attacker.team || c === attacker) continue;
       const rx = c.position.x - origin.x;
       const rz = c.position.z - origin.z;
@@ -420,6 +442,7 @@ export class CombatSystem {
   }
 
   update(dt, terrain, now = 0) {
+    this._ensureSpatial(now);
     for (let i = this._fxRings.length - 1; i >= 0; i--) {
       const r = this._fxRings[i];
       r.life -= dt;
@@ -445,7 +468,8 @@ export class CombatSystem {
         if (a.isSiege && this.siege) this.siege.onSiegeHit(a.pos);
         hit = true;
       }
-      for (const c of this.characters) {
+      const arrowNearby = this._spatialHash.queryRadius(a.pos, a.vel.length() * dt + MAX_HIT_RADIUS);
+      for (const c of arrowNearby) {
         if (!c.alive || c.team === a.team) continue;
         if (a.hitSet && a.hitSet.has(c)) continue;
         const cap = c.capsule;

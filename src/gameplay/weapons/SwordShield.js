@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
 import { WEAPON_STATS } from '../../core/constants/balance.js';
+import { PALETTE } from '../../core/constants/palette.js';
 
 // 剑盾：持盾格挡减伤非重锤
 export class SwordShield extends Weapon {
@@ -20,7 +21,7 @@ export class SwordShield extends Weapon {
   }
   createMesh() {
     const g = new THREE.Group();
-    const bladeMat = new THREE.MeshStandardMaterial({ color: 0xdfe7ee, metalness: 0.85, roughness: 0.25, emissive: 0x1a2030, emissiveIntensity: 0.12 });
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0xdfe7ee, metalness: 0.85, roughness: 0.25, emissive: PALETTE.WEAPON.BLADE_EMISSIVE, emissiveIntensity: PALETTE.WEAPON.BLADE_EMISSIVE_INTENSITY });
     const fullerMat = new THREE.MeshStandardMaterial({ color: 0xa0a8b0, metalness: 0.7, roughness: 0.3 });
     const shieldMat = new THREE.MeshStandardMaterial({ color: 0x2a4a8a, metalness: 0.6, roughness: 0.4, emissive: 0x081830, emissiveIntensity: 0.1 });
     const trimMat = new THREE.MeshStandardMaterial({ color: 0xd4b25a, metalness: 0.8, roughness: 0.35 });

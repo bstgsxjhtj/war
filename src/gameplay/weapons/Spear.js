@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Weapon, AttackType } from '../Weapon.js';
 import { WEAPON_STATS } from '../../core/constants/balance.js';
+import { PALETTE } from '../../core/constants/palette.js';
 
 // 长枪：长距突刺窄弧，风筝盾兵
 export class Spear extends Weapon {
@@ -22,7 +23,7 @@ export class Spear extends Weapon {
     const g = new THREE.Group();
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x6a4220, roughness: 0.7 });
     const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x4a2a10, roughness: 0.8 });
-    const metalMat = new THREE.MeshStandardMaterial({ color: 0xc9a44a, metalness: 0.8, roughness: 0.3, emissive: 0x1a1408, emissiveIntensity: 0.15 });
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0xc9a44a, metalness: 0.8, roughness: 0.3, emissive: PALETTE.WEAPON.BLADE_EMISSIVE, emissiveIntensity: 0.5 });
     const steelMat = new THREE.MeshStandardMaterial({ color: 0xb0b8c0, metalness: 0.9, roughness: 0.2 });
 
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3.2, 8), woodMat);

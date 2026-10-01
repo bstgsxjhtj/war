@@ -1,17 +1,17 @@
-import { SaveManager } from '../../src/gameplay/SaveManager.js';
+import { SaveManager, slotKey, slotBackupKey } from '../../src/gameplay/SaveManager.js';
 import { LS } from '../../src/core/constants/storage-keys.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 describe('SaveManager 版本迁移框架', () => {
   beforeEach(() => { localStorage.clear(); });
 
-  it('CURRENT_VERSION 为 2（v1→v2 演示迁移）', () => {
+  it('CURRENT_VERSION 为 3（v1→v2→v3 迁移链）', () => {
     const sm = new SaveManager();
     const d = sm.save({ mode: '战役', stage: 1 });
-    expect(d.version).toBe(2);
+    expect(d.version).toBe(3);
   });
 
-  it('v1 存档加载时自动迁移到 v2，补充 campaignCleared 字段', () => {
+  it('v1 存档加载时自动迁移到 v3，补充 campaignCleared 字段', () => {
     const v1Data = {
       version: 1, savedAt: 1000, mode: '战役', stage: 3,
       campaignCompleted: false, score: 500, kills: 20,
@@ -21,10 +21,20 @@ describe('SaveManager 版本迁移框架', () => {
     localStorage.setItem(LS.SAVEGAME, JSON.stringify(v1Data));
     const sm = new SaveManager();
     const d = sm.load();
-    expect(d.version).toBe(2);
+    expect(d.version).toBe(3);
     expect(d.stage).toBe(3);
     expect(d.score).toBe(500);
     expect(d.campaignCleared).toBeDefined();
+  });
+
+  it('v2 遗留单槽（savegame_v1）迁移进槽 0 并落盘为 v3', () => {
+    localStorage.setItem(LS.SAVEGAME, JSON.stringify({ version: 2, mode: '战役', stage: 4, score: 700 }));
+    const sm = new SaveManager();
+    const d = sm.load();
+    expect(d.version).toBe(3);
+    expect(d.slot).toBe(0);
+    expect(d.stage).toBe(4);
+    expect(JSON.parse(localStorage.getItem(slotKey(0))).stage).toBe(4);
   });
 
   it('v1 存档 campaignCompleted=true 时迁移 campaignCleared=10', () => {
@@ -32,7 +42,7 @@ describe('SaveManager 版本迁移框架', () => {
     localStorage.setItem(LS.SAVEGAME, JSON.stringify(v1Data));
     const sm = new SaveManager();
     const d = sm.load();
-    expect(d.version).toBe(2);
+    expect(d.version).toBe(3);
     expect(d.campaignCleared).toBe(10);
   });
 
@@ -60,14 +70,14 @@ describe('SaveManager 版本迁移框架', () => {
 describe('SaveManager 损坏备份恢复', () => {
   beforeEach(() => { localStorage.clear(); });
 
-  it('存档 JSON 损坏时尝试从备份恢复', () => {
-    const goodData = { version: 1, stage: 5, score: 2000, kills: 80, campaignCompleted: false };
+  it('存档 JSON 损坏时尝试从遗留备份恢复', () => {
+    const goodData = { version: 2, stage: 5, score: 2000, kills: 80, campaignCompleted: false };
     localStorage.setItem(LS.SAVEGAME_BACKUP, JSON.stringify(goodData));
     localStorage.setItem(LS.SAVEGAME, '{corrupt json!!!');
     const sm = new SaveManager();
     const d = sm.load();
     expect(d).not.toBeNull();
-    expect(d.version).toBe(2);
+    expect(d.version).toBe(3);
     expect(d.stage).toBe(5);
     expect(d.score).toBe(2000);
   });
@@ -81,20 +91,20 @@ describe('SaveManager 损坏备份恢复', () => {
   it('save 时自动备份上一次的有效存档', () => {
     const sm1 = new SaveManager();
     sm1.save({ mode: '战役', stage: 2, score: 800 });
-    const firstRaw = localStorage.getItem(LS.SAVEGAME);
+    const firstRaw = localStorage.getItem(slotKey(0));
     expect(firstRaw).toBeTruthy();
     const sm2 = new SaveManager();
     sm2.save({ mode: '战役', stage: 3, score: 1200 });
-    const backup = localStorage.getItem(LS.SAVEGAME_BACKUP);
+    const backup = localStorage.getItem(slotBackupKey(0));
     expect(backup).toBeTruthy();
     expect(JSON.parse(backup).stage).toBe(2);
   });
 
   it('save 不会备份损坏的旧数据', () => {
-    localStorage.setItem(LS.SAVEGAME, '{corrupt!!!');
+    localStorage.setItem(slotKey(0), '{corrupt!!!');
     const sm = new SaveManager();
     sm.save({ mode: '战役', stage: 1, score: 100 });
-    expect(localStorage.getItem(LS.SAVEGAME_BACKUP)).toBeNull();
+    expect(localStorage.getItem(slotBackupKey(0))).toBeNull();
   });
 
   it('备份损坏时回退到 null（不连锁崩溃）', () => {
@@ -105,12 +115,12 @@ describe('SaveManager 损坏备份恢复', () => {
   });
 
   it('reset 同时清除主存档和备份', () => {
-    localStorage.setItem(LS.SAVEGAME, JSON.stringify({ version: 1, stage: 1 }));
-    localStorage.setItem(LS.SAVEGAME_BACKUP, JSON.stringify({ version: 1, stage: 0 }));
+    localStorage.setItem(slotKey(0), JSON.stringify({ version: 3, stage: 1 }));
+    localStorage.setItem(slotBackupKey(0), JSON.stringify({ version: 3, stage: 0 }));
     const sm = new SaveManager();
     sm.reset();
-    expect(localStorage.getItem(LS.SAVEGAME)).toBeNull();
-    expect(localStorage.getItem(LS.SAVEGAME_BACKUP)).toBeNull();
+    expect(localStorage.getItem(slotKey(0))).toBeNull();
+    expect(localStorage.getItem(slotBackupKey(0))).toBeNull();
   });
 });
 
@@ -129,7 +139,7 @@ describe('存档损坏恢复 e2e（P2-7：部分字段缺失合并默认 + 旧�
     expect(d.achievements).toEqual({});
     expect(d.skillPoints).toBe(0);
     expect(d.playTime).toBe(0);
-    expect(d.version).toBe(2);
+    expect(d.version).toBe(3);
   });
 
   it('旧键中某一项损坏 JSON 时，其他旧键仍正常迁移（逐项 try/catch 容错）', () => {
