@@ -234,7 +234,9 @@ export class Player extends Character {
 
     if (this._attackQueued) {
       this._queueTime += dt;
-      if (this._queueTime > 0.25) this._attackQueued = false;
+      // 战役一#2：缓冲对齐武器冷却——重锤 1.2s 冷却下固定 0.25s 缓冲有 0.78s 死区吞输入
+      const _abuf = Math.max(0.25, this.weapon.cooldown + 0.2);
+      if (this._queueTime > _abuf) this._attackQueued = false;
       else if (this.tryAttack(combat, 1)) this._attackQueued = false;
     }
 

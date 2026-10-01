@@ -22,6 +22,10 @@
 
 **AI 闪避 i 帧**（P0-2，2026-09-28）：AIController.takeDamage 顶部 `if (this._dodgeTimer > 0) return 0;`——闪避期间完全免伤并跳过格挡/反击/ironhide/reflect 全链，与玩家 `_dodgeIFrame` 对称（AI 不复用 `_dodgeIFrame` 以免触发玩家专属的完美闪避逻辑）。
 
+**攻击缓冲对齐冷却 + 命中帧后取消后摇**（C1-2，2026-10-01）：旧 `Player.update` 攻击缓冲固定 0.25s，重锤（cooldown 1.2s）有 ~0.78s 死区吞输入；`tryAttack` 在 `_attacking` 期间一律拒绝，连招须掐点等动画全结束。修复两处：
+- `Player._attackQueued` 缓冲时长改为 `max(0.25, weapon.cooldown + 0.2)`——覆盖武器冷却期，重锤缓冲 1.4s，消除死区。
+- `Character.tryAttack` 在 `_attacking` 期间不再一律拒绝：命中帧后（`t >= weapon.hitFrame`）且 `weapon.ready` 时允许取消后摇立即接下一段连招（Hades 式提前排队）；弓/法杖（projectile）不参与取消；命中帧前段（`t < hitFrame`）仍不可取消。冷却约束保留，避免重锤连发破坏平衡。
+
 **噩梦敌人词条**（P0-1，2026-09-28；P3-3 统一抽象，2026-09-29）：`currentStage.enemyMods`（reflect/vampire/lucky/swift/ironhide）由 Spawner._applyEnemyMods 注入非 Boss 敌人（AIController.setEnemyMods），行为经 `AffixBehavior` 统一接口（`AFFIX_BEHAVIORS` 纯函数集 + `applyEnemyBehaviors` 调度器）分发，消除散落的 `_enemyMods.includes` 内联分支：
 - 受击侧（AIController.takeDamage → applyEnemyBehaviors.modifyIncoming/onTakeDamage）：ironhide 受伤 ×0.75；reflect 反弹 10% 给攻击者（_reflecting 守卫防双方递归）。
 - 攻击侧（CombatSystem._affixLeech → applyEnemyBehaviors.onDealDamage）：vampire 吸血 15%（与玩家吸血/连击/技能吸血分步 clamp maxHp，结果等价）。lucky 暴击 +15%（×2）仍由 _affixApply 内联（暴击路径独立，不经 behavior 接口）。

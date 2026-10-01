@@ -330,7 +330,7 @@
 | # | 内容 | 优先级 | 状态 |
 |---|---|---|---|
 | C1-1 | QualityGovernor/Perf 喂真实帧间隔（从 onFixed 移到 onRender）+ Time onRender 传 delta | P0 | ✅已修 |
-| C1-2 | 攻击缓冲对齐动画时长 + 命中帧后排队连击 | P0 | ⬜待做 |
+| C1-2 | 攻击缓冲对齐动画时长 + 命中帧后排队连招 | P0 | ✅已修 |
 | C1-3 | 修完美闪避只触发一次（tryDodge 重置 _perfectDodge） | P0 | ⬜待做 |
 | C1-4 | 相机/震屏缓动 dt 化 | P0 | ⬜待做 |
 | C1-5 | HUD setter 全部走 _write 脏检查 + MiniMap 降频 15Hz | P0 | ⬜待做 |

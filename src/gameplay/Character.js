@@ -426,8 +426,17 @@ export class Character {
   }
 
   tryAttack(combat, charge = 1) {
-    if (!this.alive || this._attacking || !this.weapon.ready) return false;
+    if (!this.alive) return false;
     const isBow = this.weapon.type === 'projectile';
+    // 战役一#2：命中帧后允许取消后摇接下一段连招（Hades 式提前排队），消除"掐点"断连；
+    // 仍受 weapon.ready 冷却约束，避免重锤连发破坏平衡
+    if (this._attacking) {
+      if (isBow) return false;
+      const t = 1 - Math.max(0, this._anim) / this._animDur;
+      const hitT = this.weapon.hitFrame ?? 0.35;
+      if (t < hitT) return false;
+      if (!this.weapon.ready) return false;
+    } else if (!this.weapon.ready) return false;
     if (isBow && charge < 0.15) return false;
     if (isBow && !this.stamina.consume(5)) return false;
     if (!isBow) this._softLock(combat);
