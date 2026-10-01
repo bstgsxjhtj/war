@@ -45,7 +45,7 @@ export class Renderer {
     this._quality = 'high';
 
     this.composer = new EffectComposer(this.webgl);
-    this._bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.22, 0.3, 1.05);
+    this._bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.45, 0.4, 0.85);
     this._vignette = new ShaderPass(VignetteShader);
     this.composer.addPass(new OutputPass());
     this._resizeHandler = () => this._onResize();

@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { deepDispose } from '../render/disposeUtils.js';
 
-// 黄昏氛围：fog 60-220 覆盖远山，太阳 fog:false，远山3层色阶向雾色靠拢
+// 黄昏氛围：FogExp2 指数雾（density 属性可被 WeatherSystem 动态调节），太阳 fog:false，远山3层色阶向雾色靠拢
 export class Scene {
   constructor() {
     this.scene = new THREE.Scene();
     const fogColor = 0x8a7458;
     this.scene.background = new THREE.Color(fogColor);
-    this.scene.fog = new THREE.Fog(fogColor, 40, 200);
+    this.scene.fog = new THREE.FogExp2(fogColor, 0.008);
 
     const hemi = new THREE.HemisphereLight(0xffd9a8, 0x5a4a36, 0.65);
     this.scene.add(hemi);

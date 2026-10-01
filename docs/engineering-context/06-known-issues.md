@@ -337,7 +337,7 @@
 | C1-6 | 菜单暂停闸门（UIStack pausesGame + installUIStackEscape 幂等修复） | P0 | ✅已修 |
 | C1-7 | 会话闭环：退出到主菜单 + 结算屏三键（重试/换模式/回主菜单） | P0 | ✅已修 |
 | C1-8 | 角色纹理/材质共享缓存消除换波尖峰 | P0 | ✅已修 |
-| C2 | 画面调通（雾效/Bloom/水面/打击特效）+ 内容可达（模式/进度入口） | P1 | ⬜待做 |
+| C2 | 画面调通（雾效/Bloom/水面/打击特效）+ 内容可达（模式/进度入口） | P1 | ✅已修 |
 | C3 | 画面提质（Q版比例/色调/刀光）+ 深度优化（多档存档/空间哈希/UI令牌） | P2 | ⬜待做 |
 
 ### 第十四轮回归测试
@@ -377,3 +377,20 @@
 接线：`killFeed/notificationSystem/miniMapPing/fullMapPanel.update(dt)` 加入主循环。
 
 测试总量：1181 → 1239（+58），118 个测试文件全绿。
+
+---
+
+### 第十六轮：战役二 画面调通 + 内容可达（2026-10-01）
+
+渲染管线审查发现 6 项缺陷，修复后画面/可达性对齐成熟游戏基线：
+
+| # | 修复 | 根因 | 状态 |
+|---|---|---|---|
+| C2-9 | Fog→FogExp2 | `THREE.Fog(near,far)` 无 density 属性，WeatherSystem 设 `fog.density` 全部静默失败（雨/夜/雪/暴雾无变化） | ✅已修 |
+| C2-10 | 训练场模式注册 | TrainingMode 类存在但未加入 MODE_ORDER/createMode，玩家无法选到此模式 | ✅已修 |
+| C2-11 | Bloom 调强 | strength 0.22/threshold 1.05 过弱，武器/火光几乎无辉光 | ✅已修 |
+| C2-12 | 水面 Fresnel + 反射色 | 水面无视角依赖反射（无 Fresnel）；Reflector 底色 0x4a4038 暖棕不自然 | ✅已修 |
+| C2-13 | 武器拖尾顶点色渐变 | LineBasicMaterial 单色无渐变，拖尾头尾同色无衰减 | ✅已修 |
+| C2-14 | 环境死代码激活 | `_ruins()`/`_landmarks()` 定义但 `_build()`/`_buildFromLayout()` 从不调用，废墟/地标不出现 | ✅已修 |
+
+测试：gameModes.test.js 适配 8 模式（+1 TrainingMode import/createMode 断言、nextModeName 环序含训练场）。测试总量 1239 不变，118 个测试文件全绿。

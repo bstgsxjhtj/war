@@ -10,17 +10,20 @@ export class WeaponTrail {
   attach(weaponMesh, color = 0xfff0a0) {
     if (weaponMesh.userData._trail) return weaponMesh.userData._trail;
     const positions = new Float32Array(this._maxSeg * 2 * 3);
+    const colors = new Float32Array(this._maxSeg * 2 * 3);
+    const baseColor = new THREE.Color(color);
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     const material = new THREE.LineBasicMaterial({
-      color, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false
+      vertexColors: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false
     });
     const line = new THREE.LineSegments(geometry, material);
     line.frustumCulled = false;
     this.scene.add(line);
     const history = [];
     for (let i = 0; i < this._maxSeg; i++) history.push({ tail: new THREE.Vector3(), tip: new THREE.Vector3() });
-    const trail = { line, positions, history, head: 0, count: 0, active: false, color, weaponMesh };
+    const trail = { line, positions, colors, baseColor, history, head: 0, count: 0, active: false, color, weaponMesh };
     weaponMesh.userData._trail = trail;
     this._trails.push(trail);
     return trail;
@@ -83,15 +86,20 @@ export class WeaponTrail {
         slot.tip.copy(tmpP.set(0, 0, 0.8).applyMatrix4(mw));
       }
       const segs = Math.min(trail.count - 1, this._maxSeg - 1);
+      const bc = trail.baseColor;
       for (let i = 0; i < segs; i++) {
         const a = trail.history[(trail.head + i) % this._maxSeg], b = trail.history[(trail.head + i + 1) % this._maxSeg];
         const idx = i * 6;
         trail.positions[idx] = a.tail.x; trail.positions[idx+1] = a.tail.y; trail.positions[idx+2] = a.tail.z;
         trail.positions[idx+3] = b.tail.x; trail.positions[idx+4] = b.tail.y; trail.positions[idx+5] = b.tail.z;
+        const fadeA = 1 - i / segs, fadeB = 1 - (i + 1) / segs;
+        trail.colors[idx]   = bc.r * fadeA; trail.colors[idx+1] = bc.g * fadeA; trail.colors[idx+2] = bc.b * fadeA;
+        trail.colors[idx+3] = bc.r * fadeB; trail.colors[idx+4] = bc.g * fadeB; trail.colors[idx+5] = bc.b * fadeB;
       }
       if (segs > 0) {
         trail.line.geometry.setDrawRange(0, segs * 2);
         trail.line.geometry.attributes.position.needsUpdate = true;
+        trail.line.geometry.attributes.color.needsUpdate = true;
       } else trail.line.geometry.setDrawRange(0, 0);
     }
   }

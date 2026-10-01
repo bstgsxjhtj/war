@@ -3,13 +3,14 @@ import { MODE_ORDER, MODE_DESC, createMode, nextModeName } from '../../src/gamep
 import { Deathmatch, Domination, SiegeMode } from '../../src/gameplay/GameMode.js';
 import { WaveMode } from '../../src/gameplay/WaveMode.js';
 import { BattlefieldMode } from '../../src/gameplay/BattlefieldMode.js';
+import { TrainingMode } from '../../src/gameplay/TrainingMode.js';
 
 const bus = { on: () => {}, emit: () => {} };
 const campaign = { name: '战役' };
 
 describe('gameModes 玩法模式注册表', () => {
-  it('MODE_ORDER 覆盖全部 7 种玩法且顺序固定', () => {
-    expect(MODE_ORDER).toEqual(['死斗', '据点', '攻城', '波次', '战场', '无尽', '战役']);
+  it('MODE_ORDER 覆盖全部 8 种玩法且顺序固定', () => {
+    expect(MODE_ORDER).toEqual(['死斗', '据点', '攻城', '波次', '战场', '无尽', '战役', '训练场']);
   });
 
   it('每种玩法都有说明文案', () => {
@@ -24,6 +25,7 @@ describe('gameModes 玩法模式注册表', () => {
     expect(createMode('波次', { bus, campaign })).toBeInstanceOf(WaveMode);
     expect(createMode('无尽', { bus, campaign })).toBeInstanceOf(WaveMode);
     expect(createMode('战役', { bus, campaign })).toBe(campaign);
+    expect(createMode('训练场', { bus, campaign })).toBeInstanceOf(TrainingMode);
   });
 
   it('无尽标记 endless，波次不标记', () => {
@@ -31,11 +33,12 @@ describe('gameModes 玩法模式注册表', () => {
     expect(createMode('波次', { bus, campaign }).endless).toBe(false);
   });
 
-  it('nextModeName 按环顺序前进，战役后回到死斗', () => {
+  it('nextModeName 按环顺序前进，训练场后回到死斗', () => {
     expect(nextModeName('死斗')).toBe('据点');
     expect(nextModeName('战场')).toBe('无尽');
     expect(nextModeName('无尽')).toBe('战役');
-    expect(nextModeName('战役')).toBe('死斗');
+    expect(nextModeName('战役')).toBe('训练场');
+    expect(nextModeName('训练场')).toBe('死斗');
   });
 
   it('nextModeName 对未知模式回退到首个模式', () => {

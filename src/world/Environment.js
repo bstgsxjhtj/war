@@ -42,6 +42,8 @@ export class Environment {
     this._bloodstains(10);
     this._smokeColumns(4);
     this._grass(5000);
+    this._ruins();
+    this._landmarks();
   }
 
   _buildFromLayout(layout) {
@@ -55,6 +57,8 @@ export class Environment {
     this._bloodstains(8);
     this._smokeColumns(3);
     this._grass(4000);
+    this._ruins();
+    this._landmarks();
   }
 
   _scatterTrees(n) {

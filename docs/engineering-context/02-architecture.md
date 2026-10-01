@@ -186,3 +186,16 @@ ESM 依赖图必须保持无环（DAG）。
 **接线**（`main_entry.js`）：实例化后，`killFeed/notificationSystem/miniMapPing/fullMapPanel` 的 `update(dt)` 加入主循环 `onFixed`，紧随 `miniMap.update(dt)` 之后。`fullMapPanel.setRefs(player, ais, camera)` 每帧注入引用（纯数据读取，不导入类）。`statsPanel.toggle` 包装为打开时先 `saveOrch.capture()` 刷新数据。`screenshotMode` 注入 `canvas` + `bus`。
 
 **新事件常量**（`events.js`）：`UI_NOTIFY`/`UI_TOOLTIP`/`KILLFEED_EVENT`/`MAP_PING`/`SCREENSHOT`。
+
+## 18. 战役二：画面调通 + 内容可达（2026-10-01）
+
+> 对标成熟游戏渲染管线审查后修复 6 项画面/可达性缺陷。所有修改落在既有文件，无新增模块。
+
+| # | 修复 | 文件 | 内容 |
+|---|---|---|---|
+| C2-9 | 雾效修复 | `engine/Scene.js` | `THREE.Fog(near,far)` → `THREE.FogExp2(color, 0.008)`。线性 Fog 无 density 属性，WeatherSystem 设 `fog.density` 全部静默失败；改 FogExp2 后雨/夜/雪/暴雾密度（0.012/0.006/0.015/0.018/0.005）生效。 |
+| C2-10 | 训练场注册 | `gameplay/gameModes.js` | TrainingMode 加入 MODE_ORDER（第 8 项）、MODE_DESC、createMode switch。此前 TrainingMode 类存在但无注册，玩家无法选到此模式。 |
+| C2-11 | Bloom 调强 | `engine/Renderer.js` | UnrealBloomPass strength 0.22→0.45、radius 0.3→0.4、threshold 1.05→0.85。原值过弱，武器/火光几乎无辉光。 |
+| C2-12 | 水面 Fresnel | `world/Water.js` | 顶点着色器加 vNormal/vViewDir varying；片元着色器 `fres=pow(1.0-abs(dot(vNormal,vViewDir)),3.0)` 视角依赖反射，与 uSky(0x9ab8d0) 混合。Reflector 颜色 0x4a4038(暖棕)→0x8899aa(天蓝) 修正反射底色。 |
+| C2-13 | 武器拖尾顶点色渐变 | `render/WeaponTrail.js` | attach() 加 colors Float32Array + baseColor + `vertexColors:true` 材质；update() 内循环按段龄写色：头部（i=0）= full baseColor，尾部（i=segs-1）→ 黑。fadeA=1-i/segs, fadeB=1-(i+1)/segs。此前单色 LineBasicMaterial 无渐变。 |
+| C2-14 | 环境死代码激活 | `world/Environment.js` | `_ruins()` + `_landmarks()` 原为死代码（定义但 `_build()`/`_buildFromLayout()` 从不调用）。现两处构建末尾均调用，废墟/地标实际出现在场景中。 |
