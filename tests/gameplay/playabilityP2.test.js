@@ -191,3 +191,225 @@ describe('P2-C resolveMelee 命中部位集成', () => {
     expect(dmg).toBeCloseTo(10 * 2.5);
   });
 });
+
+describe('P2 补充：Duo 互斥与边界', () => {
+  let st;
+  beforeEach(() => { localStorage.clear(); st = new SkillTree(); });
+
+  it('Duo warbringer 与 warden 因 berserk/guardian 互斥而不可同点', () => {
+    st.points = 30;
+    st.skills.power.level = 3;
+    st.skills.mastery.level = 3;
+    st.skills.vigor.level = 3;
+    st.branches.berserk.level = 1;
+    st.branches.critical.level = 1;
+    expect(st.upgradeBranch('warbringer')).toBe(true);
+    expect(st.upgradeBranch('guardian')).toBe(false); // guardian 与 berserk 互斥
+    expect(st.upgradeBranch('warden')).toBe(false); // warden 需 guardian，无法解锁
+  });
+
+  it('Duo 节点 points 不足时失败（cost 5）', () => {
+    st.points = 3;
+    st.branches.berserk.level = 1;
+    st.branches.critical.level = 1;
+    expect(st.upgradeBranch('warbringer')).toBe(false);
+  });
+
+  it('Duo 节点 max:1 不可重复升级', () => {
+    st.points = 20;
+    st.branches.berserk.level = 1;
+    st.branches.critical.level = 1;
+    expect(st.upgradeBranch('warbringer')).toBe(true);
+    expect(st.upgradeBranch('warbringer')).toBe(false);
+  });
+
+  it('Duo warbringer 缺 critical 前置时失败', () => {
+    st.points = 20;
+    st.branches.berserk.level = 1;
+    expect(st.upgradeBranch('warbringer')).toBe(false);
+  });
+});
+
+describe('P2 补充：局内外桥接边界', () => {
+  it('runBuffModifiers 多分支同时生效叠加', () => {
+    const st = new SkillTree();
+    st.branches.critical.level = 1;
+    st.branches.berserk.level = 1;
+    st.branches.lifesteal.level = 1;
+    const m = st.runBuffModifiers();
+    expect(m.crit.weightMul).toBeCloseTo(1.5);
+    expect(m.damage.weightMul).toBeCloseTo(1.3);
+    expect(m.lifesteal.weightMul).toBe(1.5);
+  });
+
+  it('runBuffModifiers Tier3 warlord 提升 execdmg 权重 ×2', () => {
+    const st = new SkillTree();
+    st.branches.warlord.level = 1;
+    expect(st.runBuffModifiers().execdmg.weightMul).toBe(2);
+  });
+
+  it('RunBuffs.setModifiers(null) 安全清空', () => {
+    const rb = new RunBuffs(0);
+    rb.setModifiers({ crit: { weightMul: 10 } });
+    rb.setModifiers(null);
+    expect(rb._modifiers).toEqual({});
+  });
+
+  it('RunBuffs.setModifiers 未调时 roll3 正常返回 3 项', () => {
+    const rb = new RunBuffs(0);
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const picks = rb.roll3();
+    expect(picks).toHaveLength(3);
+  });
+});
+
+describe('P2 补充：weaponMods 边界', () => {
+  let st;
+  beforeEach(() => { localStorage.clear(); st = new SkillTree(); });
+
+  it('getWeaponMod 未选返回 null', () => {
+    expect(st.getWeaponMod(0)).toBeNull();
+    expect(st.getWeaponMod(1)).toBeNull();
+  });
+
+  it('upgradeWeaponMod 武器未 Lv3 失败', () => {
+    st.points = 10;
+    st.weaponLevel[0] = 2;
+    expect(st.upgradeWeaponMod(0, 'bleed')).toBe(false);
+  });
+
+  it('upgradeWeaponMod 点数不足失败（需 2 点）', () => {
+    st.points = 1;
+    st.weaponLevel[0] = 3;
+    expect(st.upgradeWeaponMod(0, 'bleed')).toBe(false);
+  });
+
+  it('upgradeWeaponMod 已选不可改', () => {
+    st.points = 10;
+    st.weaponLevel[0] = 3;
+    expect(st.upgradeWeaponMod(0, 'bleed')).toBe(true);
+    expect(st.upgradeWeaponMod(0, 'range')).toBe(false);
+    expect(st.getWeaponMod(0)).toBe('bleed');
+  });
+
+  it('weaponMods 多武器独立', () => {
+    st.points = 10;
+    st.weaponLevel[0] = 3;
+    st.weaponLevel[1] = 3;
+    expect(st.upgradeWeaponMod(0, 'bleed')).toBe(true);
+    expect(st.upgradeWeaponMod(1, 'pierce')).toBe(true);
+    expect(st.getWeaponMod(0)).toBe('bleed');
+    expect(st.getWeaponMod(1)).toBe('pierce');
+  });
+});
+
+describe('P2 补充：Affixes equip variable slot 边界', () => {
+  it('0 槽装备拒绝所有 slot', () => {
+    const a = new Affixes();
+    a.grant('锋锐', 1);
+    const empty = { affixes: [] };
+    expect(a.equip(empty, 0, 0)).toBe(false);
+  });
+
+  it('护甲 1 槽 slot 0 成功', () => {
+    const a = new Affixes();
+    a.grant('锋锐', 1);
+    const armor = { affixes: [null] };
+    expect(a.equip(armor, 0, 0)).toBe(true);
+    expect(armor.affixes[0]).toEqual({ type: '锋锐', tier: 1, greater: false });
+  });
+
+  it('武器 2 槽 slot 0/1 均成功', () => {
+    const a = new Affixes();
+    a.grant('锋锐', 1);
+    a.grant('吸血', 0);
+    const weapon = { affixes: [null, null] };
+    expect(a.equip(weapon, 0, 0)).toBe(true);
+    expect(a.equip(weapon, 1, 0)).toBe(true);
+    expect(weapon.affixes[0].type).toBe('锋锐');
+    expect(weapon.affixes[1].type).toBe('吸血');
+  });
+});
+
+describe('P2 补充：命中部位边界值', () => {
+  const cs = Object.create(CombatSystem.prototype);
+
+  it('高度差恰好 0.5 判身（不 >0.5）', () => {
+    expect(cs._hitPartMul({ position: { y: 0 } }, { position: { y: -0.2 } })).toBe(1.0);
+  });
+
+  it('高度差 0.6 判头（>0.5）', () => {
+    expect(cs._hitPartMul({ position: { y: 0.1 } }, { position: { y: -0.2 } })).toBe(1.5);
+  });
+
+  it('高度差 -0.7 判腿（<-0.5）', () => {
+    expect(cs._hitPartMul({ position: { y: -0.8 } }, { position: { y: 0.2 } })).toBe(0.8);
+  });
+
+  it('高度差 -0.1 判身（>-0.5）', () => {
+    expect(cs._hitPartMul({ position: { y: -0.2 } }, { position: { y: 0.2 } })).toBe(1.0);
+  });
+
+  it('无 position 默认判身 ×1.0', () => {
+    expect(cs._hitPartMul({}, {})).toBe(1.0);
+    expect(cs._hitPartMul(null, null)).toBe(1.0);
+  });
+});
+
+describe('P2 补充：动态克制边界', () => {
+  const cs = Object.create(CombatSystem.prototype);
+  cs._counterMatrix = COUNTER_MATRIX;
+
+  it('_counterBonusTimer = 0 时 dynamicMul = 1', () => {
+    const r = cs._counterMulFull(makeW('HEAVY'), makeW('SHIELD'), { _counterBonusTimer: 0 }, {});
+    expect(r.dynamicMul).toBe(1);
+    expect(r.damageMul).toBe(1.8);
+  });
+
+  it('_counterBonusTimer 负数时 dynamicMul = 1（安全）', () => {
+    const r = cs._counterMulFull(makeW('HEAVY'), makeW('SHIELD'), { _counterBonusTimer: -1 }, {});
+    expect(r.dynamicMul).toBe(1);
+  });
+
+  it('attacker 无 _counterBonusTimer 字段时 dynamicMul = 1（向后兼容）', () => {
+    const r = cs._counterMulFull(makeW('HEAVY'), makeW('SHIELD'), {}, {});
+    expect(r.dynamicMul).toBe(1);
+  });
+
+  it('动态克制与非克制武器组合：weaponMul=1 × dynamicMul=1.5 → 1.5', () => {
+    const r = cs._counterMulFull(makeW('SWORD'), makeW('SWORD'), { _counterBonusTimer: 1 }, {});
+    expect(r.weaponMul).toBe(1);
+    expect(r.dynamicMul).toBe(1.5);
+    expect(r.damageMul).toBeCloseTo(1.5);
+  });
+});
+
+describe('P2 补充：resolveMelee 低打高（腿部位 ×0.8）', () => {
+  function mockChar(team, x = 0, z = 0, opts = {}) {
+    return {
+      alive: true, team,
+      position: { x, y: 0, z, distanceTo() { return 1; }, clone() { return { ...this, setY() { return this; } }; }, copy() { return this; } },
+      forward: { x: 0, z: 1 },
+      weapon: { weaponClass: 'SWORD', damage: 10, range: 5, arc: Math.PI, comboDamage: null, comboKnock: null, comboLaunch: null, affixes: [null, null], name: '剑' },
+      health: { alive: true, hp: 100, maxHp: 100 },
+      takeDamage: vi.fn(),
+      _curVel: { addScaledVector() {} },
+      vy: 0, _launchRot: 0, _hurt: 0,
+      ...opts
+    };
+  }
+  function mkCS() {
+    return new CombatSystem({ add() {}, remove() {} }, { emit: vi.fn(), on: vi.fn() });
+  }
+
+  it('attacker 低于 victim 时伤害 ×0.8（腿部位）', () => {
+    const cs = mkCS();
+    const attacker = mockChar(0, 0, 0, { position: { x: 0, y: -0.8, z: 0, distanceTo() { return 1; }, clone() { return { ...this, setY() { return this; } }; }, copy() { return this; } } });
+    const victim = mockChar(1, 0, 2, { position: { x: 0, y: 0.2, z: 2, distanceTo() { return 1; }, clone() { return { ...this, setY() { return this; } }; }, copy() { return this; } } });
+    victim.forward = { x: 0, z: -1 };
+    cs.characters = [attacker, victim];
+    cs.resolveMelee(attacker, attacker.weapon, 0, 0);
+    const dmg = victim.takeDamage.mock.calls[0][0];
+    expect(dmg).toBeCloseTo(10 * 0.8);
+  });
+});
