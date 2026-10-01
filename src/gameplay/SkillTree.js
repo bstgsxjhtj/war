@@ -34,7 +34,12 @@ export class SkillTree {
       // P1-A Keystone 机制改写：改变核心机制而非数值（类 PoE Keystone）
       colossus:    { level: 0, max: 1, name: '巨像',     desc: '【改写】禁闪避，减伤+40%，移速-15%', cost: 4, req: ['power>=3','guardian>=1'], keystone: true },
       overload:    { level: 0, max: 1, name: '过载',     desc: '【改写】耐力上限-50%，法伤+60%',     cost: 4, req: ['mastery>=3','frenzy>=1'], keystone: true, reqClass: 'mage' },
+      // P2-A Duo 组合解锁：跨系双前置同时满足→解锁第三层组合技（类 Hades Duo Boon）
+      warbringer:  { level: 0, max: 1, name: '战神',     desc: '伤害+30%+暴击+15%（Duo）',  cost: 5, req: ['berserk>=1','critical>=1'], duo: true },
+      warden:      { level: 0, max: 1, name: '守护者',   desc: '减伤+30%+回血+8（Duo）',    cost: 5, req: ['guardian>=1','regen>=1'],   duo: true },
+      phantom:     { level: 0, max: 1, name: '幻影',     desc: '移速+15%+闪避+15%（Duo）', cost: 5, req: ['swift>=1','evade>=1'],     duo: true },
     };
+    this.weaponMods = {}; // P2-B 武器形态改造（Lv3 二选一，类 Daedalus Hammer）
     this._classType = null;
   }
 
@@ -85,6 +90,30 @@ export class SkillTree {
     return -1;
   }
 
+  // P2-B 武器形态改造：Lv3 时二选一改变攻击形态（类 Daedalus Hammer）
+  upgradeWeaponMod(idx, modKey) {
+    if (this.weaponLevel[idx] < 3) return false;
+    if (this.weaponMods[idx]) return false;
+    if (this.points < 2) return false;
+    this.weaponMods[idx] = modKey;
+    this.points -= 2;
+    return true;
+  }
+
+  getWeaponMod(idx) { return this.weaponMods[idx] || null; }
+
+  // P2-A 局内外桥接：局外分支提升对应 RunBuffs 升级的出现权重（meta↔run 耦合，本工程独有）
+  runBuffModifiers() {
+    const m = {};
+    if (this.branches.berserk.level > 0) m.damage = { weightMul: 1 + 0.3 * this.branches.berserk.level };
+    if (this.branches.critical.level > 0) m.crit = { weightMul: 1 + 0.5 * this.branches.critical.level };
+    if (this.branches.lifesteal.level > 0) m.lifesteal = { weightMul: 1.5 };
+    if (this.branches.regen.level > 0) m.regen = { weightMul: 1.5 };
+    if (this.branches.warlord.level > 0) m.execdmg = { weightMul: 2 };
+    if (this.branches.tempest.level > 0) m.dodgecd = { weightMul: 2 };
+    return m;
+  }
+
   setClassType(type) { this._classType = type; }
 
   reorderSkill(from, to) {
@@ -122,6 +151,7 @@ export class SkillTree {
     for (const s of Object.values(this.skills)) { this.points += s.level * s.cost; s.level = 0; }
     for (let i = 0; i < this.weaponOrder.length; i++) { this.points += (this.weaponLevel[i] - 1) * 2; this.weaponLevel[i] = 1; }
     for (const b of Object.values(this.branches)) { this.points += b.level * b.cost; b.level = 0; }
+    for (const [k, v] of Object.entries(this.weaponMods)) { if (v) { this.points += 2; delete this.weaponMods[k]; } }
   }
 
   get damageMul() { return 1 + this.skills.power.level * 0.1; }
@@ -157,6 +187,13 @@ export class SkillTree {
   get keystoneColossusSpeed() { return -0.15 * this.branches.colossus.level; }
   get keystoneOverloadStamina() { return -0.50 * this.branches.overload.level; }
   get keystoneOverloadSpell() { return 0.60 * this.branches.overload.level; }
+  // P2-A Duo 组合解锁 getter（跨系双前置满足后解锁，类 Hades Duo Boon）
+  get duoWarbringerDmg() { return 0.30 * this.branches.warbringer.level; }
+  get duoWarbringerCrit() { return 0.15 * this.branches.warbringer.level; }
+  get duoWardenDef() { return 0.30 * this.branches.warden.level; }
+  get duoWardenRegen() { return 8 * this.branches.warden.level; }
+  get duoPhantomSpeed() { return 0.15 * this.branches.phantom.level; }
+  get duoPhantomDodge() { return 0.15 * this.branches.phantom.level; }
 
   totalMul(weaponIdx) {
     return this.damageMul * this.masteryMul * this.weaponDamageMul(weaponIdx);
@@ -170,6 +207,7 @@ export class SkillTree {
       skillOrder: [...this.skillOrder],
       weaponOrder: [...this.weaponOrder],
       branches: Object.fromEntries(Object.entries(this.branches).map(([k, v]) => [k, v.level])),
+      weaponMods: { ...this.weaponMods },
     };
   }
 
@@ -193,6 +231,7 @@ export class SkillTree {
     if (Array.isArray(data.skillOrder) && data.skillOrder.length === 4) this.skillOrder = data.skillOrder;
     if (Array.isArray(data.weaponOrder) && data.weaponOrder.length === this.weaponNames.length) this.weaponOrder = data.weaponOrder;
     for (const [k, v] of Object.entries(data.branches || {})) if (this.branches[k] && typeof v === 'number') this.branches[k].level = Math.max(0, Math.min(this.branches[k].max, v));
+    if (data.weaponMods) this.weaponMods = { ...data.weaponMods };
   }
 
   hasProfile(name) { return !!localStorage.getItem(LS.SKILLTREE_PROFILE_PREFIX + name); }

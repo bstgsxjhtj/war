@@ -37,7 +37,7 @@ export class Affixes {
     return true;
   }
   equip(weapon, slot, invIdx) {
-    if (!weapon || !weapon.affixes || slot < 0 || slot > 1) return false;
+    if (!weapon || !weapon.affixes || slot < 0 || slot >= weapon.affixes.length) return false;
     if (!this.inventory[invIdx]) return false;
     const oldAffix = weapon.affixes[slot];
     const newAffix = this.inventory.splice(invIdx, 1)[0];

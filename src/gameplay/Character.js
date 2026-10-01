@@ -73,7 +73,7 @@ export class Character {
     // 第三轮：锁定/格挡/完美闪避/击飞
     this.lockTarget = null;
     this._blocking = false; this._perfectWindow = 0;
-    this._perfectDodge = false; this._perfectBuff = 0;
+    this._perfectDodge = false; this._perfectBuff = 0; this._counterBonusTimer = 0;
     this._launchRot = 0;
     this._inWater = false;
     this._posture = 0; this._postureBroken = 0; this._postureRegenDelay = 0;
@@ -368,7 +368,7 @@ export class Character {
     this._comboCount = 0; this._anim = 0; this._attacking = false; this._hurt = 0; this._deadTimer = 0;
     this._dodgeTimer = 0; this._dodgeIFrame = 0; this._iFrame = 0; this._stun = 0;
     this._dodgeOverride = 0;
-    this._blocking = false; this._perfectWindow = 0; this._perfectDodge = false; this._perfectBuff = 0; this._launchRot = 0;
+    this._blocking = false; this._perfectWindow = 0; this._perfectDodge = false; this._perfectBuff = 0; this._counterBonusTimer = 0; this._launchRot = 0;
     this._updateHpBar();
   }
 
@@ -520,6 +520,7 @@ export class Character {
             attacker._wasPerfectBlocked = true;
             attacker._addPosture?.(POSTURE.PARRY_DEALT);
             this._perfectRebound = true; // 弹反标记：下次反击触发连击 perfect 加成
+            this._counterBonusTimer = 2; // P2-C 动态克制：2s 内反击克制 ×1.5（复用完美格挡状态）
             this.stamina.consume(0);
             this.addRage(15);
             if (this._bus) this._bus.emit(EV.FX_PERFECTBLOCK, { char: this });
@@ -660,6 +661,7 @@ export class Character {
     if (this._dodgeOverride > 0) this._dodgeOverride -= dt;
     if (this._perfectWindow > 0) this._perfectWindow -= dt;
     if (this._perfectBuff > 0) this._perfectBuff -= dt;
+    if (this._counterBonusTimer > 0) this._counterBonusTimer -= dt;
   }
 
   _tickDeath(dt) {

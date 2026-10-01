@@ -475,3 +475,15 @@
 | P1-C | 相克多维化 | CombatSystem.js | DAMAGE_ARMOR_TABLE（cut/pierce/blunt × light/medium/heavy，类 M&B）+ WEAPON_DAMAGE_TYPE 映射 + CLASS_COUNTER 职业三角（类 FE）+ _counterMulFull 多元输出 {damageMul, postureMul} + COUNTER_TOTAL_MAX=2.5 上限；resolveMelee 集成，向后兼容无 armorType/classType 单位 |
 
 测试总量：1302 → 1337（+35），124 个测试文件全绿。
+
+### 第二十轮：可玩性能力再深化（2026-10-01）
+
+> 第二轮圆桌会议（圆桌3 差距 + 圆桌4 建议），基于第一轮 P1 已实现，落地 6 项未覆盖的高 ROI 深化方向。
+
+| # | 能力 | 文件 | 说明 |
+|---|---|---|---|
+| P2-A | 科技树续深 | SkillTree.js + RunBuffs.js | Duo 组合解锁（warbringer/warden/phantom 跨系双前置，类 Hades Duo Boon）+ 局内外桥接（runBuffModifiers 影响局内权重，本工程独有 meta↔run 耦合）+ 武器形态改造（weaponMods Lv3 二选一，类 Daedalus Hammer） |
+| P2-B | 装备续深 | Affixes.js | equip slot 检查改为 variable length，支持护甲 1 槽与武器 2 槽统一接口（全身词条协同铺路） |
+| P2-C | 相克续深 | CombatSystem.js + Character.js | 命中部位乘区（_hitPartMul 头/身/腿 ×1.5/1.0/0.8，类 M&B）+ 动态克制（完美格挡后 _counterBonusTimer 2s 克制 ×1.5，复用已有状态零结构改动）+ _counterMulFull 返回 dynamicMul |
+
+测试总量：1337 → 1353（+16），125 个测试文件全绿。

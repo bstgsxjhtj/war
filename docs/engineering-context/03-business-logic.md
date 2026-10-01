@@ -112,3 +112,18 @@
 - **职业相克第三维**：`CLASS_COUNTER`（assassin>mage>warrior>assassin，×1.3，类 FE 三角）。
 - **多元输出**：`_counterMulFull` 返回 `{damageMul, postureMul, weaponMul, dmgTypeMul, classMul}`，三表正交相乘设上限 `COUNTER_TOTAL_MAX=2.5`；postureMul 接已有架势条（克制时削韧加成）。
 - **向后兼容**：victim 无 armorType/classType 时 dmgTypeMul=classMul=1，等价原 `_counterMul`；`_counterMul` 保留供 _emitHit 显示武器克制；resolveMelee 改用 `_counterMulFull.damageMul` 算伤害、`.weaponMul` 判 countered 显示。
+
+### 6.4 科技树续深（P2-A）
+
+- **Duo 组合解锁**：新增 3 个 Duo 节点（warbringer/warden/phantom），需跨系双前置同时满足（如 warbringer 需 berserk≥1 + critical≥1），把"二选一互斥"升级为"互斥+组合解锁第三层"（类 Hades Duo Boon）。
+- **局内外桥接**：SkillTree 新增 `runBuffModifiers()` 返回局外分支对应的局内 RunBuffs 升级权重修正（如 critical 分支→crit 升级 weightMul 提升）；RunBuffs 新增 `setModifiers()`/`_modifiers`，roll3 应用 weightMul，打通 meta↔run 耦合（本工程独有，9 款标杆都没有）。
+- **武器形态改造**：SkillTree 新增 `weaponMods` 字段 + `upgradeWeaponMod(idx, modKey)`（需武器 Lv3 + 2 点，二选一改变攻击形态，类 Daedalus Hammer），serialize/restore 持久化、reset 退款。
+
+### 6.5 装备续深（P2-B）
+
+- **护甲词缀槽**：Affixes.equip 的 slot 检查从 `slot > 1` 改为 `slot >= weapon.affixes.length`，支持护甲 1 槽（affixes=[null]）与武器 2 槽统一接口，为全身词条协同铺路。
+
+### 6.6 相克续深（P2-C）
+
+- **命中部位乘区**：`_hitPartMul(attacker, victim)` 基于高度差判头/身/腿（×1.5/1.0/0.8，类 M&B），resolveMelee 集成 `dmg *= partMul`，与背刺/暴击正交叠加。
+- **动态克制**：`_counterMulFull` 新增 `dynamicMul`（attacker._counterBonusTimer > 0 时 ×1.5），复用已有完美格挡状态——Character 完美格挡分支设 `_counterBonusTimer = 2`，`_tickTimers` 递减，使静态克制变动态博弈（零结构改动）。

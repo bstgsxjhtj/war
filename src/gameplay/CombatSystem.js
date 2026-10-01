@@ -180,14 +180,25 @@ export class CombatSystem {
     return CLASS_COUNTER[ac]?.[vc] ?? 1;
   }
 
+  // P2-C 命中部位乘区（头/身/腿 ×1.5/1.0/0.8，类 M&B 头/身/腿独立乘区）
+  _hitPartMul(attacker, victim) {
+    const aY = (attacker?.position?.y || 0) + 1.5;
+    const vY = (victim?.position?.y || 0) + 1.2;
+    if (aY > vY + 0.5) return 1.5; // 高打低→头
+    if (aY < vY - 0.5) return 0.8; // 低打高→腿
+    return 1.0; // 平→身
+  }
+
   // P1-C：多维克制合成，返回 {damageMul, postureMul}（克制时削韧加成，接已有架势条）
   _counterMulFull(atkW, vicW, attacker, victim) {
     const weaponMul = this._counterMul(atkW, vicW, attacker);
     const dmgTypeMul = this._damageTypeMul(atkW, victim);
     const classMul = this._classCounterMul(attacker, victim);
-    const damageMul = Math.min(COUNTER_TOTAL_MAX, weaponMul * dmgTypeMul * classMul);
+    // P2-C 动态克制：完美格挡后 _counterBonusTimer > 0 时克制 ×1.5（复用已有完美格挡状态，零结构改动）
+    const dynamicMul = attacker?._counterBonusTimer > 0 ? 1.5 : 1;
+    const damageMul = Math.min(COUNTER_TOTAL_MAX, weaponMul * dmgTypeMul * classMul * dynamicMul);
     const postureMul = weaponMul > 1 ? weaponMul : 1;
-    return { damageMul, postureMul, weaponMul, dmgTypeMul, classMul };
+    return { damageMul, postureMul, weaponMul, dmgTypeMul, classMul, dynamicMul };
   }
 
   _emitHit(attacker, victim, damage, weaponName, color, combo = 0, heavy = false, now = 0, backstab = false, crit = false) {
@@ -323,7 +334,8 @@ export class CombatSystem {
         const perfect = !!attacker._perfectRebound;
         if (perfect) attacker._perfectRebound = false;
         const comboMul = this._comboSys ? this._comboSys.onHit(countered, perfect, now) : 1;
-        const dmg = this._affixApply(attacker, weapon, baseDmg * counter.damageMul * (isBackstab ? 2 : 1) * comboMul);
+        const partMul = this._hitPartMul(attacker, c);
+        const dmg = this._affixApply(attacker, weapon, baseDmg * counter.damageMul * (isBackstab ? 2 : 1) * partMul * comboMul);
         const finalDmg = Math.min(dmg, weapon.damage * COMBAT.DMG_MUL_MAX);
         const lost = c.takeDamage(finalDmg, heavy || isBackstab, attacker, now);
         if (lost > 0) {

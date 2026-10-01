@@ -8,9 +8,9 @@ describe('SkillTree branches', () => {
     st = new SkillTree();
   });
 
-  it('has 17 branch skills (11 base + 4 Tier3 + 2 Keystone) with req array and excl fields', () => {
+  it('has 20 branch skills (11 base + 4 Tier3 + 2 Keystone + 3 Duo) with req array and excl fields', () => {
     const keys = Object.keys(st.branches);
-    expect(keys).toHaveLength(17);
+    expect(keys).toHaveLength(20);
     expect(Array.isArray(st.branches.berserk.req)).toBe(true);
     expect(st.branches.berserk.req).toContain('power>=2');
     expect(st.branches.berserk.excl).toBe('guardian');

@@ -23,9 +23,12 @@ export class RunBuffs {
     this.rerollsPerRun = rerollsPerRun;
     this.rerollsLeft = rerollsPerRun;
     this._lastRoll = null;
+    this._modifiers = {}; // P2-A 局内外桥接：SkillTree.runBuffModifiers() 注入的权重修正
   }
+  setModifiers(m) { this._modifiers = m || {}; }
   roll3() {
-    const pool = UPGRADES.map(u => ({ id: u.id, name: u.name, desc: u.desc, rarity: u.rarity, w: RARITY_WEIGHT[u.rarity] }));
+    const mods = this._modifiers || {};
+    const pool = UPGRADES.map(u => ({ id: u.id, name: u.name, desc: u.desc, rarity: u.rarity, w: RARITY_WEIGHT[u.rarity] * (mods[u.id]?.weightMul || 1) }));
     const out = [];
     for (let i = 0; i < 3 && pool.length > 0; i++) {
       const total = pool.reduce((s, u) => s + u.w, 0);
