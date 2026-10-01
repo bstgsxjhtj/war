@@ -264,7 +264,7 @@
 | G5 | 坚韧词缀 max-HP 在加载存档后不生效——_applyAffixMaxHp 在词缀加载前执行 | P1 | ✅已修：_applyAffixMaxHp 重构含 skill bonus，setSkill 改调 _applyAffixMaxHp，switchWeapon 也调用 |
 | G6 | HUD 回复 buff 显示硬编码 +2/s 而非实际 branchRegen 值 | P2 | ✅已修：改为动态 `回复 +${branchRegen}/s` |
 | G7 | NetClient.connect 超时不关闭 WebSocket——慢连接后 socket 泄漏 + 竞态 | P2 | ✅已修：超时回调加 `try { this.ws.close(); } catch (e) {}` |
-| G8 | RunBuffs 测试只验证字段设值不验证消费——假阳性覆盖 | P2 | ⬜已登记：需补集成测试实例化 Character 验证升级效果 |
+| G8 | RunBuffs 测试只验证字段设值不验证消费——假阳性覆盖 | P2 | ✅已修：补 10 个集成测试（regen 回血+对照/armor 减伤/dodgecd 闪避冷却/atkspd 攻击间隔/execdmg 处决阈值/crit 暴击/counterdmg 克制/damage 倍率/lifesteal 吸血），实例化 Character 验 5 字段、CombatSystem 验 4 字段消费端（RunBuffs.test.js G8 describe） |
 
 ### 回归测试
 
@@ -442,8 +442,12 @@
 
 测试总量：1269 → 1292（+23），123 个测试文件全绿。
 
-### 未修登记
+### G8 补修（2026-10-01 第十八轮）
+
+> 承第十一轮 5 专家圆桌评审的测试覆盖建议项，此前仅登记未修，本轮补齐。
 
 | # | 问题 | 位置 | 状态 |
 |---|---|---|---|
-| G8 | RunBuffs 测试只验证字段设值不验消费——假阳性覆盖 | RunBuffs.test.js | ⬜已登记（承第十一轮，未在本轮处理） |
+| G8 | RunBuffs 测试只验证字段设值不验消费——假阳性覆盖 | RunBuffs.test.js | ✅已修：新增 G8 describe 共 10 用例（regen 回血+未选对照、armor 减伤、dodgecd 闪避冷却、atkspd 攻击间隔、execdmg 处决阈值、crit 暴击、counterdmg 克制、damage 倍率、lifesteal 吸血），实例化 Character 验 5 字段、CombatSystem 验 4 字段消费端实际生效 |
+
+测试总量：1292 → 1302（+10），123 个测试文件全绿。
