@@ -463,3 +463,15 @@
 | C3-25 | 画面提质/色调 | main_entry.js/Spawner.js/LODManager.js | 玩家刀光（0xfff0a0）+ AI 刀光（0xff8060/0x60a0ff）→ PALETTE.WEAPON.BLADE_EMISSIVE / PALETTE.TEAM.RED/BLUE.PRIMARY；LOD 代理金（PROXY_GOLD=0xffd070）→ PALETTE.WEAPON.BLADE_EMISSIVE |
 
 测试总量：1302（无新增用例，色值与原硬编码等值或收拢到 PALETTE 常量，现有断言全绿），123 个测试文件全绿。
+
+### 第十九轮：可玩性能力补齐（2026-10-01）
+
+> 用户要求对比多款成熟游戏的可玩性（科技树/装备升级路线/相生相克），开 2 轮圆桌会议给差距与建议后补齐。3 路并行调研 9 款标杆（Hades/PoE/LE + D4/LE/GD + FE/TW/M&B），输出能力定义与差距清单后实现 P1-A/B/C。
+
+| # | 能力 | 文件 | 说明 |
+|---|---|---|---|
+| P1-A | 科技树深化 | SkillTree.js | req 数组表达式（支持 `>= > <= < ==` 多前置网状依赖，向后兼容）+ 4 Tier3 冠顶（warlord/bastion/druid/tempest，需基础满级+本系分支）+ 2 Keystone 机制改写（colossus 禁闪避/overload 法师耐力换法伤）+ berserk/guardian max 1→3 渐进 |
+| P1-B | 装备词条扩展 | Affixes.js | greater 品质分层（数值 ×1.5，掉率 8%+luck）+ 协同 3→6 条（新增嗜血处决阈值/荆棘反伤/风暴暴伤，行为改变协同） |
+| P1-C | 相克多维化 | CombatSystem.js | DAMAGE_ARMOR_TABLE（cut/pierce/blunt × light/medium/heavy，类 M&B）+ WEAPON_DAMAGE_TYPE 映射 + CLASS_COUNTER 职业三角（类 FE）+ _counterMulFull 多元输出 {damageMul, postureMul} + COUNTER_TOTAL_MAX=2.5 上限；resolveMelee 集成，向后兼容无 armorType/classType 单位 |
+
+测试总量：1302 → 1337（+35），124 个测试文件全绿。

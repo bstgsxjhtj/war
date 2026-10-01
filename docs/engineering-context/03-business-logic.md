@@ -89,3 +89,26 @@
 
 - `playerDamage`：本地玩家本场造成的伤害，combat.hit 且 attacker.isLocal 时累加；用于结算评级 gradeOf 与无伤判定。
 - 无伤判定应用"玩家本场承伤"，而非 playerDamage。
+
+## 6. 可玩性能力补齐（P1，2026-10-01）
+
+> 圆桌会议对比 9 款标杆（Hades/PoE/LE + D4/LE/GD + FE/TW/M&B）后，针对科技树/装备路线/相克三类能力补齐。设计原则：新增正交维度相乘而非替换，向后兼容旧 save/旧测试。
+
+### 6.1 科技树深化（P1-A，SkillTree.js）
+
+- **req 数组表达式**：`req` 从字符串 `'power'` 升级为数组 `['power>=2','berserk>=1']`，支持 `>= > <= < ==` 运算符；`_checkReqs` 解析、`_nodeLevel` 同时查 skills/branches，支持网状多前置依赖（向后兼容旧字符串按 `>=2`）。
+- **Tier3 冠顶节点**：新增 4 个（warlord/bastion/druid/tempest），需基础满级 + 本系分支已点，给予天花板回报（类 Hades Legendary）。
+- **Keystone 机制改写**：新增 2 个（colossus 禁闪避+减伤+移速降 / overload 耐力减半+法伤，法师专属），改变核心机制而非纯数值（类 PoE Keystone）。
+- **分支渐进化**：berserk/guardian 从 max:1 改为 max:3，系数 15%/级、10%/级，技能点经济有纵深。
+
+### 6.2 装备词条扩展（P1-B，Affixes.js）
+
+- **greater 品质分层**：drop 新增 greater 标记（数值 ×1.5，掉率 8% 受 luck 加成），affixBonus 读 greater 放大（类 D4 Greater Affix）。
+- **协同扩展到 6 条**：新增 3 条行为改变协同——嗜血（锋锐+吸血→处决阈值+0.08）、荆棘（坚韧+幸运→受击反伤 15%）、风暴（暴怒+迅捷→暴伤倍率+0.5）。
+
+### 6.3 相克多维化（P1-C，CombatSystem.js）
+
+- **伤害类型 × 护甲类型表**：`DAMAGE_ARMOR_TABLE`（cut/pierce/blunt × light/medium/heavy，钝>刺>切 对重甲），`WEAPON_DAMAGE_TYPE` 映射武器类→伤害类型（类 M&B）。
+- **职业相克第三维**：`CLASS_COUNTER`（assassin>mage>warrior>assassin，×1.3，类 FE 三角）。
+- **多元输出**：`_counterMulFull` 返回 `{damageMul, postureMul, weaponMul, dmgTypeMul, classMul}`，三表正交相乘设上限 `COUNTER_TOTAL_MAX=2.5`；postureMul 接已有架势条（克制时削韧加成）。
+- **向后兼容**：victim 无 armorType/classType 时 dmgTypeMul=classMul=1，等价原 `_counterMul`；`_counterMul` 保留供 _emitHit 显示武器克制；resolveMelee 改用 `_counterMulFull.damageMul` 算伤害、`.weaponMul` 判 countered 显示。

@@ -13,6 +13,23 @@ export const COUNTER_MATRIX = {
   SWORD: { HEAVY: 1.2 }
 };
 
+// P1-C 相克多维化：在 4×4 武器类矩阵之上新增两张正交小表相乘（类 M&B 伤害类型×护甲 + FE 职业三角）
+// 伤害类型 × 护甲类型 减伤系数（钝>刺>切 对重甲；切割破轻甲）
+export const DAMAGE_ARMOR_TABLE = {
+  cut:    { light: 1.0, medium: 0.75, heavy: 0.50 },
+  pierce: { light: 1.0, medium: 0.85, heavy: 0.70 },
+  blunt:  { light: 0.85, medium: 0.95, heavy: 1.0 },
+};
+// 武器类 → 伤害类型映射（同一武器类固定一种伤害类型；未来可按招式切换）
+export const WEAPON_DAMAGE_TYPE = {
+  SWORD: 'cut', SPEAR: 'pierce', HEAVY: 'blunt', SHIELD: 'blunt',
+  BOW: 'pierce', STAFF: 'pierce', DAGGER: 'cut',
+};
+// 职业相克第三维（刺客>法师>重装>刺客，类 FE 武器三角）
+export const CLASS_COUNTER = { assassin: { mage: 1.3 }, mage: { warrior: 1.3 }, warrior: { assassin: 1.3 } };
+// 三表正交相乘总倍率上限（防爆增）
+export const COUNTER_TOTAL_MAX = 2.5;
+
 const ARROW_POOL_MAX = 64;
 const MAX_HIT_RADIUS = 2;
 
@@ -147,6 +164,32 @@ export class CombatSystem {
     return base > 1 ? base * (attacker?._runCounterMul || 1) : base;
   }
 
+  // P1-C：伤害类型 × 护甲类型 减伤（类 M&B：钝>刺>切 对重甲）
+  _damageTypeMul(atkW, victim) {
+    const dt = WEAPON_DAMAGE_TYPE[atkW?.weaponClass];
+    if (!dt) return 1;
+    const at = victim?.armorType;
+    if (!at) return 1; // 未设护甲类型则不减伤（向后兼容现有 mockChar/无护甲单位）
+    return DAMAGE_ARMOR_TABLE[dt]?.[at] ?? 1;
+  }
+
+  // P1-C：职业相克第三维（类 FE 三角：刺客>法师>重装>刺客）
+  _classCounterMul(attacker, victim) {
+    const ac = attacker?.classType, vc = victim?.classType;
+    if (!ac || !vc) return 1;
+    return CLASS_COUNTER[ac]?.[vc] ?? 1;
+  }
+
+  // P1-C：多维克制合成，返回 {damageMul, postureMul}（克制时削韧加成，接已有架势条）
+  _counterMulFull(atkW, vicW, attacker, victim) {
+    const weaponMul = this._counterMul(atkW, vicW, attacker);
+    const dmgTypeMul = this._damageTypeMul(atkW, victim);
+    const classMul = this._classCounterMul(attacker, victim);
+    const damageMul = Math.min(COUNTER_TOTAL_MAX, weaponMul * dmgTypeMul * classMul);
+    const postureMul = weaponMul > 1 ? weaponMul : 1;
+    return { damageMul, postureMul, weaponMul, dmgTypeMul, classMul };
+  }
+
   _emitHit(attacker, victim, damage, weaponName, color, combo = 0, heavy = false, now = 0, backstab = false, crit = false) {
     if (attacker && attacker.addRage) attacker.addRage(3);
     const counterMul = this._counterMul(attacker.weapon, victim.weapon, attacker);
@@ -275,12 +318,12 @@ export class CombatSystem {
       if (angle <= weapon.arc / 2) {
         const backDot = c.forward.x * attacker.forward.x + c.forward.z * attacker.forward.z;
         const isBackstab = backDot > 0.7;
-        const counterMul = this._counterMul(attacker.weapon, c.weapon, attacker);
-        const countered = counterMul > 1.2;
+        const counter = this._counterMulFull(attacker.weapon, c.weapon, attacker, c);
+        const countered = counter.weaponMul > 1.2;
         const perfect = !!attacker._perfectRebound;
         if (perfect) attacker._perfectRebound = false;
         const comboMul = this._comboSys ? this._comboSys.onHit(countered, perfect, now) : 1;
-        const dmg = this._affixApply(attacker, weapon, baseDmg * counterMul * (isBackstab ? 2 : 1) * comboMul);
+        const dmg = this._affixApply(attacker, weapon, baseDmg * counter.damageMul * (isBackstab ? 2 : 1) * comboMul);
         const finalDmg = Math.min(dmg, weapon.damage * COMBAT.DMG_MUL_MAX);
         const lost = c.takeDamage(finalDmg, heavy || isBackstab, attacker, now);
         if (lost > 0) {

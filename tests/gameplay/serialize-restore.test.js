@@ -48,7 +48,7 @@ describe('serialize/restore round-trip（持久化收敛契约）', () => {
     a2.restore(snap);
     expect(a2.serialize()).toEqual(snap);
     expect(a2.inventory.length).toBe(2);
-    expect(a2.inventory[0]).toEqual({ type: '锋锐', tier: 2 });
+    expect(a2.inventory[0]).toEqual({ type: '锋锐', tier: 2, greater: false });
   });
 
   it('DailyChallenge serialize→restore 同日不重生', () => {

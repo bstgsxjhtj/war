@@ -15,17 +15,25 @@ export class SkillTree {
     this.skillOrder = ['power', 'vigor', 'agility', 'mastery'];
     this.weaponOrder = [0, 1, 2, 3];
     this.branches = {
-      berserk:     { level: 0, max: 1, name: '狂暴',     desc: '伤害+25%',           cost: 2, req: 'power',   excl: 'guardian' },
-      guardian:    { level: 0, max: 1, name: '守护',     desc: '减伤+25%',           cost: 2, req: 'power',   excl: 'berserk' },
-      regen:       { level: 0, max: 1, name: '回复',     desc: '每秒回血+5',          cost: 2, req: 'vigor',   excl: 'lifesteal' },
-      lifesteal:   { level: 0, max: 1, name: '吸血',     desc: '吸血+5%',            cost: 2, req: 'vigor',   excl: 'regen' },
-      swift:       { level: 0, max: 1, name: '疾风',     desc: '移速+10%',           cost: 2, req: 'agility', excl: 'evade' },
-      evade:       { level: 0, max: 1, name: '闪避',     desc: '闪避率+10%',         cost: 2, req: 'agility', excl: 'swift' },
-      frenzy:      { level: 0, max: 1, name: '狂热',     desc: '攻速+15%',           cost: 2, req: 'mastery', excl: 'critical' },
-      critical:    { level: 0, max: 1, name: '暴击',     desc: '暴击率+15%',         cost: 2, req: 'mastery', excl: 'frenzy' },
-      ironwall:    { level: 0, max: 1, name: '铁壁',     desc: '减伤+20%（战士）',    cost: 2, req: 'power',   excl: 'berserk',  reqClass: 'warrior' },
-      spellpower:  { level: 0, max: 1, name: '法力涌动', desc: '伤害+30%（法师）',    cost: 2, req: 'mastery', excl: 'critical', reqClass: 'mage' },
-      precision:   { level: 0, max: 1, name: '鹰眼',     desc: '伤害+25%（弓箭手）',  cost: 2, req: 'agility', excl: 'swift',    reqClass: 'archer' },
+      berserk:     { level: 0, max: 3, name: '狂暴',     desc: '伤害+15%/级',         cost: 2, req: ['power>=2'],   excl: 'guardian' },
+      guardian:    { level: 0, max: 3, name: '守护',     desc: '减伤+10%/级',         cost: 2, req: ['power>=2'],   excl: 'berserk' },
+      regen:       { level: 0, max: 1, name: '回复',     desc: '每秒回血+5',          cost: 2, req: ['vigor>=2'],   excl: 'lifesteal' },
+      lifesteal:   { level: 0, max: 1, name: '吸血',     desc: '吸血+5%',            cost: 2, req: ['vigor>=2'],   excl: 'regen' },
+      swift:       { level: 0, max: 1, name: '疾风',     desc: '移速+10%',           cost: 2, req: ['agility>=2'], excl: 'evade' },
+      evade:       { level: 0, max: 1, name: '闪避',     desc: '闪避率+10%',         cost: 2, req: ['agility>=2'], excl: 'swift' },
+      frenzy:      { level: 0, max: 1, name: '狂热',     desc: '攻速+15%',           cost: 2, req: ['mastery>=2'], excl: 'critical' },
+      critical:    { level: 0, max: 1, name: '暴击',     desc: '暴击率+15%',         cost: 2, req: ['mastery>=2'], excl: 'frenzy' },
+      ironwall:    { level: 0, max: 1, name: '铁壁',     desc: '减伤+20%（战士）',    cost: 2, req: ['power>=2'],   excl: 'berserk',  reqClass: 'warrior' },
+      spellpower:  { level: 0, max: 1, name: '法力涌动', desc: '伤害+30%（法师）',    cost: 2, req: ['mastery>=2'], excl: 'critical', reqClass: 'mage' },
+      precision:   { level: 0, max: 1, name: '鹰眼',     desc: '伤害+25%（弓箭手）',  cost: 2, req: ['agility>=2'], excl: 'swift',    reqClass: 'archer' },
+      // P1-A Tier3 冠顶：需基础满级 + 本系分支已点，给予天花板回报（类 Hades Legendary）
+      warlord:     { level: 0, max: 1, name: '军阀',     desc: '伤害+40%+处决阈值+0.10', cost: 3, req: ['power>=3','berserk>=1'], excl: 'bastion' },
+      bastion:     { level: 0, max: 1, name: '堡垒',     desc: '减伤+35%+架势恢复×2',    cost: 3, req: ['power>=3','guardian>=1'], excl: 'warlord' },
+      druid:       { level: 0, max: 1, name: '德鲁伊',   desc: '回血+12+吸血+8%',        cost: 3, req: ['vigor>=3','regen>=1','lifesteal>=1'] },
+      tempest:     { level: 0, max: 1, name: '风暴',     desc: '移速+15%+闪避+15%',     cost: 3, req: ['agility>=3','swift>=1','evade>=1'] },
+      // P1-A Keystone 机制改写：改变核心机制而非数值（类 PoE Keystone）
+      colossus:    { level: 0, max: 1, name: '巨像',     desc: '【改写】禁闪避，减伤+40%，移速-15%', cost: 4, req: ['power>=3','guardian>=1'], keystone: true },
+      overload:    { level: 0, max: 1, name: '过载',     desc: '【改写】耐力上限-50%，法伤+60%',     cost: 4, req: ['mastery>=3','frenzy>=1'], keystone: true, reqClass: 'mage' },
     };
     this._classType = null;
   }
@@ -47,10 +55,34 @@ export class SkillTree {
     const b = this.branches[key];
     if (!b || b.level >= b.max || this.points < b.cost) return false;
     if (b.reqClass && this._classType !== b.reqClass) return false;
-    const reqSkill = this.skills[b.req];
-    if (!reqSkill || reqSkill.level < 2) return false;
+    if (!this._checkReqs(b.req)) return false;
     if (this.branches[b.excl] && this.branches[b.excl].level > 0) return false;
     b.level++; this.points -= b.cost; return true;
+  }
+
+  // P1-A：req 表达式解析，支持 ['power>=2','berserk>=1'] 多前置网状依赖（向后兼容旧字符串 'power' → power>=2）
+  _checkReqs(reqs) {
+    if (!reqs) return true;
+    const arr = Array.isArray(reqs) ? reqs : [reqs];
+    for (const r of arr) {
+      const m = String(r).match(/^(\w+)(>=|>|<=|<|==)?(\d+)?$/);
+      if (!m) return false;
+      const name = m[1], op = m[2] || '>=', val = m[3] !== undefined ? parseInt(m[3], 10) : 2;
+      const level = this._nodeLevel(name);
+      if (level < 0) return false;
+      if (op === '>=' && !(level >= val)) return false;
+      if (op === '>' && !(level > val)) return false;
+      if (op === '<=' && !(level <= val)) return false;
+      if (op === '<' && !(level < val)) return false;
+      if (op === '==' && level !== val) return false;
+    }
+    return true;
+  }
+
+  _nodeLevel(name) {
+    if (this.skills[name]) return this.skills[name].level;
+    if (this.branches[name]) return this.branches[name].level;
+    return -1;
   }
 
   setClassType(type) { this._classType = type; }
@@ -99,8 +131,8 @@ export class SkillTree {
   get masteryMul() { return 1 + this.skills.mastery.level * 0.15; }
   weaponDamageMul(idx) { return 1 + (this.weaponLevel[idx] - 1) * 0.25; }
 
-  get branchDamageMul() { return 1 + 0.25 * this.branches.berserk.level; }
-  get branchDefenseMul() { return 1 - 0.25 * this.branches.guardian.level; }
+  get branchDamageMul() { return 1 + 0.15 * this.branches.berserk.level; }
+  get branchDefenseMul() { return 1 - 0.10 * this.branches.guardian.level; }
   get branchLifesteal() { return 0.05 * this.branches.lifesteal.level; }
   get branchRegen() { return 5 * this.branches.regen.level; }
   get branchMoveSpeedMul() { return 1 + 0.10 * this.branches.swift.level; }
@@ -110,6 +142,21 @@ export class SkillTree {
   get branchIronwall() { return 1 - 0.20 * this.branches.ironwall.level; }
   get branchSpellpower() { return 1 + 0.30 * this.branches.spellpower.level; }
   get branchPrecision() { return 1 + 0.25 * this.branches.precision.level; }
+  // P1-A Tier3 冠顶 getter
+  get branchWarlordDmg() { return 0.40 * this.branches.warlord.level; }
+  get branchWarlordExec() { return 0.10 * this.branches.warlord.level; }
+  get branchBastionDef() { return 0.35 * this.branches.bastion.level; }
+  get branchBastionRegenMul() { return this.branches.bastion.level > 0 ? 2 : 1; }
+  get branchDruidRegen() { return 12 * this.branches.druid.level; }
+  get branchDruidLifesteal() { return 0.08 * this.branches.druid.level; }
+  get branchTempestSpeed() { return 0.15 * this.branches.tempest.level; }
+  get branchTempestDodge() { return 0.15 * this.branches.tempest.level; }
+  // P1-A Keystone 机制改写 getter（改写核心机制而非纯数值乘算）
+  get keystoneNoDodge() { return this.branches.colossus.level > 0; }
+  get keystoneColossusDef() { return 0.40 * this.branches.colossus.level; }
+  get keystoneColossusSpeed() { return -0.15 * this.branches.colossus.level; }
+  get keystoneOverloadStamina() { return -0.50 * this.branches.overload.level; }
+  get keystoneOverloadSpell() { return 0.60 * this.branches.overload.level; }
 
   totalMul(weaponIdx) {
     return this.damageMul * this.masteryMul * this.weaponDamageMul(weaponIdx);

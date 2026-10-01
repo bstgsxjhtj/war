@@ -6,26 +6,33 @@ describe('P2-7 Build 多样性：技能树防御分支上调', () => {
   function treeWith(branchKey) {
     const t = new SkillTree();
     t.points = 20;
-    const req = t.branches[branchKey].req;
-    t.skills[req].level = 2;
+    const reqs = t.branches[branchKey].req || [];
+    const arr = Array.isArray(reqs) ? reqs : [reqs];
+    for (const r of arr) {
+      const m = String(r).match(/^(\w+)(>=|>|<=|<|==)?(\d+)?$/);
+      if (!m) continue;
+      const name = m[1], val = m[3] !== undefined ? parseInt(m[3], 10) : 2;
+      if (t.skills[name]) t.skills[name].level = Math.max(t.skills[name].level, val);
+      else if (t.branches[name]) t.branches[name].level = Math.max(t.branches[name].level, val);
+    }
     expect(t.upgradeBranch(branchKey)).toBe(true);
     return t;
   }
 
-  it('guardian 减伤上调至 25%', () => {
+  it('guardian 减伤 10%/级（max:3，P1-A 渐进化）', () => {
     const t = treeWith('guardian');
-    expect(t.branchDefenseMul).toBeCloseTo(0.75);
-    expect(t.branches.guardian.desc).toContain('25');
+    expect(t.branchDefenseMul).toBeCloseTo(0.90);
+    expect(t.branches.guardian.desc).toContain('10');
   });
 
-  it('regen 回血上调至 5HP/s', () => {
+  it('regen 回血 5HP/s', () => {
     const t = treeWith('regen');
     expect(t.branchRegen).toBe(5);
     expect(t.branches.regen.desc).toContain('5');
   });
 
-  it('berserk/lifesteal 数值保持不变', () => {
-    expect(treeWith('berserk').branchDamageMul).toBeCloseTo(1.25);
+  it('berserk 伤害 15%/级（max:3），lifesteal 保持', () => {
+    expect(treeWith('berserk').branchDamageMul).toBeCloseTo(1.15);
     expect(treeWith('lifesteal').branchLifesteal).toBeCloseTo(0.05);
   });
 });
