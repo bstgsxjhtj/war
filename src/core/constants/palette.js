@@ -17,6 +17,13 @@ export const PALETTE = {
     SKY_TOP: 0x6a5a48,
     SKY_BOTTOM: 0xc89058,
     SUN_BALL: 0xffe0a0,
+    // 天气分支光照/粒子色（C2-21：收拢原 WeatherSystem 硬编码，单一事实来源）
+    WEATHER: {
+      RAIN: { FOG_DENSITY: 0.012, SUN: 0x8888aa, SUN_INTENSITY: 0.7, HEMI_INTENSITY: 0.4, PARTICLE: 0xaaccee },
+      NIGHT: { FOG_DENSITY: 0.006, SUN: 0x4a5a8a, SUN_INTENSITY: 0.25, HEMI_SKY: 0x202038, HEMI_INTENSITY: 0.25 },
+      SNOW: { FOG_DENSITY: 0.015, SUN: 0xc0d0e0, SUN_INTENSITY: 0.85, HEMI_SKY: 0xa0b0c0, HEMI_INTENSITY: 0.55, PARTICLE: 0xffffff },
+      STORM: { FOG_DENSITY: 0.018, SUN: 0x606080, SUN_INTENSITY: 0.5, HEMI_INTENSITY: 0.3, LIGHTNING: 0xb0d0ff },
+    },
   },
 
   // 水面：暖化（原冷蓝 0x6a9ab8/0x2a4a6a 与黄昏暖调冲突）

@@ -226,13 +226,13 @@ export class Character {
     this._postureBar.position.y = 2.35; this._postureBarBg.position.y = 2.35;
     this._postureBar.renderOrder = 1005; this._postureBarBg.renderOrder = 1004;
     // 锁定标记
-    this._lockMark = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffd070, transparent: true, opacity: 0, depthTest: false }));
+    this._lockMark = new THREE.Sprite(new THREE.SpriteMaterial({ color: PALETTE.WEAPON.BLADE_EMISSIVE, transparent: true, opacity: 0, depthTest: false }));
     this._lockMark.scale.set(0.5, 0.5, 1); this._lockMark.position.y = 2.50; this._lockMark.renderOrder = 1001;
     // 色弱模式：头顶形状标记（友军圆环 / 敌军方块），非本地单位默认隐藏，由 setColorblind 控制
     const markGeo = this.team === 0 ? new THREE.TorusGeometry(0.16, 0.045, 6, 14) : new THREE.BoxGeometry(0.24, 0.24, 0.24);
     this._teamMark = new THREE.Mesh(
       markGeo,
-      new THREE.MeshBasicMaterial({ color: this.team === 0 ? 0x66aaff : 0xff6666, transparent: true, opacity: 0.9, depthTest: false })
+      new THREE.MeshBasicMaterial({ color: this.team === 0 ? PALETTE.TEAM.BLUE.PRIMARY : PALETTE.TEAM.RED.PRIMARY, transparent: true, opacity: 0.9, depthTest: false })
     );
     this._teamMark.position.y = 2.75; this._teamMark.renderOrder = 1002; this._teamMark.visible = false;
     const showBar = !this.isLocal;
@@ -390,7 +390,7 @@ export class Character {
     deepDispose(this._weaponMesh);
     this._weaponMesh = this.weapon.createMesh();
     this.weaponPivot.add(this._weaponMesh);
-    if (this._weaponTrail) this._weaponTrail.attach(this._weaponMesh, this._weaponTrailColor || 0xfff0a0);
+    if (this._weaponTrail) this._weaponTrail.attach(this._weaponMesh, this._weaponTrailColor || PALETTE.WEAPON.BLADE_EMISSIVE);
     this._applyAffixMaxHp();
     this._comboCount = 0; this._attacking = false; this._blocking = false;
   }

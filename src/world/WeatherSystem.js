@@ -37,7 +37,7 @@ export class WeatherSystem {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setDrawRange(0, N);
     this._rainGeo = geo;
-    this._rain = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xaaccee, size: 0.12, transparent: true, opacity: 0.6 }));
+    this._rain = new THREE.Points(geo, new THREE.PointsMaterial({ color: PALETTE.SCENE.WEATHER.RAIN.PARTICLE, size: 0.12, transparent: true, opacity: 0.6 }));
     this._rain.visible = false;
     this.scene.add(this._rain);
   }
@@ -54,13 +54,13 @@ export class WeatherSystem {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setDrawRange(0, N);
     this._snowGeo = geo;
-    this._snow = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.8 }));
+    this._snow = new THREE.Points(geo, new THREE.PointsMaterial({ color: PALETTE.SCENE.WEATHER.SNOW.PARTICLE, size: 0.18, transparent: true, opacity: 0.8 }));
     this._snow.visible = false;
     this.scene.add(this._snow);
   }
 
   _initLightning() {
-    this._lightning = new THREE.PointLight(0xb0d0ff, 0, 80);
+    this._lightning = new THREE.PointLight(PALETTE.SCENE.WEATHER.STORM.LIGHTNING, 0, 80);
     this._lightning.position.set(0, 30, 0);
     this.scene.add(this._lightning);
   }
@@ -140,25 +140,26 @@ export class WeatherSystem {
     // 天气切换时终止进行中的闪光序列，避免残留
     this._flashPhase = 0;
     this._flashTimer = 0;
+    const W = PALETTE.SCENE.WEATHER;
     if (this._mode === 'rain') {
       this._rain.visible = true;
-      if (this.scene.fog) this.scene.fog.density = 0.012;
-      if (this.sun) { this.sun.intensity = 0.7; this.sun.color.setHex(0x8888aa); }
-      if (this.hemi) this.hemi.intensity = 0.4;
+      if (this.scene.fog) this.scene.fog.density = W.RAIN.FOG_DENSITY;
+      if (this.sun) { this.sun.intensity = W.RAIN.SUN_INTENSITY; this.sun.color.setHex(W.RAIN.SUN); }
+      if (this.hemi) this.hemi.intensity = W.RAIN.HEMI_INTENSITY;
     } else if (this._mode === 'night') {
-      if (this.scene.fog) this.scene.fog.density = 0.006;
-      if (this.sun) { this.sun.intensity = 0.25; this.sun.color.setHex(0x4a5a8a); }
-      if (this.hemi) { this.hemi.intensity = 0.25; this.hemi.color.setHex(0x202038); }
+      if (this.scene.fog) this.scene.fog.density = W.NIGHT.FOG_DENSITY;
+      if (this.sun) { this.sun.intensity = W.NIGHT.SUN_INTENSITY; this.sun.color.setHex(W.NIGHT.SUN); }
+      if (this.hemi) { this.hemi.intensity = W.NIGHT.HEMI_INTENSITY; this.hemi.color.setHex(W.NIGHT.HEMI_SKY); }
     } else if (this._mode === 'snow') {
       this._snow.visible = true;
-      if (this.scene.fog) this.scene.fog.density = 0.015;
-      if (this.sun) { this.sun.intensity = 0.85; this.sun.color.setHex(0xc0d0e0); }
-      if (this.hemi) { this.hemi.intensity = 0.55; this.hemi.color.setHex(0xa0b0c0); }
+      if (this.scene.fog) this.scene.fog.density = W.SNOW.FOG_DENSITY;
+      if (this.sun) { this.sun.intensity = W.SNOW.SUN_INTENSITY; this.sun.color.setHex(W.SNOW.SUN); }
+      if (this.hemi) { this.hemi.intensity = W.SNOW.HEMI_INTENSITY; this.hemi.color.setHex(W.SNOW.HEMI_SKY); }
     } else if (this._mode === 'storm') {
       this._rain.visible = true;
-      if (this.scene.fog) this.scene.fog.density = 0.018;
-      if (this.sun) { this.sun.intensity = 0.5; this.sun.color.setHex(0x606080); }
-      if (this.hemi) this.hemi.intensity = 0.3;
+      if (this.scene.fog) this.scene.fog.density = W.STORM.FOG_DENSITY;
+      if (this.sun) { this.sun.intensity = W.STORM.SUN_INTENSITY; this.sun.color.setHex(W.STORM.SUN); }
+      if (this.hemi) this.hemi.intensity = W.STORM.HEMI_INTENSITY;
     } else {
       // C2-15：clear 复位到场景基准黄昏调（PALETTE.SCENE），否则一次天气循环后雾密度/日照/半球色永久漂移
       if (this.scene.fog) this.scene.fog.density = PALETTE.SCENE.FOG_DENSITY;

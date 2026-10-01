@@ -89,6 +89,7 @@ import { StatsPanel } from './auxiliary/StatsPanel.js';
 import { ScreenshotMode } from './auxiliary/ScreenshotMode.js';
 import { Accessibility } from './auxiliary/Accessibility.js';
 import { EXECUTE } from './core/constants/balance.js';
+import { PALETTE } from './core/constants/palette.js';
 
 async function bootstrap() {
   const app = document.querySelector('#app');
@@ -410,8 +411,8 @@ async function bootstrap() {
     player.setCameraRef(camera);
     scene.add(player.root);
     combat.register(player);
-    if (player._weaponMesh) weaponTrail.attach(player._weaponMesh, 0xfff0a0);
-    player.setWeaponTrail(weaponTrail, 0xfff0a0);
+    if (player._weaponMesh) weaponTrail.attach(player._weaponMesh, PALETTE.WEAPON.BLADE_EMISSIVE);
+    player.setWeaponTrail(weaponTrail, PALETTE.WEAPON.BLADE_EMISSIVE);
     if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx);
     let redLayout, bossWave = false, spawnModifier = null, stageDifficulty = 1;
     if (mode.name === '战役') { const lay = campaign.spawnLayout(); redLayout = lay.red; stageDifficulty = lay.difficulty || 1; }

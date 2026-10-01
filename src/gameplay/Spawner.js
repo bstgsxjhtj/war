@@ -8,6 +8,7 @@ import { Warhammer } from './weapons/Warhammer.js';
 import { Bow } from './weapons/Bow.js';
 import { CLASS_DEFS, AI_CLASS_CONFIG, randomAIClass } from './ClassDefinition.js';
 import { ENEMY_MODS } from '../core/constants/balance.js';
+import { PALETTE } from '../core/constants/palette.js';
 import { applyEnemyBehaviors } from './AffixBehavior.js';
 
 const AI_WEAPON_MAKERS = [() => new Spear(), () => new SwordShield(), () => new Warhammer(), () => new Bow()];
@@ -47,7 +48,7 @@ export class Spawner {
     this._maybeElite(ai, eliteChanceMul);
     this.scene.add(ai.root);
     this.combat.register(ai);
-    if (ai._weaponMesh) this.weaponTrail.attach(ai._weaponMesh, ai.team === 1 ? 0xff8060 : 0x60a0ff);
+    if (ai._weaponMesh) this.weaponTrail.attach(ai._weaponMesh, ai.team === 1 ? PALETTE.TEAM.RED.PRIMARY : PALETTE.TEAM.BLUE.PRIMARY);
     if (this.lod) this.lod.register(ai);
     this._applyEnemyMods(ai);
     ais.push(ai);

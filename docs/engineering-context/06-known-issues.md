@@ -451,3 +451,15 @@
 | G8 | RunBuffs 测试只验证字段设值不验消费——假阳性覆盖 | RunBuffs.test.js | ✅已修：新增 G8 describe 共 10 用例（regen 回血+未选对照、armor 减伤、dodgecd 闪避冷却、atkspd 攻击间隔、execdmg 处决阈值、crit 暴击、counterdmg 克制、damage 倍率、lifesteal 吸血），实例化 Character 验 5 字段、CombatSystem 验 4 字段消费端实际生效 |
 
 测试总量：1292 → 1302（+10），123 个测试文件全绿。
+
+### 第十八轮：战役二/三 色板统一收尾（2026-10-01）
+
+> C3-18（中央色板）与 C2-15（clear 复位）的遗漏项：天气分支光照/粒子色、阵营标记、刀光、锁定标记、LOD 代理金仍硬编码未走 PALETTE。本轮收拢，全仓颜色单一事实来源闭环。
+
+| # | 主题 | 文件 | 说明 |
+|---|---|---|---|
+| C2-21 | 画面调通/色调 | WeatherSystem.js + palette.js | 雨/夜/雪/暴风 4 分支光照（fog.density/sun.intensity/sun.color/hemi）+ 3 粒子色（rain/snow/lightning）收拢到 PALETTE.SCENE.WEATHER（RAIN/NIGHT/SNOW/STORM 各含 FOG_DENSITY/SUN/SUN_INTENSITY/HEMI_SKY/HEMI_INTENSITY/PARTICLE/LIGHTNING） |
+| C3-24 | 画面提质/色调 | Character.js | _teamMark 阵营色（0x66aaff/0xff6666）→ PALETTE.TEAM.BLUE/RED.PRIMARY；_lockMark 锁定金（0xffd070）→ PALETTE.WEAPON.BLADE_EMISSIVE；attach fallback（0xfff0a0）→ PALETTE.WEAPON.BLADE_EMISSIVE |
+| C3-25 | 画面提质/色调 | main_entry.js/Spawner.js/LODManager.js | 玩家刀光（0xfff0a0）+ AI 刀光（0xff8060/0x60a0ff）→ PALETTE.WEAPON.BLADE_EMISSIVE / PALETTE.TEAM.RED/BLUE.PRIMARY；LOD 代理金（PROXY_GOLD=0xffd070）→ PALETTE.WEAPON.BLADE_EMISSIVE |
+
+测试总量：1302（无新增用例，色值与原硬编码等值或收拢到 PALETTE 常量，现有断言全绿），123 个测试文件全绿。

@@ -1,10 +1,11 @@
 import * as THREE from 'three';
+import { PALETTE } from '../core/constants/palette.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const PROXY_MAX = 80;
 const QUALITY_SCALE = { high: 1.0, mid: 0.8, low: 0.5 };
 const PROXY_GRAY = 0x888888;
-const PROXY_GOLD = 0xffd070;
+const PROXY_GOLD = PALETTE.WEAPON.BLADE_EMISSIVE;
 const ELITE_SCALE = 1.3;
 // 代理胶囊半高：CapsuleGeometry(0.5, 1.2) 总高 = 1.2 + 2*0.5 = 2.2 → 半高 1.1（C3-23：脚底对齐用）
 const PROXY_HALF = 1.1;
