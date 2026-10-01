@@ -58,4 +58,26 @@ describe('UIStack 面板栈', () => {
     esc();
     expect(p.hide).toHaveBeenCalledTimes(1);
   });
+
+  it('closable=false 的栈顶面板 Escape 不关闭但仍吞掉事件', () => {
+    const p = { hide: vi.fn(), closable: false };
+    UIStack.push(p);
+    const spy = vi.fn();
+    window.addEventListener('keydown', spy);
+    esc();
+    expect(p.hide).not.toHaveBeenCalled();
+    expect(spy).not.toHaveBeenCalled();
+    expect(UIStack.top).toBe(p);
+    window.removeEventListener('keydown', spy);
+  });
+
+  it('closable=false 栈底时栈顶可正常关闭', () => {
+    const bottom = { hide: vi.fn(), closable: false };
+    const top = { hide: vi.fn() };
+    UIStack.push(bottom); UIStack.push(top);
+    esc();
+    expect(top.hide).toHaveBeenCalledTimes(1);
+    expect(bottom.hide).not.toHaveBeenCalled();
+    expect(UIStack.top).toBe(bottom);
+  });
 });

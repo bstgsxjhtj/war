@@ -20,7 +20,7 @@ ESM 依赖图必须保持无环（DAG）。
 - **engine**：Renderer（后期管线：SSAO+Reflector 静态 import 修 dist 404、UnrealBloom+暗角 Vignette、low 画质降级关 SSAO/Bloom/Reflector）、Scene（黄昏琥珀调色、远山顶点扰动、Fresnel rim 替固定方向光）、Camera、AssetLoader。
 - **world**：Terrain、Environment（树/石/残骸均 InstancedMesh：树 1 trunk + 3 leaf InstancedMesh 共 4 drawcall 替代 ~136、石 1 drawcall 替代 24、残骸≤2 drawcall 替代 16；草 6 InstancedMesh 已有）、Water、WeatherSystem、MapGenerator、SiegeStructure、SupplyPoint。
 - **gameplay**：Character 基类（Health/Stamina/Skeleton）→ Player / AIController（→BossEnemy/Cavalry）/ RemotePlayer；CombatSystem、ComboSystem、WeaponSkills、Weapon、weapons/*（Sword/Spear/SwordShield/Warhammer/Bow）；AI 辅助（AIManager、UnitFormation、AffixBehavior）；模式类（GameMode/WaveMode/TrainingMode/CampaignMode）；元进度类（Progression、SkillTree、Affixes、Achievements、WeaponSkins、DailyChallenge、RunBuffs）；SaveManager；战斗辅助（EnvironmentHazards、DifficultyAssist、TrajectoryPreview、EscortTarget、DefensePoint）；Spawner（红队生成）。
-- **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI、ProgressionUI、WeaponSkinsUI、UIPanel（面板基类）、UIStack（Escape 栈）、UpgradePicker（3 选 1 升级）、DeathFeedback（死亡反馈）。
+- **ui**：HUD、MiniMap、ResultScreen、SettingsMenu、SkillTreeUI、Tutorial、SaveUI、AchievementsUI、AffixesUI、ProgressionUI、WeaponSkinsUI、UIPanel（面板基类）、UIStack（Escape 栈，支持 closable=false 不可关面板）、UpgradePicker（3 选 1 升级）、DeathFeedback（死亡反馈）、MainMenuUI（标题屏）、ClassSelectUI（职业选择）、GameMenu（Esc 菜单）。
 - **render**：TextureFactory（程序纹理 canvas 缓存）、disposeUtils、WeaponTrail、DodgeGhosts、EnvMap、LODManager、ParticleFX、TelegraphIndicator。
 - **app**：MatchController（比分/回合/胜负）、SaveOrchestrator（存档编排）、InputRouter（全局按键）、GameClock（随 timeScale 缩放的延迟任务）、EventWiring（17 个纯事件处理器下沉）、AchievementWiring（成就接线）、QualityGovernor（自适应画质：双向——持续低帧率降级 + 持续高帧率回升，回升不越过用户设定 ceiling；tick 返回新档位与 direction 标志）。
 
@@ -90,3 +90,12 @@ ESM 依赖图必须保持无环（DAG）。
 - **残骸**（`_wreckage`）：预分盾/矛两类，各建一个 `InstancedMesh`（≤2 drawcall 替代 16）。
 - 矩阵用共享 `dummy` Object3D 组装（position + rotation + scale → `updateMatrix` → `setMatrixAt`），`instanceMatrix.needsUpdate` 末尾统一置位。
 - `setQuality` 仍只缩放 grass/dust/leaves 计数（结构物树/石/残骸 count 不随画质变化，避免 popping）；`deepDispose` 遍历 group 自动释放 InstancedMesh 几何/材质/实例缓冲。
+
+## 10. 主菜单标题屏 + UIStack closable（P1-1，2026-10-01）
+
+启动流程原为 `classSelectUI.show()` 直入职业选择，无标题屏。改为 `MainMenuUI.show()` 作为首个面板，选择后进入职业选择：
+
+- **MainMenuUI**（`src/ui/MainMenuUI.js`）：全屏标题叠层，4 按钮——开始新游戏（`campaign.reset()` 保留 cleared 存档解锁进度 + `applyModeByName('战役')` 载入第 1 关地图 + `classSelectUI.show()`）、继续战役（存档存在时可用，`applyModeByName('战役')` 恢复 campaign.stage + `classSelectUI.show()`）、快速对战（保持当前/默认模式直接 `classSelectUI.show()`）、设置（`settings.show()` 叠于标题屏之上）。
+- **存档检测**：`hasSave: () => !!saveManager.load()` 决定"继续战役"禁用态；`getCampaignStage`/`getCampaignCleared` 在按钮文案显示"第X关"/"已通关X关"。
+- **UIStack closable 扩展**：`installUIStackEscape` 的捕获阶段 Escape 处理器在 `e.preventDefault() + e.stopImmediatePropagation()` 之后检查 `top.closable === false`——若不可关则直接 return（Escape 已被吞掉、不泄露到 InputRouter，但面板保持打开）。MainMenuUI 设 `closable = false`，避免标题屏被 Esc 关闭后无路可走；SettingsMenu 叠于其上时 Esc 正常关闭 SettingsMenu（栈顶 closable 未设，默认可关）。现有面板不设 closable 属性（`undefined === false` 为 false），行为完全向后兼容。
+- **模式切换时机**：`applyModeByName('战役')` 内部 `match.restart() → startRound() → spawnAll()`，在 `classSelectUI.show()` 前以默认职业生成实体；职业选择回调再次 `spawnAll()` 覆写为所选职业。叠层覆盖画面，用户不可见中间态。

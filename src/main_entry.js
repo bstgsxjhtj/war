@@ -51,6 +51,7 @@ import { MiniMap } from './ui/MiniMap.js';
 import { CLASS_DEFS } from './gameplay/ClassDefinition.js';
 import { ClassSelectUI } from './ui/ClassSelectUI.js';
 import { GameMenu } from './ui/GameMenu.js';
+import { MainMenuUI } from './ui/MainMenuUI.js';
 import { BuildReviewUI } from './ui/BuildReviewUI.js';
 import { WeaponTrail, HitDirection, HitStop } from './render/WeaponTrail.js';
 import { DodgeGhosts } from './render/DodgeGhosts.js';
@@ -441,7 +442,26 @@ async function bootstrap() {
     setTimeout(() => hud.clearHint(), 3000);
     relockPointer();
   });
-  classSelectUI.show();
+  // P1-1 主菜单标题屏：启动首个面板，选择后进入职业选择
+  const mainMenuUI = new MainMenuUI({
+    hasSave: () => !!saveManager.load(),
+    getCampaignStage: () => campaign.stage,
+    getCampaignCleared: () => campaign.cleared,
+    onNewGame: () => {
+      campaign.reset();
+      inputRouter.applyModeByName('战役');
+      classSelectUI.show();
+    },
+    onContinue: () => {
+      inputRouter.applyModeByName('战役');
+      classSelectUI.show();
+    },
+    onQuickBattle: () => {
+      classSelectUI.show();
+    },
+    onOpenSettings: () => settings.show(),
+  });
+  mainMenuUI.show();
   gameMenu = new GameMenu({
     getModeName: () => mode.name,
     onSelectMode: (name) => {

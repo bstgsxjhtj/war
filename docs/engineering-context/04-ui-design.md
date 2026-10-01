@@ -34,7 +34,7 @@
 
 1. 面板默认 `display:none`，toggle 切换；Escape 关闭。
 2. 面板样式：fixed 定位卡片。**UIPanel 基类**（`src/ui/UIPanel.js`）封装居中/定位容器 + toggleKey 开关 + show/hide/toggle/render 契约；AffixesUI/AchievementsUI/WeaponSkinsUI/SaveUI 继承之，子类只覆写 `render()` 提供内容。SkillTreeUI 因全屏遮罩 + opacity 渐变 + ui.locklost 语义不继承，保持独立。
-3. **Escape 统一走 UIStack**（`src/ui/UIStack.js`）：所有可 Escape 关闭的面板（UIPanel 子类、SkillTreeUI、SettingsMenu、ResultScreen）show 时入栈、hide 时出栈；UIStack 捕获阶段监听 Escape 只关**栈顶**并 stopImmediatePropagation，杜绝多面板同时响应；栈空时 Escape 才由 InputRouter 打开设置。面板自身不得再监听 Escape。
+3. **Escape 统一走 UIStack**（`src/ui/UIStack.js`）：所有可 Escape 关闭的面板（UIPanel 子类、SkillTreeUI、SettingsMenu、ResultScreen、GameMenu）show 时入栈、hide 时出栈；UIStack 捕获阶段监听 Escape 只关**栈顶**并 stopImmediatePropagation，杜绝多面板同时响应；栈空时 Escape 才由 InputRouter 打开设置。面板自身不得再监听 Escape。面板可设 `closable = false`（如 MainMenuUI 标题屏），Escape 仍被吞掉但不关闭该面板——避免标题屏被误关后无路可走；栈顶为可关面板时正常关闭（closable 未设默认可关，向后兼容）。
 4. UI 只依赖 gameplay 的数据/常量，不反向被依赖。
 5. UI 测试用 `// @vitest-environment jsdom` pragma，模板见 tests/ui/SettingsMenu.test.js。
 6. 面板内提示统一走 `bus.emit('hud.flash', ...)` → HUD 监听显示（禁止发无人监听的事件）。
