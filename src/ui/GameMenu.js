@@ -6,6 +6,7 @@ export class GameMenu {
   constructor(opts = {}) {
     this.opts = opts;
     this.open = false;
+    this.pausesGame = true; // 战役一#6：Esc 菜单打开时冻结 gameplay
     this._modeBtns = new Map();
     this._build();
   }

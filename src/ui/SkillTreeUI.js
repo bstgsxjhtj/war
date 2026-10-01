@@ -7,6 +7,7 @@ export class SkillTreeUI {
     this.skill = skill;
     this.kb = kb;
     this.open = false;
+    this.pausesGame = true; // 战役一#6：技能树打开时冻结 gameplay
     this._tab = 'skill';
     this._resetUsed = false;
     this._dragIdx = -1;

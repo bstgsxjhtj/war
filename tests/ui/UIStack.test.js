@@ -80,4 +80,31 @@ describe('UIStack 面板栈', () => {
     expect(bottom.hide).not.toHaveBeenCalled();
     expect(UIStack.top).toBe(bottom);
   });
+
+  it('空栈 pausing=false (C1-6)', () => {
+    expect(UIStack.pausing).toBe(false);
+  });
+
+  it('pausesGame=true 面板入栈后 pausing=true (C1-6)', () => {
+    const p = { hide() {}, pausesGame: true };
+    UIStack.push(p);
+    expect(UIStack.pausing).toBe(true);
+    UIStack.remove(p);
+    expect(UIStack.pausing).toBe(false);
+  });
+
+  it('pausesGame 未设（undefined）的面板不触发 pausing (C1-6)', () => {
+    const p = { hide() {} };
+    UIStack.push(p);
+    expect(UIStack.pausing).toBe(false);
+  });
+
+  it('栈中任意面板 pausesGame=true 即触发 pausing', () => {
+    const a = { hide() {} };
+    const b = { hide() {}, pausesGame: true };
+    UIStack.push(a); UIStack.push(b);
+    expect(UIStack.pausing).toBe(true);
+    UIStack.remove(b);
+    expect(UIStack.pausing).toBe(false);
+  });
 });

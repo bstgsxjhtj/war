@@ -128,3 +128,16 @@ ESM 依赖图必须保持无环（DAG）。
 - 构造时 `isLocal ? 0 : 1/30` 设 `_animInterval`（本地玩家=0 满帧保证输入响应；非本地 AI=1/30 即 30fps）。
 - `_tickAnimState` 中非本地角色累积 `dt` 到 `_animAccum`，未达 `_animInterval` 早返回（姿态保持上一帧，30fps 仍视觉流畅），达阈值才调 `skeleton.update(累积dt)` 并清零。`skeleton.applyState`（姿态计算）与 `_tickFace`（表情）每帧执行不受影响——只降频骨骼矩阵写入。
 - 本地玩家走 else 分支每帧 `skeleton.update(dt)`，响应不受降频影响。
+
+## 14. 菜单暂停闸门 + installUIStackEscape 幂等修复（C1-6，2026-10-01）
+
+**暂停闸门**：打开任何菜单面板时冻结 gameplay（AI/战斗/玩家更新全跳过），仅保留环境氛围动画。
+
+- **UIStack `pausing` getter**：`_stack.some(p => p.pausesGame)`——栈中任意面板 `pausesGame=true` 时返回 true。
+- **pausesGame 属性**：`UIPanel` 子类构造默认 `this.pausesGame = true`（成就/词条/存档/皮肤）；`GameMenu`/`SettingsMenu`/`SkillTreeUI` 显式设 `this.pausesGame = true`。`UpgradePicker` 不设（已有独立的 `upgradePicker.visible` 早返回路径）。
+- **main_entry 暂停闸门**：`onFixed` 回调中，`upgradePicker.visible` 检查之后、`combat.hitstop` 之前，插入 `if (UIStack.pausing) { env.update(dt, now); return; }`——跳过 gameplay 更新但保留环境动画（云/雾漂移）。
+
+**installUIStackEscape 幂等修复**：vitest `singleFork: true` 下模块在测试文件间重新求值（产生新 `UIStack` 对象 + 新 `_escapeHandler` 闭包），但 `window` 不重建——旧监听器仍留在 window 上且闭包捕获了旧 `UIStack`。旧监听器先触发（捕获阶段、先注册）时若旧栈非空调 `stopImmediatePropagation`，新监听器永远不执行 → 测试失败。
+
+- **解法**：监听器只安装一次（`window._uiStackEscapeInstalled` 幂等标志），监听器内部通过 `window._uiStack` 动态读取当前 `UIStack` 引用（每次 `installUIStackEscape` 调用时更新 `window._uiStack = UIStack`）。单一监听器始终看到最新模块的 UIStack，跨模块重求值安全。
+- 生产环境：模块只求值一次，`installUIStackEscape` 只调用一次，行为与原 `_installed` 标志等价。

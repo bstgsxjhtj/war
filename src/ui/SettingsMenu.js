@@ -5,6 +5,7 @@ import { UIStack } from './UIStack.js';
 export class SettingsMenu {
   constructor(bus, audio, kb) {
     this.bus = bus; this.audio = audio; this.kb = kb || null; this.open = false;
+    this.pausesGame = true; // 战役一#6：设置面板打开时冻结 gameplay
     this.quality = 'high'; this.sensitivity = 1; this.difficulty = 'normal';
     this.colorblind = false; this.reducedMotion = false; this.shakeIntensity = 1;
     this._vol = { master: 0.7, sfx: 0.8, bgm: 0.5, env: 0.4 };

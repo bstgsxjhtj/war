@@ -77,7 +77,7 @@ import { wireAchievements } from './app/AchievementWiring.js';
 import { wireCoreHandlers } from './app/EventWiring.js';
 import { InputRouter } from './app/InputRouter.js';
 import { GameClock } from './app/GameClock.js';
-import { installUIStackEscape } from './ui/UIStack.js';
+import { installUIStackEscape, UIStack } from './ui/UIStack.js';
 import { EV } from './core/constants/events.js';
 import { LS } from './core/constants/storage-keys.js';
 import { EXECUTE } from './core/constants/balance.js';
@@ -538,6 +538,9 @@ async function bootstrap() {
         }
         if (state.current !== States.PLAYING) { env.update(dt, now); if (_bgmCombatSet) { audio.playSound('bgmStop'); audio.playSound('stinger', { stinger: player.alive ? 'victory' : 'defeat' }); _bgmCombatSet = false; } if (_bossBarShown) { hud.hideBoss(); _bossBarShown = false; _bossPhaseShown = 0; } hud.setLowHP(false); if (tutorial) { tutorial.destroy(); tutorial = null; } return; }
         if (upgradePicker.visible) { env.update(dt, now); return; }
+        // 战役一#6：菜单暂停闸门——任何 pausesGame 面板（Esc 菜单/设置/技能树/成就/词条/存档/皮肤）
+        // 打开时冻结 gameplay（AI/战斗/玩家更新全跳过），仅保留环境氛围动画
+        if (UIStack.pausing) { env.update(dt, now); return; }
 
         if (combat.hitstop > 0) combat.hitstop = Math.max(0, combat.hitstop - dt);
         const _freeze = (!_reducedMotion && combat.hitstop > 0 && !hitStop.active) || deathFeedback.paused;

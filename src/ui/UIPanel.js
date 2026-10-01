@@ -6,6 +6,8 @@ export class UIPanel {
     this.toggleKey = toggleKey;
     this.kb = kb;
     this.action = action;
+    // 战役一#6：UIPanel 子类（成就/词条/存档/皮肤）默认暂停游戏——打开时主循环冻结 gameplay
+    this.pausesGame = true;
     this.visible = false;
     this.el = document.createElement('div');
     this.el.id = id;
