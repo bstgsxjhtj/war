@@ -13,6 +13,7 @@ describe('GameMenu 统一游戏菜单', () => {
     onOpenSettings: vi.fn(),
     onRestart: vi.fn(),
     onResume: vi.fn(),
+    onExitToMenu: vi.fn(),
   });
 
   beforeEach(() => {
@@ -94,5 +95,19 @@ describe('GameMenu 统一游戏菜单', () => {
     expect(menu.open).toBe(true);
     menu.toggle();
     expect(menu.open).toBe(false);
+  });
+
+  it('退出到主菜单按钮触发 onExitToMenu (C1-7)', () => {
+    const o = opts();
+    const m = new GameMenu(o);
+    m.el.querySelector('[data-action="exit"]').click();
+    expect(o.onExitToMenu).toHaveBeenCalledTimes(1);
+    m.dispose();
+  });
+
+  it('pausesGame=true 打开时冻结 gameplay (C1-6)', () => {
+    expect(menu.pausesGame).toBe(true);
+    menu.show();
+    expect(UIStack.pausing).toBe(true);
   });
 });

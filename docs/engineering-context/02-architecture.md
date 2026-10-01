@@ -141,3 +141,17 @@ ESM 依赖图必须保持无环（DAG）。
 
 - **解法**：监听器只安装一次（`window._uiStackEscapeInstalled` 幂等标志），监听器内部通过 `window._uiStack` 动态读取当前 `UIStack` 引用（每次 `installUIStackEscape` 调用时更新 `window._uiStack = UIStack`）。单一监听器始终看到最新模块的 UIStack，跨模块重求值安全。
 - 生产环境：模块只求值一次，`installUIStackEscape` 只调用一次，行为与原 `_installed` 标志等价。
+
+## 15. 会话闭环：结算屏三键 + 退出到主菜单（C1-7，2026-10-01）
+
+**结算屏三键**：`ResultScreen` 原仅一个"继续 (R)"按钮，`hide()` 自动 `emit(ROUND_RESTART)` → 只能重开。改为三按钮 + `hide()` 不再 emit：
+
+- **重试 (R)**：`this.hide(); bus.emit(ROUND_RESTART)` ——与原行为等价，KeyR 快捷键同效。
+- **换模式**：`this.hide(); opts.onChangeMode()` ——关闭结算屏后打开 GameMenu（不 emit ROUND_RESTART，用户选模式后 `match.restart()` 自然重置）。
+- **回主菜单**：`this.hide(); opts.onExitToMenu()` ——关闭结算屏后显示 MainMenuUI。
+- `hide()` 仅做 UIStack.remove + 移除 keyHandler，不再 emit。ROUND_RESTART 由重试按钮/KeyR 显式触发。
+- `constructor(bus, opts = {})` 新增第二参数 `opts`（`onChangeMode` / `onExitToMenu`），向后兼容（默认 `{}`）。
+
+**GameMenu 退出到主菜单**：操作行下方新增全宽按钮"退出到主菜单"（`data-action="exit"`），回调 `opts.onExitToMenu`。main_entry 中 `onExitToMenu: () => { gameMenu.hide(); mainMenuUI.show(); }`——关闭 Esc 菜单后显示标题屏，`UIStack.pausing` 仍为 true（MainMenuUI.pausesGame=true），gameplay 冻结。
+
+**MainMenuUI pausesGame**：标题屏增设 `this.pausesGame = true`。从结算屏/GameMenu 回主菜单时，gameplay 立即冻结（AI/战斗/玩家更新全跳过）。从主菜单开始新游戏时 `mainMenuUI.hide()` → `UIStack.pausing = false` → `applyModeByName` → `match.restart()` → `startRound()` → `state.transit(PLAYING)`，gameplay 恢复。

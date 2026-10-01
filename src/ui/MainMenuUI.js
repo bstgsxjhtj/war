@@ -6,6 +6,7 @@ export class MainMenuUI {
   constructor(opts = {}) {
     this.opts = opts;
     this.closable = false;
+    this.pausesGame = true; // 战役一#7：标题屏打开时冻结 gameplay（从结算屏/GameMenu 回主菜单时暂停后台对战）
     this.el = null;
     this._continueBtn = null;
     this._build();

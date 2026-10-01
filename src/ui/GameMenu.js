@@ -90,6 +90,13 @@ export class GameMenu {
     row.append(classBtn, settingsBtn, restartBtn, resumeBtn);
     panel.appendChild(row);
 
+    // 战役一#7：退出到主菜单（全宽按钮，置于操作行下方）
+    const exitBtn = mkBtn('exit', '退出到主菜单', '#4a2a2a');
+    exitBtn.style.gridColumn = '1 / -1';
+    exitBtn.style.marginTop = '10px';
+    exitBtn.addEventListener('click', () => { if (this.opts.onExitToMenu) this.opts.onExitToMenu(); });
+    panel.appendChild(exitBtn);
+
     const hint = document.createElement('div');
     Object.assign(hint.style, { fontSize: '11px', opacity: '0.4', marginTop: '16px', textAlign: 'center' });
     hint.textContent = 'M 键可在对局结束后直接轮换模式 · 点击画面重新锁定鼠标';

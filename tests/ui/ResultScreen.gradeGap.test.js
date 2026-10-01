@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ResultScreen } from '../../src/ui/ResultScreen.js';
 
+beforeEach(() => { document.body.innerHTML = ''; });
+
 describe('ResultScreen.gradeGap 评级差距', () => {
   it('S 评级时返回 null（已到顶）', () => {
     expect(ResultScreen.gradeGap(8, 200, 50)).toBe(null);
@@ -139,5 +141,55 @@ describe('ResultScreen.show 死因统计', () => {
   it('无 deathStats 时不渲染死因统计区', () => {
     rs.show({ kills: 5, damage: 150, time: 50, win: true });
     expect(rs.el.innerHTML).not.toContain('死因统计');
+  });
+});
+
+describe('ResultScreen 三键结算（C1-7）', () => {
+  let rs, bus;
+  beforeEach(() => {
+    bus = { emit: vi.fn(), on: vi.fn() };
+  });
+
+  it('渲染重试/换模式/回主菜单三键', () => {
+    rs = new ResultScreen(bus);
+    rs.show({ kills: 1, damage: 50, time: 30, win: false });
+    expect(rs.el.querySelector('#rs-retry')).toBeTruthy();
+    expect(rs.el.querySelector('#rs-mode')).toBeTruthy();
+    expect(rs.el.querySelector('#rs-menu')).toBeTruthy();
+  });
+
+  it('点击重试 hide 后 emit ROUND_RESTART', () => {
+    rs = new ResultScreen(bus);
+    rs.show({ kills: 1, damage: 50, time: 30, win: false });
+    rs.el.querySelector('#rs-retry').click();
+    expect(rs.el.style.display).toBe('none');
+    expect(bus.emit).toHaveBeenCalledWith('round.restart');
+  });
+
+  it('点击换模式调用 onChangeMode 且不 emit ROUND_RESTART', () => {
+    const onChangeMode = vi.fn();
+    rs = new ResultScreen(bus, { onChangeMode });
+    rs.show({ kills: 1, damage: 50, time: 30, win: false });
+    rs.el.querySelector('#rs-mode').click();
+    expect(rs.el.style.display).toBe('none');
+    expect(onChangeMode).toHaveBeenCalledTimes(1);
+    expect(bus.emit).not.toHaveBeenCalled();
+  });
+
+  it('点击回主菜单调用 onExitToMenu 且不 emit ROUND_RESTART', () => {
+    const onExitToMenu = vi.fn();
+    rs = new ResultScreen(bus, { onExitToMenu });
+    rs.show({ kills: 1, damage: 50, time: 30, win: false });
+    rs.el.querySelector('#rs-menu').click();
+    expect(rs.el.style.display).toBe('none');
+    expect(onExitToMenu).toHaveBeenCalledTimes(1);
+    expect(bus.emit).not.toHaveBeenCalled();
+  });
+
+  it('hide 不再 emit ROUND_RESTART（由重试按钮负责 emit）', () => {
+    rs = new ResultScreen(bus);
+    rs.show({ kills: 1, damage: 50, time: 30, win: false });
+    rs.hide();
+    expect(bus.emit).not.toHaveBeenCalled();
   });
 });

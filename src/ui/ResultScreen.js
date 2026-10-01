@@ -37,8 +37,9 @@ export class ResultScreen {
     return { next: next[grade], gap: Math.ceil(thresholds[grade] - score) };
   }
 
-  constructor(bus) {
+  constructor(bus, opts = {}) {
     this.bus = bus;
+    this.opts = opts;
     this.el = document.createElement('div');
     this.el.id = 'result-screen';
     Object.assign(this.el.style, {
@@ -93,14 +94,19 @@ export class ResultScreen {
       deathStatsHtml,
       waveHtml,
       statsHtml,
-      '<button id="rs-continue" style="padding:12px 32px;background:linear-gradient(90deg,#3a5a4a,#2a4a3a);border:1px solid #4a8;border-radius:8px;color:#fff;cursor:pointer;font-size:15px;font-family:inherit;font-weight:600;width:100%;">\u7ee7\u7eed (R)</button>',
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-top:8px;">',
+      '<button id="rs-retry" style="padding:12px 16px;background:linear-gradient(90deg,#3a5a4a,#2a4a3a);border:1px solid #4a8;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">\u91cd\u8bd5 (R)</button>',
+      '<button id="rs-mode" style="padding:12px 16px;background:linear-gradient(90deg,#365070,#2a4060);border:1px solid #48a;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">\u6362\u6a21\u5f0f</button>',
+      '<button id="rs-menu" style="padding:12px 16px;background:linear-gradient(90deg,#4a3a3a,#3a2a2a);border:1px solid #a55;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">\u56de\u4e3b\u83dc\u5355</button>',
+      '</div>',
       '</div>'
     ].join('');
     this.el.style.display = 'flex';
     UIStack.push(this);
-    const btn = this.el.querySelector('#rs-continue');
-    if (btn) btn.addEventListener('click', () => this.hide());
-    this._keyHandler = (e) => { if (e.code === 'KeyR') this.hide(); };
+    this.el.querySelector('#rs-retry').addEventListener('click', () => { this.hide(); this.bus.emit(EV.ROUND_RESTART); });
+    this.el.querySelector('#rs-mode').addEventListener('click', () => { this.hide(); if (this.opts.onChangeMode) this.opts.onChangeMode(); });
+    this.el.querySelector('#rs-menu').addEventListener('click', () => { this.hide(); if (this.opts.onExitToMenu) this.opts.onExitToMenu(); });
+    this._keyHandler = (e) => { if (e.code === 'KeyR') { this.hide(); this.bus.emit(EV.ROUND_RESTART); } };
     window.addEventListener('keydown', this._keyHandler);
   }
 
@@ -113,6 +119,5 @@ export class ResultScreen {
     this.el.style.display = 'none';
     UIStack.remove(this);
     window.removeEventListener('keydown', this._keyHandler);
-    this.bus.emit(EV.ROUND_RESTART);
   }
 }

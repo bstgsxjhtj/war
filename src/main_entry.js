@@ -131,7 +131,10 @@ async function bootstrap() {
   water.mesh.position.set(0, 0.2, 0);
   scene.add(water.mesh);
   const supply = new SupplyPoint();
-  const resultScreen = new ResultScreen(bus);
+  const resultScreen = new ResultScreen(bus, {
+    onChangeMode: () => gameMenu.show(),
+    onExitToMenu: () => mainMenuUI.show(),
+  });
   scene.add(supply.group);
   await water.init();
 
@@ -502,6 +505,7 @@ async function bootstrap() {
     onOpenSettings: () => settings.show(),
     onRestart: () => { match.restart(); gameMenu.hide(); relockPointer(); },
     onResume: () => { gameMenu.hide(); relockPointer(); },
+    onExitToMenu: () => { gameMenu.hide(); mainMenuUI.show(); },
   });
   const buildReviewUI = new BuildReviewUI(() => ({ selectedClass, player, skills, runBuffs }));
   window.addEventListener('keydown', (e) => {

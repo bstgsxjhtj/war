@@ -148,4 +148,10 @@ describe('MainMenuUI 主菜单标题屏', () => {
     m.dispose();
     expect(m.el).toBeNull();
   });
+
+  it('pausesGame=true 打开时冻结 gameplay (C1-7)', () => {
+    expect(menu.pausesGame).toBe(true);
+    menu.show();
+    expect(UIStack.pausing).toBe(true);
+  });
 });
