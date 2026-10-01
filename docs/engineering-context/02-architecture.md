@@ -212,3 +212,18 @@ ESM 依赖图必须保持无环（DAG）。
 | C3-20 | 多档存档 | `gameplay/SaveManager.js`、`core/constants/storage-keys.js`、`ui/SaveUI.js`、`main_entry.js` | SaveManager 参数化槽位（`new SaveManager(slot)`），键模板 `savegame_v2_slot_{N}` + 备份 `savegame_v2_slot_bak_{N}`，`CURRENT_VERSION` 2→3（v2→v3 迁移：登记 slot 字段）。静态 `listSlots/peek/getActiveSlot/setActiveSlot`；槽 0 空时一次性迁移遗留 `savegame_v1`（v2）。SaveUI 渲染槽位列表（写入/清除），开机 `new SaveManager(SaveManager.getActiveSlot())`。 |
 | C3-21 | 空间哈希邻居查询 | `core/SpatialHash.js`（新建）、`gameplay/CombatSystem.js`、`gameplay/AIController.js`、`main_entry.js` | 均匀网格 cellSize=10，`queryRadius`（复用结果数组）/`queryNearest`（环形扩张+早停）替代 O(N²) 暴力扫描，应用于近战/AOE/大招/箭矢/AI 选目标。`_ensureSpatial(now)` 按帧时间戳 memo 化，每帧仅重建一次。`main_entry` 每帧构建一次 `aiSpatialHash` 并传给全部 AI，避免 N 个 AI 各自重建网格。**注意：`AIController.update` 第 6 参为 `spatialHash`，所有覆写子类（`BossEnemy`、`EliteEnemy`、`CavalryEnemy`）必须声明并转发该参数**，否则共享哈希被静默丢弃、退化为每帧自建网格。 |
 | C3-22 | HUD 帧批量写入 | `ui/HUD.js`、`main_entry.js` | 新增 `beginFrame/commitFrame`：帧内活跃时 `_write` 入队闭包，帧末统一提交，减少逐 setter 的 DOM 抖动；20+ 方法收编到 `_write`（含 8 个计时器 opacity）。 |
+
+## 20. 战役二/三 续推：死代码/死事件/失效路径清扫（2026-10-01）
+
+> 对渲染管线、辅助系统、LOD 三层做定向复审，确认并修复 6 项证据可查的缺陷。所有修改落在既有文件，新增 3 个测试文件（Scene/WeatherSystem.palette/aux-events）。
+
+| # | 类别 | 修复 | 文件 | 内容 |
+|---|---|---|---|---|
+| C2-15 | 画面调通 | 天气光照失效 + clear 未复位基准 | `core/constants/palette.js`、`engine/Scene.js`、`world/WeatherSystem.js` | `Scene` 从未存 `this.hemi` → `main_entry` 传 `scene.hemi \|\| null` 使 WeatherSystem 5 个环境光分支全为死代码。现 `Scene` 暴露 `this.hemi`，全量颜色改用 `PALETTE.SCENE`（新增 `FOG_DENSITY`），`WeatherSystem.apply()` 的 clear 分支复位到 `PALETTE.SCENE` 基准（此前硬编码值偏离基准 → 一次天气循环后雾密度/日照/半球色永久漂移）。 |
+| C2-16 | 画面调通 | 水面浪花朝向 | `world/Water.js` | `_splash` Points 作为已旋转 `-Math.PI/2` 的水面网格子级时，其局部 y/z 轴与世界上下轴互换 → 水平散布被映射到竖直方向（粒子悬空 ±depth/2）。加 `_splash.rotation.x = Math.PI/2` 反向抵消。 |
+| C2-17 | 内容可达 | 辅助系统死事件补生产者 | `main_entry.js` | `EV.MAP_PING`（MiniMapPing/FullMapPanel 监听）与 `EV.UI_NOTIFY`（NotificationSystem 监听）全仓无生产者。新增 `pingMap(pos,type)`，在 Boss 召唤 / 波次 Boss 生成 / 投石机占领三处广播 `MAP_PING`；生存时间达成与波次里程碑广播 `UI_NOTIFY`。 |
+| C2-18 | 内容可达 | Tooltip 零注册 | `ui/SettingsMenu.js`、`main_entry.js` | Tooltip 模块无任何 `register()` 调用。`SettingsMenu.attachAux({ tooltip })` 为画质/难度/音量/色弱/减少动效/震动/重置教程等关键项注册悬停说明。 |
+| C2-19 | 内容可达 | Accessibility 无 UI 入口 | `ui/SettingsMenu.js`、`main_entry.js` | 无障碍设置仅可手改 `localStorage['accessibility']`。`attachAux({ accessibility })` 渲染"无障碍"分区（UI 缩放/字体大小/高对比度/长按切换/字幕），控件直连 `accessibility.set(key,val)`；main_entry 在 `Tooltip`/`Accessibility` 实例化后调用 `settings.attachAux({ tooltip, accessibility })`。 |
+| C3-23 | 画面提质 | LOD 代理胶囊半埋 | `render/LODManager.js` | 代理矩阵按 `char.position`（脚底）合成，而 `CapsuleGeometry(0.5,1.2)` 以自身中心为原点（总高 2.2）→ 远距代理一半埋入地下。补竖直偏移 `PROXY_HALF(1.1) * 精英缩放`（`_isElite` 时 ×1.3）。 |
+
+**架构约定**：`Scene` 必须暴露 `hemi`/`sun` 引用供 `WeatherSystem` 调节；任何天气分支对场景基准值的复位必须以 `PALETTE.SCENE` 为唯一来源。组合根（`main_entry`）负责为 `src/auxiliary/` 的事件（`MAP_PING`/`UI_NOTIFY` 等）提供生产者，辅助模块自身不发明数据。`SettingsMenu.attachAux` 是辅助系统接入设置面板的唯一入口（保持构造签名向后兼容）。

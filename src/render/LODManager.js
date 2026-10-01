@@ -6,6 +6,8 @@ const QUALITY_SCALE = { high: 1.0, mid: 0.8, low: 0.5 };
 const PROXY_GRAY = 0x888888;
 const PROXY_GOLD = 0xffd070;
 const ELITE_SCALE = 1.3;
+// 代理胶囊半高：CapsuleGeometry(0.5, 1.2) 总高 = 1.2 + 2*0.5 = 2.2 → 半高 1.1（C3-23：脚底对齐用）
+const PROXY_HALF = 1.1;
 const DECORATIVE = ['cape', 'emblem', 'factionFlag', 'rKneeguard', 'lKneeguard'];
 const MID_EXTRA = ['rPauldron', 'lPauldron', 'visor', 'belt', 'chestplate'];
 const TICK_INTERVAL = 0.25;
@@ -136,9 +138,12 @@ export class LODManager {
       const effective = this._isThreat(char) ? Math.min(level, 1) : level;
       if (effective !== char._lodLevel) this._applyLevel(char, effective);
       if (effective === 2 && proxyIdx < PROXY_MAX) {
-        this._tmpPos.copy(char.position);
-        this._tmpQuat.setFromAxisAngle(UP, 0);
         const s = char._isElite ? ELITE_SCALE : 1;
+        this._tmpPos.copy(char.position);
+        // C3-23：char.position 位于脚底，而胶囊几何以自身中心为原点——不补竖直偏移会有一半埋入地下、
+        // 可见高度仅为实际一半。偏移半高（capsule 高 2.2 → 半高 1.1）随精英缩放同步。
+        this._tmpPos.y += PROXY_HALF * s;
+        this._tmpQuat.setFromAxisAngle(UP, 0);
         this._tmpScale.set(s, s, s);
         this._tmpMatrix.compose(this._tmpPos, this._tmpQuat, this._tmpScale);
         this._proxyMesh.setMatrixAt(proxyIdx, this._tmpMatrix);

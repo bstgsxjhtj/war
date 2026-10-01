@@ -165,6 +165,7 @@ async function bootstrap() {
       e.setCameraRef(camera); scene.add(e.root); combat.register(e); lod.register(e); ais.push(e);
     }
     audio.playSound('ultimate');
+    pingMap(pos, 'objective'); // C2-17：Boss 召唤在小地图/全图打目标点
   });
   const miniMap = new MiniMap(bus);
   const weaponTrail = new WeaponTrail(scene.scene);
@@ -315,6 +316,8 @@ async function bootstrap() {
   const screenshotMode = new ScreenshotMode({ canvas });
   const accessibility = new Accessibility({ bus });
   screenshotMode.setBus(bus);
+  // C2-18/C2-19：设置面板接入 tooltip（悬停说明）与无障碍分区（此前两者均无入口）
+  settings.attachAux({ tooltip, accessibility });
   // StatsPanel 数据刷新：从存档采集中读取生涯统计
   statsPanel._refreshFromSave = () => {
     const c = saveOrch.capture();
@@ -334,9 +337,18 @@ async function bootstrap() {
   const _origStatsToggle = statsPanel.toggle.bind(statsPanel);
   statsPanel.toggle = function() { if (statsPanel.el.style.display === 'none') statsPanel._refreshFromSave(); _origStatsToggle(); };
 
+  // 小地图 Ping：向 MiniMapPing/FullMapPanel 广播标记（C2-17：map.ping 此前无任何生产者 → 两者成死功能）
+  function pingMap(pos, type) {
+    if (!pos) return;
+    bus.emit(EV.MAP_PING, { x: pos.x, z: pos.z, type });
+  }
+
   function spawnRed(redLayout, { bossWave = false, modifier = null, stageDifficulty = 1, bossType = null } = {}) {
     if (envHazards) envHazards.setHazardBoost((campaign.currentStage && campaign.currentStage.hazardBoost) || 1);
+    const _before = ais.length;
     spawner.spawnRed(redLayout, ais, { bossWave, modeName: mode.name, modifier, stageDifficulty, bossType });
+    // C2-17：本波生成 Boss 时在小地图/全图上打目标点
+    for (let i = _before; i < ais.length; i++) if (ais[i]._isBoss) { pingMap(ais[i].position, 'objective'); break; }
   }
 
   // 清理已阵亡单位：detach 拖尾 + 注销 LOD + dispose + 移出 scene + 从 ais/combat 移除，防止无界增长
@@ -640,11 +652,11 @@ async function bootstrap() {
         supply.update(player, dt, now);
         siege.update(dt, combat, _all);
         // 投石机争夺：靠近自动占领/夺占（每次判定用实时占领方，避免快照过期）
-        if (player.alive && siege.trebuchet.team !== player.team && siege.tryOccupy(player)) hud.flash('已占领投石机！');
+        if (player.alive && siege.trebuchet.team !== player.team && siege.tryOccupy(player)) { hud.flash('已占领投石机！'); pingMap(siege.trebuchet.position, 'assist'); }
         for (const a of ais) {
           if (!a.alive || a.team === siege.trebuchet.team) continue;
           const _wasHeld = siege.trebuchet.team === 0;
-          if (siege.tryOccupy(a) && _wasHeld) hud.flash('投石机被敌方占领！');
+          if (siege.tryOccupy(a) && _wasHeld) { hud.flash('投石机被敌方占领！'); pingMap(siege.trebuchet.position, 'danger'); }
         }
         // AI 决策占领/抢夺投石机：未控方派最近 AI 前往
         if (siege.trebuchet.team !== 1) {
@@ -708,7 +720,7 @@ async function bootstrap() {
           if (match.timeLimit > 0) match.timeLimit -= dt;
           if (match.surviveTimer > 0) {
             match.surviveTimer -= dt;
-            if (match.surviveTimer <= 0 && !match.surviveWavesDone) { match.surviveWavesDone = true; hud.flash('生存时间达成！'); setTimeout(() => hud.clearHint(), 1500); }
+            if (match.surviveTimer <= 0 && !match.surviveWavesDone) { match.surviveWavesDone = true; hud.flash('生存时间达成！'); bus.emit(EV.UI_NOTIFY, { text: '生存时间达成！', priority: 1 }); setTimeout(() => hud.clearHint(), 1500); }
           }
           if (match.escortTarget) match.escortTarget.update(dt, player);
           campaign.onTick(dt, {
@@ -744,6 +756,7 @@ async function bootstrap() {
               else msg += ' · 里程碑 +' + milestone.total + ' 分';
             }
             hud.flash(msg);
+            bus.emit(EV.UI_NOTIFY, { text: msg, priority: 0, duration: 4 }); // C2-17：里程碑/破纪录走分级通知
             setTimeout(() => hud.clearHint(), 2500);
             if (mode.endless && daily.track('endlessWave')) bus.emit(EV.DAILY_UPDATE, daily.challenges);
             if (lay.modifier && lay.modifier.weather) weather.setMode(lay.modifier.weather);

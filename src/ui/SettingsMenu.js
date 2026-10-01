@@ -42,6 +42,7 @@ export class SettingsMenu {
         <div style="margin-bottom:8px;"><label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;"><input id="set-rm" type="checkbox"> 减少动效（关闭脉冲/震动/顿帧）</label></div>
         <div style="margin-bottom:14px;"><div style="font-size:13px;margin-bottom:4px;">屏幕震动强度 <span id="set-shake-v">100%</span></div><input id="set-shake" type="range" min="0" max="100" value="100" style="width:100%;"></div>
         ${keybindHtml}
+        <div id="set-a11y"></div>
         <button id="set-reset-tut" style="width:100%;padding:6px;background:#3a3a4a;font-family:inherit;border:1px solid #567;border-radius:6px;color:#cdd;font-size:13px;cursor:pointer;margin-bottom:8px;">重置新手引导（下次进入生效）</button>
         <button id="set-close" style="width:100%;padding:8px;background:#6b5;font-family:inherit;border:none;border-radius:6px;color:#fff;font-size:14px;cursor:pointer;margin-top:8px;">关闭</button>
       </div>`;
@@ -117,4 +118,58 @@ export class SettingsMenu {
   toggle() { this.open ? this.hide() : this.show(); }
   show() { this.el.style.display = 'flex'; this.open = true; UIStack.push(this); if (this.audio) this.audio.resume(); this._applyAll(); }
   hide() { this._cancelListen(); this.el.style.display = 'none'; this.open = false; UIStack.remove(this); }
+
+  // C2-18/C2-19：接入辅助系统——tooltip 提示注册 + 无障碍分区渲染
+  attachAux({ tooltip = null, accessibility = null } = {}) {
+    this._tip = tooltip;
+    this._a11y = accessibility;
+    this._a11yEl = this.el.querySelector('#set-a11y');
+    this._renderA11y();
+    this._registerTooltips();
+  }
+
+  // C2-19：无障碍设置此前只能手改 localStorage['accessibility']，面板内无入口 → 分区补齐
+  _renderA11y() {
+    const a = this._a11y;
+    if (!a || !this._a11yEl) return;
+    const s = a.getAll();
+    this._a11yEl.innerHTML = `
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px;border-top:1px solid #456;padding-top:12px;">无障碍</div>
+      <div style="margin-bottom:8px;"><div style="font-size:13px;margin-bottom:4px;">界面缩放 <span id="a11y-scale-v">${s.uiScale.toFixed(1)}×</span></div><input id="a11y-scale" type="range" min="80" max="130" step="10" value="${Math.round(s.uiScale * 100)}" style="width:100%;"></div>
+      <div style="margin-bottom:8px;"><div style="font-size:13px;margin-bottom:4px;">字体大小</div><select id="a11y-font" style="width:100%;padding:6px;background:#2a2a3a;color:#eee;border:1px solid #456;border-radius:6px;"><option value="small">小</option><option value="medium">中</option><option value="large">大</option></select></div>
+      <div style="margin-bottom:8px;"><label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;"><input id="a11y-hc" type="checkbox"> 高对比度</label></div>
+      <div style="margin-bottom:8px;"><label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;"><input id="a11y-hold" type="checkbox"> 长按切换（防误触）</label></div>
+      <div style="margin-bottom:14px;"><label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;"><input id="a11y-sub" type="checkbox"> 显示字幕</label></div>`;
+    const scale = this._a11yEl.querySelector('#a11y-scale');
+    const scaleV = this._a11yEl.querySelector('#a11y-scale-v');
+    const font = this._a11yEl.querySelector('#a11y-font');
+    const hc = this._a11yEl.querySelector('#a11y-hc');
+    const hold = this._a11yEl.querySelector('#a11y-hold');
+    const sub = this._a11yEl.querySelector('#a11y-sub');
+    font.value = s.fontSize; hc.checked = s.highContrast; hold.checked = s.holdToToggle; sub.checked = s.subtitleEnabled;
+    scale.addEventListener('input', () => { a.set('uiScale', Number(scale.value) / 100); scaleV.textContent = a.get('uiScale').toFixed(1) + '×'; });
+    font.addEventListener('change', () => a.set('fontSize', font.value));
+    hc.addEventListener('change', () => a.set('highContrast', hc.checked));
+    hold.addEventListener('change', () => a.set('holdToToggle', hold.checked));
+    sub.addEventListener('change', () => a.set('subtitleEnabled', sub.checked));
+  }
+
+  // C2-18：Tooltip 模块此前零注册（死功能）→ 为设置项绑定悬停说明
+  _registerTooltips() {
+    const t = this._tip;
+    if (!t || typeof t.register !== 'function') return;
+    const tip = (sel, text) => { const el = this.el.querySelector(sel); if (el) t.register(el, text); };
+    tip('#set-qual', '画质档位：高＝4096 阴影贴图 + 2× 像素比；中＝2048 + 1×；低＝关阴影 + 0.7×（自适应降档不会越过此手动上限）');
+    tip('#set-diff', '敌人强度档位：影响 AI 血量/伤害倍率与增援频率');
+    tip('#set-vol', '主音量：所有音频通道的总输出');
+    tip('#set-cb', '色弱模式：为敌我单位附加形状/轮廓区分，不改变数值');
+    tip('#set-rm', '减少动效：关闭受击脉冲、屏幕震动与顿帧，缓解眩晕');
+    tip('#set-shake', '屏幕震动强度：单独缩放镜头震动幅度（0＝完全不震）');
+    tip('#set-reset-tut', '清除新手引导完成标记，下次进入游戏重新演示');
+    tip('#a11y-scale', '界面缩放：整体缩放 HUD 与菜单（0.8×–1.3×）');
+    tip('#a11y-font', '字体大小：HUD 与菜单的基准字号');
+    tip('#a11y-hc', '高对比度：提高对比与饱和度并加粗边框，弱视友好');
+    tip('#a11y-hold', '长按切换：开关类按键需长按生效，避免误触');
+    tip('#a11y-sub', '字幕：显示战斗与剧情的文字提示');
+  }
 }

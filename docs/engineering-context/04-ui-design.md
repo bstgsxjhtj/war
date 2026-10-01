@@ -20,7 +20,7 @@
 | FullMapPanel | G | 全屏战场地图（700×700，玩家/敌人/Boss/补给点，10Hz 重绘） |
 | StatsPanel | P | 生涯统计（9 项：击杀/阵亡/场次/胜率/最高波/连击/连杀/时长/成就） |
 | ScreenshotMode | F12 | WebGL canvas 截图为 PNG 下载 + 200ms 快门闪光 |
-| Accessibility | 设置内 | 无障碍选项（UI 缩放 0.8-1.3 / 字体 small/medium/large / 高对比度 / hold-to-toggle / 字幕） |
+| Accessibility | 设置内 | 无障碍选项（UI 缩放 0.8-1.3 / 字体 small/medium/large / 高对比度 / hold-to-toggle / 字幕）。C2-19：设置面板新增"无障碍"分区（`SettingsMenu.attachAux({ accessibility })` 渲染，控件直连 `accessibility.set`），此前仅可手改 `localStorage['accessibility']` |
 
 ## 2. 按键映射（全局唯一，新增按键前必须查此表）
 

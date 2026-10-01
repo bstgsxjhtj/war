@@ -6,6 +6,7 @@ export const PALETTE = {
   // 场景：黄昏暖调
   SCENE: {
     FOG: 0x8a7458,
+    FOG_DENSITY: 0.008,
     BG: 0x8a7458,
     HEMI_SKY: 0xffd9a8,
     HEMI_GROUND: 0x5a4a36,

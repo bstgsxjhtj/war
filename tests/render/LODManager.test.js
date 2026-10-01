@@ -221,6 +221,33 @@ describe('LODManager', () => {
     expect(sc.x).toBeCloseTo(1.0);
   });
 
+  it('C3-23: 远距代理胶囊竖直居中（脚底 position.y + 半高 1.1），不半埋地下', () => {
+    const c = makeChar(1, 0, 60);
+    c.position.set(5, 0, 60);
+    lod.register(c);
+    lod.tick();
+    expect(lod.proxyCount).toBe(1);
+    const m = new THREE.Matrix4();
+    lod._proxyMesh.getMatrixAt(0, m);
+    const pos = new THREE.Vector3();
+    m.decompose(pos, new THREE.Quaternion(), new THREE.Vector3());
+    expect(pos.y).toBeCloseTo(0 + 1.1, 3);
+    expect(pos.x).toBeCloseTo(5, 3);
+  });
+
+  it('C3-23: 精英代理偏移随缩放同步（半高 1.1 * 1.3）', () => {
+    const c = makeChar(1, 0, 60);
+    c.position.set(0, 4, 60);
+    c._isElite = true;
+    lod.register(c);
+    lod.tick();
+    const m = new THREE.Matrix4();
+    lod._proxyMesh.getMatrixAt(0, m);
+    const pos = new THREE.Vector3();
+    m.decompose(pos, new THREE.Quaternion(), new THREE.Vector3());
+    expect(pos.y).toBeCloseTo(4 + 1.1 * 1.3, 3);
+  });
+
   it('tick(dt) 内部累积 dt，未达 0.25s 间隔不执行降级（P2-6）', () => {
     const c = makeChar(1, 0, 60);
     lod.register(c);

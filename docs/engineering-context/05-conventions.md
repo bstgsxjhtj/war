@@ -6,6 +6,15 @@
 禁止发射无监听者的事件；新增事件需在本文件登记 payload 契约。
 **事件名常量化**：全部 bus 事件名收敛于 `src/core/constants/events.js`（`EV.XXX`，当前 50 个事件），代码中禁止再写事件名字符串字面量。
 
+**辅助系统事件 payload 契约**（`src/auxiliary/` 监听，生产者位于组合根 `main_entry.js`）：
+
+| 事件 | payload | 消费者 |
+|---|---|---|
+| `EV.MAP_PING` (map.ping) | `{ x: number, z: number, type: 'objective'\|'assist'\|'danger'\|'ping' }` | MiniMapPing、FullMapPanel |
+| `EV.UI_NOTIFY` (ui.notify) | `{ text: string, priority?: 0\|1, duration?: number }` | NotificationSystem |
+| `EV.KILLFEED_EVENT` | 战斗事件聚合载荷 | KillFeed |
+| `EV.SCREENSHOT` (aux.screenshot) | 无/截图上下文 | ScreenshotMode |
+
 ## 2. localStorage 键登记
 
 **键名常量化**：全部 localStorage 键收敛于 `src/core/constants/storage-keys.js`（`LS.XXX`，当前 19 个键），代码中禁止再写键名字符串字面量。

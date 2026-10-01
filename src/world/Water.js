@@ -34,6 +34,10 @@ export class Water {
     }
     sgeo.setAttribute('position', new THREE.BufferAttribute(this._spos, 3));
     this._splash = new THREE.Points(sgeo, new THREE.PointsMaterial({ color: 0xddeeff, size: 0.18, transparent: true, opacity: 0.7, depthWrite: false }));
+    // C2-16：splash 作为已旋转 -90° 的水面网格子级时，其局部 y/z 轴与世界上下轴互换——
+    // 浪花的水平散布会被映射到世界垂直方向（粒子悬空 ±depth/2）。对其反向旋转 +90° 抵消父级旋转，
+    // 使局部坐标与世界轴一致（x 沿宽度、y 向上、z 沿深度），update() 中的上升逻辑才正确。
+    this._splash.rotation.x = Math.PI / 2;
     this.mesh.add(this._splash);
     this._splashGeo = sgeo;
   }

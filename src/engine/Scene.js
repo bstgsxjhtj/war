@@ -1,18 +1,22 @@
 import * as THREE from 'three';
 import { deepDispose } from '../render/disposeUtils.js';
+import { PALETTE } from '../core/constants/palette.js';
 
 // 黄昏氛围：FogExp2 指数雾（density 属性可被 WeatherSystem 动态调节），太阳 fog:false，远山3层色阶向雾色靠拢
+// 颜色统一取自 PALETTE.SCENE（中央色板唯一事实来源）；hemi 需暴露给 WeatherSystem 调节环境光
 export class Scene {
   constructor() {
     this.scene = new THREE.Scene();
-    const fogColor = 0x8a7458;
-    this.scene.background = new THREE.Color(fogColor);
-    this.scene.fog = new THREE.FogExp2(fogColor, 0.008);
+    const fogColor = PALETTE.SCENE.FOG;
+    this.scene.background = new THREE.Color(PALETTE.SCENE.BG);
+    this.scene.fog = new THREE.FogExp2(fogColor, PALETTE.SCENE.FOG_DENSITY);
 
-    const hemi = new THREE.HemisphereLight(0xffd9a8, 0x5a4a36, 0.65);
+    const hemi = new THREE.HemisphereLight(PALETTE.SCENE.HEMI_SKY, PALETTE.SCENE.HEMI_GROUND, 0.65);
     this.scene.add(hemi);
+    // C2-15：暴露半球光供 WeatherSystem 按天气调节强度/色温（此前未暴露 → 天气环境光分支全为死代码）
+    this.hemi = hemi;
 
-    const sun = new THREE.DirectionalLight(0xffc070, 1.4);
+    const sun = new THREE.DirectionalLight(PALETTE.SCENE.SUN, 1.4);
     sun.position.set(70, 90, 40);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -30,9 +34,9 @@ export class Scene {
     // 远山 3 层（色阶向雾色靠拢，均在 fog 内）
     this._mountains = new THREE.Group();
     const layers = [
-      { r: 100, col: 0x6a5238, h: [18, 30] },
-      { r: 140, col: 0x78685a, h: [20, 36] },
-      { r: 180, col: 0x8a7458, h: [22, 40] }
+      { r: 100, col: PALETTE.SCENE.MOUNTAIN_FAR, h: [18, 30] },
+      { r: 140, col: PALETTE.SCENE.MOUNTAIN_MID, h: [20, 36] },
+      { r: 180, col: PALETTE.SCENE.MOUNTAIN_NEAR, h: [22, 40] }
     ];
     for (const L of layers) {
       const mat = new THREE.MeshStandardMaterial({ color: L.col, roughness: 1 });
@@ -55,7 +59,7 @@ export class Scene {
     // 天穹渐变 + 地平线暖光带
     const skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false,
-      uniforms: { top: { value: new THREE.Color(0x6a5a48) }, bottom: { value: new THREE.Color(0xc89058) } },
+      uniforms: { top: { value: new THREE.Color(PALETTE.SCENE.SKY_TOP) }, bottom: { value: new THREE.Color(PALETTE.SCENE.SKY_BOTTOM) } },
       vertexShader: `varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
       fragmentShader: `varying vec3 vP; uniform vec3 top; uniform vec3 bottom; void main(){
         float h=normalize(vP).y;
@@ -69,7 +73,7 @@ export class Scene {
     // 太阳球（禁用雾，距离 380 在天穹内）
     const sunMesh = new THREE.Mesh(
       new THREE.SphereGeometry(6, 12, 8),
-      new THREE.MeshBasicMaterial({ color: 0xffe0a0, fog: false })
+      new THREE.MeshBasicMaterial({ color: PALETTE.SCENE.SUN_BALL, fog: false })
     );
     sunMesh.position.set(70, 90, 40).normalize().multiplyScalar(380);
     this.scene.add(sunMesh);

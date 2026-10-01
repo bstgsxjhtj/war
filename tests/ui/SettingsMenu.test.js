@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { SettingsMenu } from '../../src/ui/SettingsMenu.js';
 import { UIStack } from '../../src/ui/UIStack.js';
+import { Accessibility } from '../../src/auxiliary/Accessibility.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('SettingsMenu', () => {
@@ -143,5 +144,60 @@ describe('SettingsMenu 无障碍设置', () => {
     expect(bus.emit).toHaveBeenCalledWith('settings.colorblind', { colorblind: false });
     expect(bus.emit).toHaveBeenCalledWith('settings.reducedMotion', { reducedMotion: false });
     expect(bus.emit).toHaveBeenCalledWith('settings.shakeIntensity', { shakeIntensity: 1 });
+  });
+});
+
+describe('SettingsMenu attachAux（C2-18/C2-19）', () => {
+  let bus, audio, menu;
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = '';
+    bus = { on: vi.fn(), emit: vi.fn() };
+    audio = { setVolume: vi.fn(), resume: vi.fn(), getVolume: vi.fn(() => 0.7) };
+    menu = new SettingsMenu(bus, audio);
+  });
+
+  it('传入 accessibility → 渲染无障碍分区并回填当前值', () => {
+    const a11y = new Accessibility();
+    menu.attachAux({ accessibility: a11y });
+    expect(menu._a11yEl.querySelector('#a11y-scale')).not.toBeNull();
+    expect(menu._a11yEl.querySelector('#a11y-hc').checked).toBe(false);
+    expect(menu._a11yEl.querySelector('#a11y-sub').checked).toBe(true);
+    expect(menu._a11yEl.querySelector('#a11y-font').value).toBe('medium');
+  });
+
+  it('无障碍控件变更调用 accessibility.set', () => {
+    const a11y = new Accessibility();
+    const spy = vi.spyOn(a11y, 'set');
+    menu.attachAux({ accessibility: a11y });
+    const hc = menu._a11yEl.querySelector('#a11y-hc');
+    hc.checked = true;
+    hc.dispatchEvent(new Event('change'));
+    expect(spy).toHaveBeenCalledWith('highContrast', true);
+
+    const scale = menu._a11yEl.querySelector('#a11y-scale');
+    scale.value = '120';
+    scale.dispatchEvent(new Event('input'));
+    expect(spy).toHaveBeenCalledWith('uiScale', 1.2);
+
+    const font = menu._a11yEl.querySelector('#a11y-font');
+    font.value = 'large';
+    font.dispatchEvent(new Event('change'));
+    expect(spy).toHaveBeenCalledWith('fontSize', 'large');
+  });
+
+  it('传入 tooltip → 为设置项注册悬停说明', () => {
+    const tooltip = { register: vi.fn() };
+    const a11y = new Accessibility();
+    menu.attachAux({ tooltip, accessibility: a11y });
+    expect(tooltip.register).toHaveBeenCalled();
+    const els = tooltip.register.mock.calls.map((c) => c[0]);
+    expect(els).toContain(menu.el.querySelector('#set-qual'));
+    expect(els).toContain(menu.el.querySelector('#a11y-hc'));
+  });
+
+  it('未传 tooltip/accessibility 时不抛错且不渲染分区', () => {
+    expect(() => menu.attachAux()).not.toThrow();
+    expect(menu._a11yEl.querySelector('#a11y-scale')).toBeNull();
   });
 });

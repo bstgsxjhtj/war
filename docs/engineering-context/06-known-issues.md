@@ -17,7 +17,7 @@
 | 9 | K 键双重绑定（main_entry + SkillTreeUI）面板关不掉 | main_entry.js:411 / SkillTreeUI.js:45 | ✅已修：SkillTreeUI 改为全权 toggle（document 自监听），main_entry 移除 KeyK 绑定 |
 | 10 | Affixes.equip 不移除库存 → 词条可复制 | Affixes.js:29-34 | ✅已修：splice 出新词条 + 旧词条 push 回库存 |
 | 11 | ResultScreen 两套评级算法并存 | ResultScreen.js:31 vs gradeOf | ✅已修：show() 改用 ResultScreen.gradeOf(kills,damage,time) |
-| 12 | 死事件：hud.flash / hud.miss / settings.closed / skins.changed 无监听 | SkillTreeUI/BossEnemy/SettingsMenu/WeaponSkins | ✅部分修：HUD 已加 bus.on('hud.flash')；hud.miss/settings.closed/skins.changed 仍 ⬜ |
+| 12 | 死事件：hud.flash / hud.miss / settings.closed / skins.changed 无监听 | SkillTreeUI/BossEnemy/SettingsMenu/WeaponSkins | ✅已修（2026-10-01 第十七轮核实）：HUD 监听 hud.flash；HUD.js:169 监听 HUD_MISS（BossEnemy.js:396 发射）；main_entry.js:299 监听 SKINS_CHANGED（WeaponSkinsUI.js:38/42 发射）；settings.closed 已不存在于 events.js（第五轮 cdba941 清理） |
 | 13 | "重置所有进度"不清成就/词条/每日/皮肤/旧键 | main_entry resetSave | ✅已修：resetSave 现清理全部受管键 + 各模块 _data 重置 |
 | 14 | 成就击杀计数未过滤 killer.isLocal | main_entry.js:106 | ⚠️误报：L106 已有 `if (p.killer.isLocal)` 过滤 |
 | 15 | Progression.restore 不触发 _checkUnlocks | Progression.js:78-83 | ✅已修：restore 末尾加 this._checkUnlocks() |
@@ -407,3 +407,43 @@
 | C2-14 | 环境死代码激活 | `_ruins()`/`_landmarks()` 定义但 `_build()`/`_buildFromLayout()` 从不调用，废墟/地标不出现 | ✅已修 |
 
 测试：gameModes.test.js 适配 8 模式（+1 TrainingMode import/createMode 断言、nextModeName 环序含训练场）。测试总量 1239 不变，118 个测试文件全绿。
+
+---
+
+### 第十七轮：战役二/三 续推（2026-10-01）
+
+> 来源：对渲染管线、辅助系统、LOD 三层做定向复审，确认 6 项证据可查的缺陷（死代码/死事件/失效路径），全部修复。
+
+| # | 类别 | 修复 | 根因 | 状态 |
+|---|---|---|---|---|
+| C2-15 | 画面调通 | 天气光照失效 + clear 未复位基准 | `Scene` 从未存 `this.hemi`，main_entry 传 `scene.hemi \|\| null` → WeatherSystem 5 个环境光分支全为死代码；且 `clear` 分支硬编码 fog 0.005/日色 0xffe0b0 与场景基准（0.008/0xffc070）不一致 → 一次天气循环后色调永久漂移 | ✅已修 |
+| C2-16 | 画面调通 | 水面浪花朝向修正 | `_splash` Points 是已旋转 -90° 水面网格的子级，其局部 y/z 轴映射到世界垂直轴 → 浪花的水平散布变成 ±depth/2 的悬空粒子 | ✅已修 |
+| C2-17 | 内容可达 | 辅助系统死事件补生产者 | `EV.MAP_PING`（MiniMapPing/FullMapPanel 监听）与 `EV.UI_NOTIFY`（NotificationSystem 监听）全仓无生产者 → 小地图标记、全屏地图目标点、分级通知三项能力为死功能 | ✅已修 |
+| C2-18 | 内容可达 | Tooltip 零注册 | Tooltip 模块无任何 `register()` 调用 → 通用悬停提示为死功能 | ✅已修 |
+| C2-19 | 内容可达 | Accessibility 无 UI 入口 | 无障碍设置仅可手改 `localStorage['accessibility']`，设置面板无入口（04 §1 界面清单已声明"设置内"但未实现） | ✅已修 |
+| C3-23 | 画面提质 | LOD 代理胶囊半埋 | 代理矩阵按 `char.position`（脚底）合成，而胶囊几何以自身中心为原点 → 远距代理有一半埋入地下，可见高度仅实际一半 | ✅已修 |
+
+实现要点：
+- `core/constants/palette.js` SCENE 新增 `FOG_DENSITY: 0.008`；`engine/Scene.js` 全量改用 PALETTE.SCENE（含背景/雾/半球/日照/远山/天穹/太阳球）并暴露 `this.hemi`；`world/WeatherSystem.js` clear 分支复位到 PALETTE.SCENE 基准。
+- `world/Water.js` `_splash.rotation.x = Math.PI/2` 抵消父级 -90° 旋转。
+- `main_entry.js` 新增 `pingMap(pos,type)`，在 Boss 召唤/波次 Boss 生成/投石机占领三处广播 `MAP_PING`；生存达标与波次里程碑广播 `UI_NOTIFY`。
+- `ui/SettingsMenu.js` 新增 `attachAux({ tooltip, accessibility })`：渲染无障碍分区（UI 缩放/字体大小/高对比度/长按切换/字幕，直连 accessibility.set），并为关键设置项注册 Tooltip；main_entry 在辅助系统实例化后调用。
+- `render/LODManager.js` 代理矩阵补竖直偏移 `PROXY_HALF(1.1) * 精英缩放`。
+
+### 第十七轮回归测试
+
+| 修复 | 测试文件 | 新增用例 |
+|---|---|---|
+| C2-15 | Scene.test.js（新建）/ WeatherSystem.palette.test.js（新建） | 5（hemi 暴露 + 色板取值 + FogExp2 密度 + 背景 + 日照）/ 6（rain/night/snow/storm 改变值 → clear 复位基准 + null 光源不抛） |
+| C2-16 | Water.test.js | 1（splash 反向旋转 + 为水面子级） |
+| C2-17/C2-18/C2-19 | aux-events.test.js（新建） | 5（main_entry 发射 MAP_PING/UI_NOTIFY、pingMap 载荷、≥3 处调用、attachAux 注入） |
+| C2-18/C2-19 | SettingsMenu.test.js | 4（无障碍分区渲染回填、控件变更调 accessibility.set、tooltip 注册、无参不抛） |
+| C3-23 | LODManager.test.js | 2（普通代理 y=脚底+1.1、精英 y=脚底+1.1×1.3） |
+
+测试总量：1269 → 1292（+23），123 个测试文件全绿。
+
+### 未修登记
+
+| # | 问题 | 位置 | 状态 |
+|---|---|---|---|
+| G8 | RunBuffs 测试只验证字段设值不验消费——假阳性覆盖 | RunBuffs.test.js | ⬜已登记（承第十一轮，未在本轮处理） |

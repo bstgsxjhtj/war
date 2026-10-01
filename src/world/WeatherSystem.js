@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-
+import { PALETTE } from '../core/constants/palette.js';
 // 天气系统：晴/雨/夜/雪/雷暴
 export class WeatherSystem {
   constructor(scene, sun = null, hemi = null, audio = null) {
@@ -160,9 +160,10 @@ export class WeatherSystem {
       if (this.sun) { this.sun.intensity = 0.5; this.sun.color.setHex(0x606080); }
       if (this.hemi) this.hemi.intensity = 0.3;
     } else {
-      if (this.scene.fog) this.scene.fog.density = 0.005;
-      if (this.sun) { this.sun.intensity = 1.4; this.sun.color.setHex(0xffe0b0); }
-      if (this.hemi) { this.hemi.intensity = 0.65; this.hemi.color.setHex(0x9ab0d0); }
+      // C2-15：clear 复位到场景基准黄昏调（PALETTE.SCENE），否则一次天气循环后雾密度/日照/半球色永久漂移
+      if (this.scene.fog) this.scene.fog.density = PALETTE.SCENE.FOG_DENSITY;
+      if (this.sun) { this.sun.intensity = 1.4; this.sun.color.setHex(PALETTE.SCENE.SUN); }
+      if (this.hemi) { this.hemi.intensity = 0.65; this.hemi.color.setHex(PALETTE.SCENE.HEMI_SKY); }
     }
   }
 
