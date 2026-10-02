@@ -83,14 +83,20 @@ export class ClassSelectUI {
 
     const hint = document.createElement('div');
     Object.assign(hint.style, { fontSize: '12px', opacity: '0.4', marginTop: '28px' });
-    hint.textContent = '点击卡片确认选择 · 游戏中可通过设置切换职业';
+    hint.textContent = '点击卡片确认选择 · 游戏中按 C 切换职业 · Esc 返回';
     overlay.appendChild(hint);
+
+    const backBtn = document.createElement('button');
+    Object.assign(backBtn.style, { position: 'absolute', top: '24px', left: '24px', padding: '8px 20px', background: 'rgba(30,30,40,.8)', color: '#cde', border: '1px solid #456', borderRadius: '6px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' });
+    backBtn.textContent = '← 返回';
+    backBtn.addEventListener('click', () => { this.hide(); if (this.opts.onCancel) this.opts.onCancel(); else if (this.opts.onBack) this.opts.onBack(); });
+    overlay.appendChild(backBtn);
 
     document.body.appendChild(overlay);
     this.el = overlay;
   }
 
-  show() { if (this.el) this.el.style.display = 'flex'; }
-  hide() { if (this.el) this.el.style.display = 'none'; }
+  show() { if (this.el) { this.el.style.display = 'flex'; this._escHandler = (e) => { if (e.code === 'Escape') { this.hide(); if (this.opts.onCancel) this.opts.onCancel(); else if (this.opts.onBack) this.opts.onBack(); } }; window.addEventListener('keydown', this._escHandler); } }
+  hide() { if (this.el) { this.el.style.display = 'none'; if (this._escHandler) { window.removeEventListener('keydown', this._escHandler); this._escHandler = null; } } }
   dispose() { if (this.el) { this.el.remove(); this.el = null; } }
 }

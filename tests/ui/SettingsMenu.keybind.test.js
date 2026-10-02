@@ -24,9 +24,9 @@ describe('SettingsMenu 键位重绑', () => {
     expect(BINDING_ORDER.length).toBe(21);
   });
 
-  it('每个按钮显示当前绑定的键码', () => {
+  it('每个按钮显示当前绑定的键码（友好标签）', () => {
     const btn = menu.el.querySelector('[data-bind="dodge"]');
-    expect(btn.textContent).toContain('KeyQ');
+    expect(btn.textContent).toContain('Q');
   });
 
   it('点击按钮进入监听模式，按钮文案变为"按下任意键"', () => {
@@ -42,7 +42,7 @@ describe('SettingsMenu 键位重绑', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyR' }));
     expect(kb.get('dodge')).toBe('KeyR');
     expect(menu._listeningAction).toBeNull();
-    expect(btn.textContent).toContain('KeyR');
+    expect(btn.textContent).toContain('R');
   });
 
   it('重绑后 emit settings.keybind 事件通知 Player', () => {

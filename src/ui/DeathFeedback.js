@@ -1,16 +1,16 @@
 // 死亡即时反馈：阵亡 overlay + 凶手方向箭 + 0.8s 冻结闸门
 import { COUNTER_MATRIX } from '../gameplay/CombatSystem.js';
 
-const PAUSE = 0.8;
+const PAUSE = 1.5;
 const ARROW_HOLD = 1.6;
 
 export function killerLabel(k) {
-  if (!k) return '未知';
+  if (!k) return '环境伤害';
   if (k._isBoss) return k.displayName || ('【Boss】' + (k._name || ''));
   if (k._isElite) return k.displayName || '【精英】精兵';
   if (k._isCavalry) return '骑兵';
   if (k.isLocal) return '玩家';
-  return k.weapon?.name || '未知';
+  return k.weapon?.name || '环境伤害';
 }
 
 export class DeathFeedback {
@@ -29,8 +29,12 @@ export class DeathFeedback {
     Object.assign(this._title.style, { color: '#ff5050', fontSize: '30px', fontWeight: 'bold', textShadow: '0 2px 6px #000' });
     this._cause = document.createElement('div');
     Object.assign(this._cause.style, { color: '#fff', fontSize: '18px', marginTop: '6px', textShadow: '0 1px 3px #000' });
+    this._hint = document.createElement('div');
+    Object.assign(this._hint.style, { color: '#ffd070', fontSize: '14px', marginTop: '16px', textShadow: '0 1px 3px #000', opacity: '0.8' });
+    this._hint.textContent = '按 R 重开 · Esc 回菜单';
     this.el.appendChild(this._title);
     this.el.appendChild(this._cause);
+    this.el.appendChild(this._hint);
     document.body.appendChild(this.el);
 
     this._arrow = document.createElement('div');

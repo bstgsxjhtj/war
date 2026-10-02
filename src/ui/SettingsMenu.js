@@ -1,6 +1,6 @@
 import { EV } from '../core/constants/events.js';
 import { LS } from '../core/constants/storage-keys.js';
-import { BINDING_ORDER, BINDING_LABELS } from '../core/input/KeyBindings.js';
+import { BINDING_ORDER, BINDING_LABELS, keyLabel } from '../core/input/KeyBindings.js';
 import { UIStack } from './UIStack.js';
 export class SettingsMenu {
   constructor(bus, audio, kb) {
@@ -13,7 +13,7 @@ export class SettingsMenu {
     this._listenHandler = null;
     const keybindHtml = this.kb ? this._buildKeybindHtml() : '';
     this.el = document.createElement('div');
-    Object.assign(this.el.style, { position:'fixed', inset:'0', background:'rgba(0,0,0,.8)', display:'none', alignItems:'center', justifyContent:'center', zIndex:100, fontFamily:'Segoe UI, sans-serif' });
+    Object.assign(this.el.style, { position:'fixed', inset:'0', background:'rgba(0,0,0,.8)', display:'none', alignItems:'center', justifyContent:'center', zIndex:9600, fontFamily:'Segoe UI, sans-serif' });
     this.el.innerHTML = `
       <div style="background:#1e1e2e;border:1px solid #456;border-radius:12px;padding:24px;width:360px;color:#eee;max-height:90vh;overflow-y:auto;">
         <div style="font-size:18px;font-weight:600;margin-bottom:16px;text-align:center;">设置</div>
@@ -81,7 +81,7 @@ export class SettingsMenu {
   _save() { try { localStorage.setItem(LS.SETTINGS, JSON.stringify({ quality: this.quality, sensitivity: this.sensitivity, difficulty: this.difficulty, colorblind: this.colorblind, reducedMotion: this.reducedMotion, shakeIntensity: this.shakeIntensity })); } catch (e) {} }
   _applyAll() { if (this.audio) { this.audio.setVolume('master', this._vol.master); this.audio.setVolume('sfx', this._vol.sfx); this.audio.setVolume('bgm', this._vol.bgm); this.audio.setVolume('env', this._vol.env); } this.bus.emit(EV.SETTINGS_QUALITY, { quality: this.quality }); this.bus.emit(EV.SETTINGS_SENSITIVITY, { sensitivity: this.sensitivity }); this.bus.emit(EV.SETTINGS_DIFFICULTY, { difficulty: this.difficulty }); this.bus.emit(EV.SETTINGS_COLORBLIND, { colorblind: this.colorblind }); this.bus.emit(EV.SETTINGS_REDUCED_MOTION, { reducedMotion: this.reducedMotion }); this.bus.emit(EV.SETTINGS_SHAKE_INTENSITY, { shakeIntensity: this.shakeIntensity }); }
   _buildKeybindHtml() {
-    const rows = BINDING_ORDER.map(action => `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:13px;"><span>${BINDING_LABELS[action]}</span><button data-bind="${action}" style="padding:4px 12px;background:#2a2a3a;color:#eee;border:1px solid #456;border-radius:4px;cursor:pointer;font-family:inherit;min-width:80px;text-align:center;">${this.kb.get(action)}</button></div>`).join('');
+    const rows = BINDING_ORDER.map(action => `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:13px;"><span>${BINDING_LABELS[action]}</span><button data-bind="${action}" style="padding:4px 12px;background:#2a2a3a;color:#eee;border:1px solid #456;border-radius:4px;cursor:pointer;font-family:inherit;min-width:80px;text-align:center;">${keyLabel(this.kb.get(action))}</button></div>`).join('');
     return `<div style="margin-bottom:12px;"><div style="font-size:14px;font-weight:600;margin-bottom:8px;border-top:1px solid #456;padding-top:12px;">键位</div>${rows}<button id="set-reset-keys" style="width:100%;padding:6px;background:#3a3a4a;font-family:inherit;border:1px solid #567;border-radius:6px;color:#cdd;font-size:13px;cursor:pointer;margin-top:8px;">恢复默认键位</button></div>`;
   }
   _wireKeybind() {
@@ -114,7 +114,7 @@ export class SettingsMenu {
     this._listeningAction = null;
     this._refreshKeyButtons();
   }
-  _refreshKeyButtons() { if (this._keyButtons) this._keyButtons.forEach(btn => { btn.textContent = this.kb.get(btn.dataset.bind); btn.style.background = '#2a2a3a'; }); }
+  _refreshKeyButtons() { if (this._keyButtons) this._keyButtons.forEach(btn => { btn.textContent = keyLabel(this.kb.get(btn.dataset.bind)); btn.style.background = '#2a2a3a'; }); }
   toggle() { this.open ? this.hide() : this.show(); }
   show() { this.el.style.display = 'flex'; this.open = true; UIStack.push(this); if (this.audio) this.audio.resume(); this._applyAll(); }
   hide() { this._cancelListen(); this.el.style.display = 'none'; this.open = false; UIStack.remove(this); }

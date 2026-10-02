@@ -19,9 +19,9 @@ describe('killerLabel', () => {
   it('普通兵种回退武器名', () => {
     expect(killerLabel({ weapon: { name: '枪' } })).toBe('枪');
   });
-  it('null/无武器回退未知', () => {
-    expect(killerLabel(null)).toBe('未知');
-    expect(killerLabel({})).toBe('未知');
+  it('null/无武器回退环境伤害', () => {
+    expect(killerLabel(null)).toBe('环境伤害');
+    expect(killerLabel({})).toBe('环境伤害');
   });
 });
 
@@ -59,13 +59,13 @@ describe('DeathFeedback - show 文案', () => {
 });
 
 describe('DeathFeedback - paused 冻结时序', () => {
-  it('show 后 paused=true，0.8s 后 paused=false', () => {
+  it('show 后 paused=true，1.5s 后 paused=false', () => {
     const df = new DeathFeedback();
     df.show({ label: '刀', countered: false, angle: 0, camYaw: 0 });
     expect(df.paused).toBe(true);
-    df.update(0.4);
+    df.update(0.8);
     expect(df.paused).toBe(true);
-    df.update(0.4);
+    df.update(0.8);
     expect(df.paused).toBe(false);
   });
 

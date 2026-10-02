@@ -32,15 +32,16 @@ export class HUD {
       </div>
       <div style="position:absolute;left:150px;bottom:24px;width:280px;">
         <div style="font-size:12px;color:#cfe;text-shadow:0 1px 2px #000;margin-bottom:4px;">生命</div>
-        <div style="background:rgba(0,0,0,.5);border:1px solid #456;border-radius:6px;overflow:hidden;height:20px;box-shadow:inset 0 0 6px #000;">
+        <div style="position:relative;background:rgba(0,0,0,.5);border:1px solid #456;border-radius:6px;overflow:hidden;height:20px;box-shadow:inset 0 0 6px #000;">
           <div id="hp" style="width:100%;height:100%;background:linear-gradient(90deg,#d33,#f70);transition:width .12s;"></div>
+          <div id="hpText" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;text-shadow:0 0 3px #000,0 1px 1px #000;pointer-events:none;"></div>
         </div>
         <div style="font-size:11px;color:#aef;text-shadow:0 1px 2px #000;margin:4px 0 2px;">耐力</div>
         <div style="background:rgba(0,0,0,.5);border:1px solid #356;border-radius:6px;overflow:hidden;height:12px;">
           <div id="stam" style="width:100%;height:100%;background:linear-gradient(90deg,#3ad,#8ef);transition:width .1s;"></div>
         </div>
-        <div style="font-size:11px;color:#fa8;text-shadow:0 1px 2px #000;margin:4px 0 2px;">怒气</div>
-        <div style="background:rgba(0,0,0,.5);border:1px solid #642;border-radius:6px;overflow:hidden;height:12px;">
+        <div style="font-size:11px;color:#fa8;text-shadow:0 1px 2px #000;margin:4px 0 2px;">怒气 <span id="rageReady" style="color:#ffd070;font-weight:600;display:none;">· 终极就绪</span></div>
+        <div style="position:relative;background:rgba(0,0,0,.5);border:1px solid #642;border-radius:6px;overflow:hidden;height:12px;">
           <div id="rage" style="width:0;height:100%;background:linear-gradient(90deg,#a30,#fa4);transition:width .1s;"></div>
         </div>
         <div id="potions" style="margin-top:6px;font-size:13px;color:#ff6644;text-shadow:0 1px 2px #000;">药水 3</div>
@@ -52,14 +53,14 @@ export class HUD {
         </div>
       </div>
       <div id="score" style="position:absolute;top:18px;left:50%;transform:translateX(-50%);color:#eee;font-size:18px;text-shadow:0 1px 2px #000;">蓝方 0  |  0 红方</div>
-      <div id="enemyCount" style="position:absolute;top:42px;right:24px;color:#ff6644;font-size:14px;text-shadow:0 1px 2px #000;display:none;">敌人 0</div>
+      <div id="enemyCount" style="position:absolute;top:162px;right:24px;color:#ff6644;font-size:14px;text-shadow:0 1px 2px #000;display:none;background:rgba(0,0,0,.5);padding:4px 10px;border-radius:6px;border:1px solid #633;">敌人 0</div>
       <div id="round" style="position:absolute;top:42px;left:50%;transform:translateX(-50%);color:#ffd070;font-size:13px;text-shadow:0 1px 2px #000;"></div>
       <div id="modeName" style="position:absolute;top:62px;left:50%;transform:translateX(-50%);color:#8cf;font-size:12px;text-shadow:0 1px 2px #000;">模式：波次</div>
       <div id="dom" style="position:absolute;top:84px;left:50%;transform:translateX(-50%);display:none;color:#fff;font-size:12px;text-shadow:0 1px 2px #000;text-align:center;"></div>
       <div id="wforecast" style="position:absolute;top:106px;left:50%;transform:translateX(-50%);color:#8df;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
       <div id="weapon" style="position:absolute;right:24px;bottom:24px;color:#cde;font-size:14px;text-shadow:0 1px 2px #000;">[1] 刀  [2] 弓</div>
-      <div id="keys" style="position:absolute;right:24px;bottom:48px;color:#bcd;font-size:11px;text-shadow:0 1px 2px #000;opacity:.6;text-align:right;line-height:1.6;">WASD · Shift冲刺 · Space跳<br>Q/双击 闪避 · LMB攻击 · RMB格挡/蓄力 · E处决 · F技能 · T终极 · H药水 · Tab锁定 · 1-4武器 · M模式</div>
-      <div id="hint" style="position:absolute;top:62%;left:50%;transform:translateX(-50%);color:#ffd;text-align:center;font-size:15px;text-shadow:0 1px 2px #000;max-width:80%;"></div>
+      <div id="keys" style="position:absolute;right:24px;bottom:48px;color:#bcd;font-size:11px;text-shadow:0 1px 2px #000;opacity:.85;text-align:right;line-height:1.6;background:rgba(0,0,0,.4);padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);">WASD · Shift冲刺 · Space跳<br>Q/双击 闪避 · LMB攻击 · RMB格挡/蓄力 · E处决 · F技能 · T终极 · H药水 · Tab锁定 · 1-4武器 · M模式 · Esc菜单</div>
+      <div id="hint" style="position:absolute;top:62%;left:50%;transform:translateX(-50%);color:#ffd;text-align:center;font-size:15px;text-shadow:0 1px 2px #000;max-width:80%;background:rgba(0,0,0,.45);padding:6px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.06);"></div>
       <div id="kill" style="position:absolute;top:30%;left:50%;transform:translateX(-50%);color:#ffd070;font-size:26px;font-weight:bold;text-shadow:0 2px 4px #000;opacity:0;transition:opacity .2s;"></div>
       <div id="buffbar" style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);display:flex;gap:8px;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
       <div id="bossbar" style="position:absolute;top:40px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:4px;"><div id="bossName" style="color:#ff8080;font-size:16px;font-weight:bold;text-shadow:0 2px 4px #000;"></div><div style="position:relative;width:300px;height:10px;background:rgba(0,0,0,0.5);border:1px solid #600;border-radius:5px;overflow:hidden;"><div id="bossFill" style="height:100%;width:100%;background:linear-gradient(90deg,#c33,#f66);transition:width .15s;"></div><div style="position:absolute;top:0;bottom:0;left:60%;width:2px;background:rgba(255,255,255,.45);"></div><div style="position:absolute;top:0;bottom:0;left:30%;width:2px;background:rgba(255,255,255,.45);"></div></div><div id="bossPips" style="color:#ffb0b0;font-size:11px;letter-spacing:3px;text-shadow:0 1px 2px #000;"></div></div>
@@ -75,8 +76,10 @@ export class HUD {
     document.body.appendChild(this.el);
     this._locklost = this.el.querySelector('#locklost');
     this._hp = this.el.querySelector('#hp');
+    this._hpText = this.el.querySelector('#hpText');
     this._stam = this.el.querySelector('#stam');
     this._rage = this.el.querySelector('#rage');
+    this._rageReady = this.el.querySelector('#rageReady');
     this._postureBar = document.createElement('div');
     this._postureBar.style.cssText = 'position:absolute;left:20px;bottom:76px;width:180px;height:5px;background:rgba(0,0,0,0.5);border-radius:3px;overflow:hidden;display:none;z-index:5;';
     this.el.appendChild(this._postureBar);
@@ -336,7 +339,10 @@ export class HUD {
     else flush();
   }
 
-  setHealth(c) { this._write(this._hp, 'width', `${Math.max(0, c.health.ratio) * 100}%`); }
+  setHealth(c) {
+    this._write(this._hp, 'width', `${Math.max(0, c.health.ratio) * 100}%`);
+    if (this._hpText) this._write(this._hpText, 'textContent', `${Math.ceil(c.health.hp)}/${Math.ceil(c.health.maxHp)}`);
+  }
   setStamina(s) {
     this._write(this._stam, 'width', `${Math.max(0, s.ratio) * 100}%`);
     this._write(this._stam, 'background', s.depleted ? 'linear-gradient(90deg,#36a,#a36)' : 'linear-gradient(90deg,#3ad,#8ef)');
@@ -345,6 +351,7 @@ export class HUD {
     if (!this._rage) return;
     this._write(this._rage, 'width', `${Math.min(1, c.rage / 100) * 100}%`);
     this._write(this._rage, 'boxShadow', c.rage >= 100 ? '0 0 8px #fa4' : 'none');
+    if (this._rageReady) this._write(this._rageReady, 'display', c.rage >= 100 ? 'inline' : 'none');
   }
   setPosture(c) {
     if (!this._postureBar) return;

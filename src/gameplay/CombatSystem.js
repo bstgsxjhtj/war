@@ -78,16 +78,16 @@ export class CombatSystem {
       this._partSlots.push({ active: false, vel: Array.from({ length: this._partN }, () => new THREE.Vector3()), life: 0, max: 0.5, offset: i * this._partN });
     }
 
-    this._numCanvas = document.createElement('canvas');
-    this._numCanvas.width = 128; this._numCanvas.height = 64;
-    this._numCtx = this._numCanvas.getContext('2d');
-    this._numTex = new THREE.CanvasTexture(this._numCanvas);
     this._numSprites = [];
     for (let i = 0; i < 16; i++) {
-      const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: this._numTex, depthTest: false, transparent: true }));
+      const cvs = document.createElement('canvas');
+      cvs.width = 128; cvs.height = 64;
+      const ctx = cvs.getContext('2d');
+      const tex = new THREE.CanvasTexture(cvs);
+      const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
       spr.visible = false; spr.scale.set(1.2, 0.6, 1); spr.renderOrder = 1000;
       this.scene.add(spr);
-      this._numSprites.push({ spr, life: 0, vy: 0 });
+      this._numSprites.push({ spr, life: 0, vy: 0, cvs, ctx, tex });
     }
 
     // P1-1: 延迟 AOE 预警——共享单位环（按 radius 缩放），待结算队列
@@ -147,10 +147,10 @@ export class CombatSystem {
     if (this._partGeo) this._partGeo.dispose();
     if (this._partMat) this._partMat.dispose();
     if (this._partMat && this._partMat.map && typeof this._partMat.map.dispose === 'function') this._partMat.map.dispose();
-    if (this._numTex) this._numTex.dispose();
     for (const n of this._numSprites) {
       this.scene.remove(n.spr);
       if (n.spr.material) n.spr.material.dispose();
+      if (n.tex) n.tex.dispose();
     }
     if (this._aoeRingGeo) this._aoeRingGeo.dispose();
     if (this._aoeRingMat) this._aoeRingMat.dispose();
@@ -254,7 +254,7 @@ export class CombatSystem {
     const slot = this._numSprites.find(n => !n.spr.visible);
     if (!slot) return;
     const c = crit ? '#ffd700' : (countered ? '#66ddff' : (amount >= 35 ? '#ff5533' : '#ffe070'));
-    const ctx = this._numCtx;
+    const ctx = slot.ctx;
     if (ctx) {
       ctx.clearRect(0, 0, 128, 64);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -268,7 +268,7 @@ export class CombatSystem {
       ctx.lineWidth = crit ? 7 : 6; ctx.strokeStyle = 'rgba(0,0,0,.85)';
       ctx.strokeText(amount, 64, crit ? 38 : 32);
       ctx.fillStyle = c; ctx.fillText(amount, 64, crit ? 38 : 32);
-      this._numTex.needsUpdate = true;
+      slot.tex.needsUpdate = true;
     }
     slot.spr.position.copy(pos); slot.spr.visible = true;
     slot.spr.scale.set(crit ? 1.8 : 1.2, crit ? 0.9 : 0.6, 1);

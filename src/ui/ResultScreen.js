@@ -94,19 +94,22 @@ export class ResultScreen {
       deathStatsHtml,
       waveHtml,
       statsHtml,
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-top:8px;">',
-      '<button id="rs-retry" style="padding:12px 16px;background:linear-gradient(90deg,#3a5a4a,#2a4a3a);border:1px solid #4a8;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">\u91cd\u8bd5 (R)</button>',
-      '<button id="rs-mode" style="padding:12px 16px;background:linear-gradient(90deg,#365070,#2a4060);border:1px solid #48a;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">\u6362\u6a21\u5f0f</button>',
-      '<button id="rs-menu" style="padding:12px 16px;background:linear-gradient(90deg,#4a3a3a,#3a2a2a);border:1px solid #a55;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">\u56de\u4e3b\u83dc\u5355</button>',
+      '<div style="display:grid;grid-template-columns:' + (win ? 'repeat(4,1fr)' : 'repeat(3,1fr)') + ';gap:10px;width:100%;margin-top:8px;">',
+      '<button id="rs-retry" style="padding:12px 16px;background:linear-gradient(90deg,#3a5a4a,#2a4a3a);border:1px solid #4a8;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">重试 (R)</button>',
+      win ? '<button id="rs-next" style="padding:12px 16px;background:linear-gradient(90deg,#5a4a1a,#4a3a0a);border:1px solid #da4;border-radius:8px;color:#ffd070;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">下一关 (N)</button>' : '',
+      '<button id="rs-mode" style="padding:12px 16px;background:linear-gradient(90deg,#365070,#2a4060);border:1px solid #48a;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">换模式</button>',
+      '<button id="rs-menu" style="padding:12px 16px;background:linear-gradient(90deg,#4a3a3a,#3a2a2a);border:1px solid #a55;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;">回主菜单</button>',
       '</div>',
       '</div>'
     ].join('');
     this.el.style.display = 'flex';
     UIStack.push(this);
     this.el.querySelector('#rs-retry').addEventListener('click', () => { this.hide(); this.bus.emit(EV.ROUND_RESTART); });
+    const nextBtn = this.el.querySelector('#rs-next');
+    if (nextBtn) nextBtn.addEventListener('click', () => { this.hide(); if (this.opts.onNextStage) this.opts.onNextStage(); else this.bus.emit(EV.ROUND_RESTART); });
     this.el.querySelector('#rs-mode').addEventListener('click', () => { this.hide(); if (this.opts.onChangeMode) this.opts.onChangeMode(); });
     this.el.querySelector('#rs-menu').addEventListener('click', () => { this.hide(); if (this.opts.onExitToMenu) this.opts.onExitToMenu(); });
-    this._keyHandler = (e) => { if (e.code === 'KeyR') { this.hide(); this.bus.emit(EV.ROUND_RESTART); } };
+    this._keyHandler = (e) => { if (e.code === 'KeyR') { this.hide(); this.bus.emit(EV.ROUND_RESTART); } else if (e.code === 'KeyN' && win) { this.hide(); if (this.opts.onNextStage) this.opts.onNextStage(); else this.bus.emit(EV.ROUND_RESTART); } };
     window.addEventListener('keydown', this._keyHandler);
   }
 

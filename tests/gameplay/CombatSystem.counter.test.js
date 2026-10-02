@@ -36,24 +36,23 @@ describe('CombatSystem._counterMul', () => {
 describe('CombatSystem.createDamageNumber 克制变色', () => {
   let cs;
   beforeEach(() => {
+    const ctx = { clearRect: vi.fn(), fillText: vi.fn(), strokeText: vi.fn() };
     cs = Object.create(CombatSystem.prototype);
-    cs._numSprites = [{ spr: { visible: false, position: { copy: vi.fn() }, scale: { set: vi.fn() } }, life: 0, vy: 0 }];
-    cs._numCtx = { clearRect: vi.fn(), fillText: vi.fn(), strokeText: vi.fn() };
-    cs._numTex = { needsUpdate: false };
+    cs._numSprites = [{ spr: { visible: false, position: { copy: vi.fn() }, scale: { set: vi.fn() } }, life: 0, vy: 0, ctx, tex: { needsUpdate: false } }];
   });
 
   it('非克制命中使用默认色', () => {
     cs.createDamageNumber({ x: 0, y: 1, z: 0 }, 20, false);
-    expect(cs._numCtx.fillStyle).toBe('#ffe070');
+    expect(cs._numSprites[0].ctx.fillStyle).toBe('#ffe070');
   });
 
   it('克制命中使用青色', () => {
     cs.createDamageNumber({ x: 0, y: 1, z: 0 }, 20, true);
-    expect(cs._numCtx.fillStyle).toBe('#66ddff');
+    expect(cs._numSprites[0].ctx.fillStyle).toBe('#66ddff');
   });
 
   it('高伤非克制使用红色', () => {
     cs.createDamageNumber({ x: 0, y: 1, z: 0 }, 50, false);
-    expect(cs._numCtx.fillStyle).toBe('#ff5533');
+    expect(cs._numSprites[0].ctx.fillStyle).toBe('#ff5533');
   });
 });

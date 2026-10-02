@@ -51,7 +51,7 @@ describe('CombatSystem.dispose (P1-5)', () => {
   it('dispose 释放粒子 Points 与数字 Sprite 资源', () => {
     const gs = vi.spyOn(cs._partGeo, 'dispose');
     const ms = vi.spyOn(cs._partMat, 'dispose');
-    const texs = vi.spyOn(cs._numTex, 'dispose');
+    const texs = vi.spyOn(cs._numSprites[0].tex, 'dispose');
     cs.dispose();
     expect(gs).toHaveBeenCalled();
     expect(ms).toHaveBeenCalled();
