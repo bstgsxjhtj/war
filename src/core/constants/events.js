@@ -37,6 +37,7 @@ export const EV = {
   FX_PERFECTDODGE: 'fx.perfectDodge',
   FX_BOSSROAR: 'fx.bossRoar',
   FX_DODGE: 'fx.dodge',
+  FX_LOCK_MARKER: 'fx.lockMarker',
   // UI
   UI_LOCKLOST: 'ui.locklost',
   UI_LOCKED: 'ui.locked',

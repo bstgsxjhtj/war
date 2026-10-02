@@ -106,6 +106,23 @@ export class Camera {
       this.target.z + oz + this._shakeOffset.z
     );
     this.cam.lookAt(this.target.x, this.target.y + 1.2, this.target.z);
+
+    // P1：锁定目标屏幕标记——投影锁定目标世界坐标到屏幕，通知 HUD 绘制 reticle
+    if (!this.bus) return;
+    if (this.lockTarget && this.lockTarget.alive) {
+      const sp = this.lockTarget.position.clone();
+      sp.y += 1.0;
+      sp.project(this.cam);
+      if (sp.z < 1) {
+        const sx = (sp.x + 1) * 0.5 * window.innerWidth;
+        const sy = (-sp.y + 1) * 0.5 * window.innerHeight;
+        this.bus.emit(EV.FX_LOCK_MARKER, { visible: true, x: sx, y: sy });
+      } else {
+        this.bus.emit(EV.FX_LOCK_MARKER, { visible: false });
+      }
+    } else {
+      this.bus.emit(EV.FX_LOCK_MARKER, { visible: false });
+    }
   }
 
   forward(out = new THREE.Vector3()) { return out.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)).normalize(); }

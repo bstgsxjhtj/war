@@ -79,7 +79,7 @@ export class CombatSystem {
     }
 
     this._numSprites = [];
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 32; i++) {
       const cvs = document.createElement('canvas');
       cvs.width = 128; cvs.height = 64;
       const ctx = cvs.getContext('2d');
@@ -272,7 +272,7 @@ export class CombatSystem {
     }
     slot.spr.position.copy(pos); slot.spr.visible = true;
     slot.spr.scale.set(crit ? 1.8 : 1.2, crit ? 0.9 : 0.6, 1);
-    slot.life = 0.9; slot.vy = crit ? 2.4 : 1.8;
+    slot.life = 1.4; slot.vy = crit ? 2.4 : 1.8;
   }
 
   setAffixes(a) { this._affixes = a; }

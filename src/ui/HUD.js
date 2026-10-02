@@ -27,6 +27,12 @@ export class HUD {
         <div style="position:absolute;left:12px;top:0;width:2px;height:26px;background:rgba(255,235,180,.9);box-shadow:0 0 4px #000;"></div>
         <div id="comboRing" style="position:absolute;inset:-4px;border-radius:50%;border:2px solid transparent;"></div>
       </div>
+      <div id="lockReticle" style="position:absolute;top:0;left:0;width:40px;height:40px;display:none;pointer-events:none;transform:translate(-50%,-50%);">
+        <div style="position:absolute;top:0;left:0;width:12px;height:12px;border-top:2px solid #ffd070;border-left:2px solid #ffd070;"></div>
+        <div style="position:absolute;top:0;right:0;width:12px;height:12px;border-top:2px solid #ffd070;border-right:2px solid #ffd070;"></div>
+        <div style="position:absolute;bottom:0;left:0;width:12px;height:12px;border-bottom:2px solid #ffd070;border-left:2px solid #ffd070;"></div>
+        <div style="position:absolute;bottom:0;right:0;width:12px;height:12px;border-bottom:2px solid #ffd070;border-right:2px solid #ffd070;"></div>
+      </div>
       <div id="charge" style="position:absolute;top:56%;left:50%;transform:translateX(-50%);width:180px;height:8px;background:rgba(0,0,0,.5);border-radius:4px;overflow:hidden;display:none;border:1px solid #456;">
         <div id="chargeFill" style="width:0;height:100%;background:linear-gradient(90deg,#ffd070,#ff5533);"></div>
       </div>
@@ -75,13 +81,14 @@ export class HUD {
     `;
     document.body.appendChild(this.el);
     this._locklost = this.el.querySelector('#locklost');
+    this._lockReticle = this.el.querySelector('#lockReticle');
     this._hp = this.el.querySelector('#hp');
     this._hpText = this.el.querySelector('#hpText');
     this._stam = this.el.querySelector('#stam');
     this._rage = this.el.querySelector('#rage');
     this._rageReady = this.el.querySelector('#rageReady');
     this._postureBar = document.createElement('div');
-    this._postureBar.style.cssText = 'position:absolute;left:20px;bottom:76px;width:180px;height:5px;background:rgba(0,0,0,0.5);border-radius:3px;overflow:hidden;display:none;z-index:5;';
+    this._postureBar.style.cssText = 'position:absolute;left:150px;bottom:8px;width:280px;height:8px;background:rgba(0,0,0,0.5);border:1px solid #654;border-radius:4px;overflow:hidden;display:none;z-index:5;';
     this.el.appendChild(this._postureBar);
     this._postureFill = document.createElement('div');
     this._postureFill.style.cssText = 'width:0%;height:100%;background:linear-gradient(90deg,#c88,#fa4);transition:width 0.1s;';
@@ -178,8 +185,9 @@ export class HUD {
 
     this._onLockClick = () => document.querySelector('#app')?.requestPointerLock();
     this._locklost.addEventListener('click', this._onLockClick);
-    on(EV.UI_LOCKLOST, () => { this._locklost.style.display = 'flex'; });
+    on(EV.UI_LOCKLOST, () => { this._locklost.style.display = 'flex'; if (this._lockReticle) this._lockReticle.style.display = 'none'; });
     on(EV.UI_LOCKED, () => { this._locklost.style.display = 'none'; });
+    on(EV.FX_LOCK_MARKER, ({ visible, x, y }) => { if (this._lockReticle) { this._lockReticle.style.display = visible ? 'block' : 'none'; if (visible) { this._lockReticle.style.left = x + 'px'; this._lockReticle.style.top = y + 'px'; } } });
     on(EV.HUD_FLASH, ({ text } = {}) => { if (text) this.flash(text); });
     on(EV.HUD_MISS, () => this.flash('落空'));
     on(EV.COMBAT_HIT, ({ victim }) => {

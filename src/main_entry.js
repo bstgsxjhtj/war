@@ -535,6 +535,10 @@ async function bootstrap() {
       classSelectUI.show();
     },
     onStageSelect: () => { stageSelectUI.show(); },
+    onTraining: () => {
+      inputRouter.applyModeByName('训练场');
+      classSelectUI.show();
+    },
     onOpenSettings: () => settings.show(),
     onOpenAchievements: () => achievementsUI.show(),
     onOpenAffixes: () => affixesUI.show(),
