@@ -280,7 +280,7 @@ async function bootstrap() {
     hud.flash('单机模式（未连服务器）');
   }
   let mode = new WaveMode(bus);
-  let allyCount = 0; // P1-2 队友数量配置（菜单可调）
+  let allyCount = 2; // P1-2 队友数量配置（菜单可调，默认 2 人）
   const saveOrch = new SaveOrchestrator({
     bus, state, hud, saveManager, progression, campaign, skills, affixes, daily, skins, achievements,
     getPlayer: () => player,
@@ -567,7 +567,20 @@ async function bootstrap() {
   gameMenu = new GameMenu({
     getModeName: () => mode.name,
     getAllyCount: () => allyCount,
-    onAllyCount: (n) => { allyCount = Math.max(0, Math.min(4, n | 0)); gameMenu.refresh(); hud.flash('队友数量：' + n + ' · 重开后生效'); setTimeout(() => hud.clearHint(), 3000); },
+    onAllyCount: (n) => {
+      const prev = allyCount;
+      allyCount = Math.max(0, Math.min(4, n | 0));
+      gameMenu.refresh();
+      if (allyCount > prev && state.current === States.PLAYING && player && spawner) {
+        const add = allyCount - prev;
+        const pos = { x: player.position.x, z: player.position.z };
+        spawner.spawnBlueAllies(add, ais, pos);
+        hud.flash('队友 +' + add + ' · 已加入战场');
+      } else {
+        hud.flash('队友数量：' + allyCount + (allyCount < prev ? ' · 下局生效' : ' · 已加入'));
+      }
+      setTimeout(() => hud.clearHint(), 3000);
+    },
     onSelectMode: (name) => {
       inputRouter.applyModeByName(name);
       gameMenu.hide();
