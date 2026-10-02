@@ -83,10 +83,12 @@ export class MainMenuUI {
     const achBtn = mkSub('achievements', '成就');
     const afxBtn = mkSub('affixes', '词条');
     const savBtn = mkSub('save', '存档');
+    const tutBtn = mkSub('tutorial', '操典');
     achBtn.addEventListener('click', () => { if (this.opts.onOpenAchievements) this.opts.onOpenAchievements(); });
     afxBtn.addEventListener('click', () => { if (this.opts.onOpenAffixes) this.opts.onOpenAffixes(); });
     savBtn.addEventListener('click', () => { if (this.opts.onOpenSave) this.opts.onOpenSave(); });
-    subRow.append(achBtn, afxBtn, savBtn);
+    tutBtn.addEventListener('click', () => { window.open('/tutorial.html', '_blank'); });
+    subRow.append(achBtn, afxBtn, savBtn, tutBtn);
     overlay.appendChild(subRow);
 
     const hint = document.createElement('div');
