@@ -84,11 +84,13 @@ export class MainMenuUI {
     const afxBtn = mkSub('affixes', '词条');
     const savBtn = mkSub('save', '存档');
     const tutBtn = mkSub('tutorial', '操典');
+    const magicBtn = mkSub('magic', '秘典');
     achBtn.addEventListener('click', () => { if (this.opts.onOpenAchievements) this.opts.onOpenAchievements(); });
     afxBtn.addEventListener('click', () => { if (this.opts.onOpenAffixes) this.opts.onOpenAffixes(); });
     savBtn.addEventListener('click', () => { if (this.opts.onOpenSave) this.opts.onOpenSave(); });
     tutBtn.addEventListener('click', () => { window.open('/tutorial.html', '_blank'); });
-    subRow.append(achBtn, afxBtn, savBtn, tutBtn);
+    magicBtn.addEventListener('click', () => { window.open('/magic.html', '_blank'); });
+    subRow.append(achBtn, afxBtn, savBtn, tutBtn, magicBtn);
     overlay.appendChild(subRow);
 
     const hint = document.createElement('div');
