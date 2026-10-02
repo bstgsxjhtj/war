@@ -506,3 +506,14 @@
 | I1-I4 | p2-wiring.test.js（新建） | 23（Character 闪避 3+减伤 3+格挡穿透 2+处决阈值 2+overload 耐力 2；CombatSystem 伤害 2+暴击 1+吸血 2+武器形态 pierce/range/knock 6） |
 
 测试总量：1379 → 1402（+23），126 个测试文件全绿。
+
+### 线上缺陷修复：黑屏 + 缓存（2026-10-02）
+
+> 用户报告：① 浏览器总是缓存旧版本需无痕模式加载最新；② 进去后主页面黑屏无法玩。
+
+| # | 问题 | 严重级 | 状态 |
+|---|---|---|---|
+| I5 | `SpatialHash` 在 `main_entry.js` L196 使用但从未导入——`bootstrap()` 抛 `ReferenceError: SpatialHash is not defined`，整个游戏初始化中止，页面黑屏。此 bug 自第十五轮（commit 84c3748 引入空间哈希）起就存在，因浏览器缓存旧版本（无此代码）而未暴露 | P0 | ✅已修：添加 `import { SpatialHash } from './core/SpatialHash.js'` |
+| I6 | index.html 无缓存控制 meta——浏览器缓存旧 ES 模块，需无痕模式才能加载最新 | P2 | ✅已修：index.html 加 `Cache-Control: no-store, no-cache, must-revalidate` + `Pragma: no-cache` + `Expires: 0` 三层 meta |
+
+验证：浏览器导航 `http://127.0.0.1:5173/?t=<timestamp>`，控制台零错误，主菜单 + HUD + 职业选择 + 选关界面全部正常渲染。

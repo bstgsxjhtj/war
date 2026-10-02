@@ -3,6 +3,7 @@ import { TextureFactory } from './render/TextureFactory.js';
 import { EventBus } from './core/EventBus.js';
 import { GameState, States } from './core/GameState.js';
 import { Time } from './core/Time.js';
+import { SpatialHash } from './core/SpatialHash.js';
 import { Renderer } from './engine/Renderer.js';
 import { Scene } from './engine/Scene.js';
 import { Camera } from './engine/Camera.js';
