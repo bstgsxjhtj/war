@@ -65,13 +65,20 @@ export class Camera {
     const lookF = 1 - Math.pow(1 - CAMERA.LERP_LOOK, dt60);
     this.yaw += (this._targetYaw - this.yaw) * lookF;
     this.pitch += (this._targetPitch - this.pitch) * lookF;
-    // 锁定时相机 yaw 缓动朝向目标
+    // 锁定时相机 yaw+pitch 缓动朝向目标
     if (this.lockTarget && this.lockTarget.alive) {
       const ty = Math.atan2(this.lockTarget.position.x - target.x, this.lockTarget.position.z - target.z);
       let dy = ty - this._targetYaw;
       while (dy > Math.PI) dy -= Math.PI * 2;
       while (dy < -Math.PI) dy += Math.PI * 2;
       this._targetYaw += dy * (1 - Math.pow(0.9, dt60));
+      // P1：锁定也调整 pitch（高低处敌人）
+      const dyh = (this.lockTarget.position.y || 0) - target.y;
+      const tp = THREE.MathUtils.clamp(0.22 + dyh * 0.04, CAMERA.PITCH_MIN, CAMERA.PITCH_MAX);
+      this._targetPitch += (tp - this._targetPitch) * (1 - Math.pow(0.92, dt60));
+    } else if (this.lockTarget && !this.lockTarget.alive) {
+      // P1：目标死亡自动释放锁定
+      this.lockTarget = null;
     }
 
     const wantDist = this.aimMode ? 3.2 : this.distance;
@@ -89,7 +96,7 @@ export class Camera {
     const oy = Math.sin(this.pitch) * this._curDist + this._curHgt;
 
     if (this._shake > 0.001) {
-      this._shakeOffset.set((Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP, (Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP, (Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP);
+      this._shakeOffset.set((Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP, (Math.random() - 0.5) * this._shake * CAMERA.SHAKE_LERP, 0);
       this._shake *= Math.pow(CAMERA.SHAKE_DECAY, dt60);
     } else this._shakeOffset.set(0, 0, 0);
 

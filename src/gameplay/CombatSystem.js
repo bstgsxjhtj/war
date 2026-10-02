@@ -326,6 +326,7 @@ export class CombatSystem {
     const modKnockMul = weaponMod === 'knock' ? 1.5 : 1;
     this._ensureSpatial(now);
     const nearby = this._spatialHash.queryRadius(attacker.position, effRange);
+    let _meleeHitCount = 0;
     for (const c of nearby) {
       if (!c.alive || c.team === attacker.team) continue;
       const dx = c.position.x - attacker.position.x;
@@ -350,6 +351,7 @@ export class CombatSystem {
         const finalDmg = Math.min(dmg, weapon.damage * COMBAT.DMG_MUL_MAX);
         const lost = c.takeDamage(finalDmg, heavy || isBackstab, attacker, now);
         if (lost > 0) {
+          _meleeHitCount++;
           this._emitHit(attacker, c, lost, weapon.name, 0xff3322, combo, heavy, now, isBackstab, branchCrit || this._lastAffixCrit);
           this._affixLeech(attacker, lost);
           c._curVel.addScaledVector(attacker.forward, knock * 2.5 * modKnockMul);
@@ -375,6 +377,10 @@ export class CombatSystem {
     // 下劈 AOE
     if (combo === 2 && weapon.comboLaunch && weapon.comboLaunch[2]?.aoe) {
       this.spawnAoE(attacker.position, weapon.comboLaunch[2].aoe, baseDmg * 0.5, attacker, now);
+    }
+    // P1：挥空反馈——未命中任何敌人时通知 HUD 显示「落空」
+    if (_meleeHitCount === 0 && attacker.isLocal) {
+      this.bus.emit(EV.HUD_MISS, {});
     }
   }
 

@@ -57,27 +57,34 @@ export class MiniMap {
       if (!ai.root || !ai.root.visible) continue;
       const dx = (ai.root.position.x - px) * scale, dz = (ai.root.position.z - pz) * scale;
       const dist2 = dx * dx + dz * dz;
-      const r = ai._isBoss ? 5 : 3;
+      const r = ai._isBoss ? 7 : (ai._isElite ? 4 : 3);
       if (dist2 > R * R) {
         // 屏外敌人：在圆边缘画方向箭头引导玩家寻找
         const ang = Math.atan2(dz, dx);
         const ex = Math.cos(ang) * (R - 7), ez = Math.sin(ang) * (R - 7);
-        ctx.fillStyle = ai.team === 0 ? '#4488ff' : '#ff4444';
+        ctx.fillStyle = ai._isBoss ? '#ffd700' : (ai.team === 0 ? '#4488ff' : '#ff4444');
         ctx.save();
         ctx.translate(ex, ez);
         ctx.rotate(ang);
         ctx.beginPath();
-        ctx.moveTo(5, 0); ctx.lineTo(-3, 3); ctx.lineTo(-3, -3);
+        const as = ai._isBoss ? 7 : 5;
+        ctx.moveTo(as, 0); ctx.lineTo(-3, 3); ctx.lineTo(-3, -3);
         ctx.closePath(); ctx.fill();
         ctx.restore();
         continue;
       }
-      ctx.fillStyle = ai.team === 0 ? '#4488ff' : '#ff4444';
+      ctx.fillStyle = ai._isBoss ? '#ffd700' : (ai.team === 0 ? '#4488ff' : '#ff4444');
       if (this._colorblind && ai.team !== 0) {
         // 色弱模式：敌人用方形，与友军圆点形成形状区分（不依赖颜色）
         ctx.beginPath(); ctx.rect(dx - r, dz - r, r * 2, r * 2); ctx.fill();
       } else {
         ctx.beginPath(); ctx.arc(dx, dz, r, 0, Math.PI * 2); ctx.fill();
+      }
+      if (ai._isBoss) {
+        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(dx, dz, r + 3, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,215,0,0.4)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(dx, dz, r + 6, 0, Math.PI * 2); ctx.stroke();
       }
       if (ai._isElite) {
         ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.5;

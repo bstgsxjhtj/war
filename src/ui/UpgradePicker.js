@@ -22,15 +22,36 @@ export class UpgradePicker {
     this._render();
     this.el.style.display = 'flex';
     try { document.exitPointerLock(); } catch (e) {}
+    // P1：键盘选择 1/2/3 + R 重选
+    this._keyHandler = (e) => {
+      if (this.el.style.display === 'none') return;
+      if (e.code === 'Digit1' || e.code === 'Numpad1') this._pickByIndex(0);
+      else if (e.code === 'Digit2' || e.code === 'Numpad2') this._pickByIndex(1);
+      else if (e.code === 'Digit3' || e.code === 'Numpad3') this._pickByIndex(2);
+      else if (e.code === 'KeyR') { const next = this.runBuffs.reroll(); if (next) { this._picks = next; this._render(); } }
+    };
+    window.addEventListener('keydown', this._keyHandler);
+  }
+
+  _pickByIndex(idx) {
+    const picks = this._picks;
+    if (!picks || !picks[idx]) return;
+    const p = picks[idx];
+    this.runBuffs.apply(this.player, p.id);
+    this.audio?.playSound('buffSelect');
+    if (this.bus) this.bus.emit('hud.flash', { text: '已获得：' + p.name });
+    const cb = this._callback;
+    this.hide();
+    if (cb) cb();
   }
 
   _render() {
     const picks = this._picks;
     const rerolls = this.runBuffs.rerollsLeft || 0;
     const rerollBtn = rerolls > 0
-      ? `<button id="upgrade-reroll" style="margin-top:18px;padding:8px 22px;background:#3a4a6a;border:1px solid #6a8aaa;border-radius:8px;color:#cde;font-family:inherit;font-size:14px;cursor:pointer;">重选（剩 ${rerolls}）</button>`
+      ? `<button id="upgrade-reroll" style="margin-top:18px;padding:8px 22px;background:#3a4a6a;border:1px solid #6a8aaa;border-radius:8px;color:#cde;font-family:inherit;font-size:14px;cursor:pointer;">重选（剩 ${rerolls} · R）</button>`
       : `<div style="margin-top:18px;font-size:12px;color:#888;">本局重选已用完</div>`;
-    this.el.innerHTML = '<div style="color:#e0d090;font-size:26px;margin-bottom:20px;text-shadow:0 2px 8px rgba(0,0,0,0.8);">选择升级</div><div style="display:flex;gap:18px;">' +
+    this.el.innerHTML = '<div style="color:#e0d090;font-size:26px;margin-bottom:6px;text-shadow:0 2px 8px rgba(0,0,0,0.8);">选择升级</div><div style="font-size:12px;color:#889;margin-bottom:18px;">按 1/2/3 键快速选择 · R 重选</div><div style="display:flex;gap:18px;">' +
       picks.map(p => '<div class="upgrade-card" data-id="' + p.id + '" data-color="' + (p.color || '#4a6a8a') + '" style="width:190px;height:240px;background:linear-gradient(135deg,#1a2a3a,#2a3a5a);border:2px solid ' + (p.color || '#4a6a8a') + ';border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s,border-color 0.15s;box-shadow:0 0 14px ' + (p.color || '#4a6a8a') + '33;"><div style="font-size:10px;color:' + (p.color || '#9a9a9a') + ';margin-bottom:8px;letter-spacing:2px;text-transform:uppercase;">' + (p.rarity || 'common') + '</div><div style="font-size:22px;color:#e0d090;margin-bottom:12px;">' + p.name + '</div><div style="font-size:13px;color:#a0b0c0;text-align:center;padding:0 12px;">' + p.desc + '</div></div>').join('') +
       '</div>' + rerollBtn;
     const cards = this.el.querySelectorAll('.upgrade-card');
@@ -62,5 +83,6 @@ export class UpgradePicker {
   hide() {
     this.el.style.display = 'none';
     this._callback = null;
+    if (this._keyHandler) { window.removeEventListener('keydown', this._keyHandler); this._keyHandler = null; }
   }
 }
