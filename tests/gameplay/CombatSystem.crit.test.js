@@ -31,6 +31,12 @@ function mockAffixes(bonuses = {}) {
 describe('CombatSystem 暴击反馈', () => {
   let cs, bus;
   beforeEach(() => {
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+      clearRect() {}, save() {}, restore() {}, translate() {}, rotate() {}, scale() {},
+      beginPath() {}, arc() {}, fill() {}, stroke() {}, moveTo() {}, lineTo() {}, closePath() {},
+      fillRect() {}, rect() {}, fillText() {}, strokeText() {},
+      fillStyle: '#000', strokeStyle: '#000', font: '', textAlign: '', textBaseline: '', lineWidth: 1,
+    }));
     bus = { emit: vi.fn() };
     cs = new CombatSystem({ add() {}, remove() {} }, bus);
     cs.spawnHitFX = vi.fn();

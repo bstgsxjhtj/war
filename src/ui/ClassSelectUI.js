@@ -52,6 +52,13 @@ export class ClassSelectUI {
       name.textContent = def.name;
       card.appendChild(name);
 
+      if (def.tags && def.tags.includes('beginner')) {
+        const badge = document.createElement('div');
+        Object.assign(badge.style, { display: 'inline-block', fontSize: '10px', fontWeight: '600', color: '#ffd070', background: 'rgba(255,208,112,.15)', border: '1px solid rgba(255,208,112,.3)', borderRadius: '4px', padding: '2px 8px', marginTop: '6px' });
+        badge.textContent = '推荐新手';
+        card.appendChild(badge);
+      }
+
       const desc = document.createElement('div');
       Object.assign(desc.style, { fontSize: '12px', opacity: '0.7', lineHeight: '1.5', minHeight: '36px' });
       desc.textContent = def.desc;

@@ -102,6 +102,15 @@ export class MiniMap {
     ctx.restore();
     ctx.save();
     ctx.translate(cx, cy);
+    // P2：指北标记 N——按玩家朝向计算北方向在圆边缘的屏幕坐标，文字始终正立可读
+    const nx = -R * Math.sin(pa), ny = -R * Math.cos(pa);
+    ctx.fillStyle = '#c9a55a';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('N', nx, ny);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(cx, cy);
     ctx.fillStyle = '#00ff88';
     ctx.beginPath();
     ctx.moveTo(0, -6); ctx.lineTo(-4, 4); ctx.lineTo(4, 4); ctx.closePath();

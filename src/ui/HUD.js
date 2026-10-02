@@ -1,4 +1,5 @@
 import { EV } from '../core/constants/events.js';
+import * as THREE from 'three';
 
 // 限时 buff 时长上限（与 gameplay 侧初始值一致）
 const PERFECT_BUFF_DUR = 2;   // 完美闪避增益
@@ -26,6 +27,12 @@ export class HUD {
         <div style="position:absolute;top:12px;left:0;width:26px;height:2px;background:rgba(255,235,180,.9);box-shadow:0 0 4px #000;"></div>
         <div style="position:absolute;left:12px;top:0;width:2px;height:26px;background:rgba(255,235,180,.9);box-shadow:0 0 4px #000;"></div>
         <div id="comboRing" style="position:absolute;inset:-4px;border-radius:50%;border:2px solid transparent;"></div>
+        <div id="hitmarker" style="position:absolute;inset:-8px;display:none;pointer-events:none;">
+          <div style="position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:3px;height:6px;background:#ff4444;"></div>
+          <div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:3px;height:6px;background:#ff4444;"></div>
+          <div style="position:absolute;left:-2px;top:50%;transform:translateY(-50%);width:6px;height:3px;background:#ff4444;"></div>
+          <div style="position:absolute;right:-2px;top:50%;transform:translateY(-50%);width:6px;height:3px;background:#ff4444;"></div>
+        </div>
       </div>
       <div id="lockReticle" style="position:absolute;top:0;left:0;width:40px;height:40px;display:none;pointer-events:none;transform:translate(-50%,-50%);">
         <div style="position:absolute;top:0;left:0;width:12px;height:12px;border-top:2px solid #ffd070;border-left:2px solid #ffd070;"></div>
@@ -82,6 +89,7 @@ export class HUD {
     document.body.appendChild(this.el);
     this._locklost = this.el.querySelector('#locklost');
     this._lockReticle = this.el.querySelector('#lockReticle');
+    this._hitmarker = this.el.querySelector('#hitmarker');
     this._hp = this.el.querySelector('#hp');
     this._hpText = this.el.querySelector('#hpText');
     this._stam = this.el.querySelector('#stam');
@@ -160,6 +168,19 @@ export class HUD {
     this._perfMin = Infinity;
     this._perfMax = 0;
 
+    // P2：屏外友军方向箭头——投影友军世界坐标到屏幕，出屏时在边缘画蓝色箭头引导玩家寻找队友
+    this._allyArrows = [];
+    this._allyArrowLayer = document.createElement('div');
+    Object.assign(this._allyArrowLayer.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '12' });
+    document.body.appendChild(this._allyArrowLayer);
+    for (let i = 0; i < 6; i++) {
+      const a = document.createElement('div');
+      a.style.cssText = 'position:absolute;display:none;font-size:20px;color:#4f8;font-weight:bold;text-shadow:0 0 4px #000,0 1px 2px #000;transform:translate(-50%,-50%);will-change:transform;';
+      this._allyArrowLayer.appendChild(a);
+      this._allyArrows.push(a);
+    }
+    this._allyV3 = new THREE.Vector3();
+
     on(EV.ENGINE_ERROR, ({ err, ts, frame }) => {
       this._errCount++;
       this._errLog.push({ msg: err && err.message ? err.message : String(err), ts, frame });
@@ -188,6 +209,7 @@ export class HUD {
     on(EV.UI_LOCKLOST, () => { this._locklost.style.display = 'flex'; if (this._lockReticle) this._lockReticle.style.display = 'none'; });
     on(EV.UI_LOCKED, () => { this._locklost.style.display = 'none'; });
     on(EV.FX_LOCK_MARKER, ({ visible, x, y }) => { if (this._lockReticle) { this._lockReticle.style.display = visible ? 'block' : 'none'; if (visible) { this._lockReticle.style.left = x + 'px'; this._lockReticle.style.top = y + 'px'; } } });
+    on(EV.FX_HITMARKER, () => { if (this._hitmarker) { this._hitmarker.style.display = 'block'; if (this._hitTimer) clearTimeout(this._hitTimer); this._hitTimer = setTimeout(() => { this._hitmarker.style.display = 'none'; }, 180); } });
     on(EV.HUD_FLASH, ({ text } = {}) => { if (text) this.flash(text); });
     on(EV.HUD_MISS, () => this.flash('落空'));
     on(EV.COMBAT_HIT, ({ victim }) => {
@@ -528,7 +550,7 @@ export class HUD {
     this._perfMax = 0;
   }
 
-  flash(msg) { this._endLocked = false; this._hint.textContent = msg; }
+  flash(msg) { this._endLocked = false; this._hint.textContent = msg; if (this._flashTimer) clearTimeout(this._flashTimer); this._flashTimer = setTimeout(() => { if (!this._endLocked) this._hint.textContent = ''; }, 3000); }
   flashEnd(msg) { this._endLocked = true; this._hint.textContent = msg; }
   clearHint() { if (!this._endLocked) this._hint.textContent = ''; }
   setSkillCooldowns(ws) {
@@ -603,5 +625,6 @@ export class HUD {
     this._unsubs = [];
     document.removeEventListener('keydown', this._onKeydown);
     if (this._locklost) this._locklost.removeEventListener('click', this._onLockClick);
+    if (this._allyArrowLayer) this._allyArrowLayer.remove();
   }
 }

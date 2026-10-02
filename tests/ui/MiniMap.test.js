@@ -12,6 +12,7 @@ function mkCtx() {
     stroke() { ops.push({ op: 'stroke', style: ctx.strokeStyle }); },
     moveTo() {}, lineTo() {}, closePath() {}, fillRect() { ops.push({ op: 'fillRect' }); },
     rect() { ops.push({ op: 'rect' }); },
+    fillText() {}, font: '', textAlign: '', textBaseline: '',
     fillStyle: '#000', strokeStyle: '#000', lineWidth: 1,
   };
   return ctx;

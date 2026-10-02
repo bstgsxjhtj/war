@@ -23,7 +23,7 @@ export class DeathFeedback {
     Object.assign(this.el.style, {
       position: 'fixed', inset: '0', display: 'none', alignItems: 'center', justifyContent: 'center',
       flexDirection: 'column', zIndex: 40, pointerEvents: 'none', fontFamily: 'Segoe UI, sans-serif',
-      background: 'rgba(80,0,0,.35)', opacity: '0', transition: 'none',
+      background: 'rgba(80,0,0,.22)', opacity: '0', transition: 'none',
     });
     this._title = document.createElement('div');
     Object.assign(this._title.style, { color: '#ff5050', fontSize: '30px', fontWeight: 'bold', textShadow: '0 2px 6px #000' });

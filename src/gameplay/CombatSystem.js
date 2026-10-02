@@ -250,29 +250,36 @@ export class CombatSystem {
     this._partGeo.attributes.color.needsUpdate = true;
   }
 
-  createDamageNumber(pos, amount, countered = false, crit = false) {
+  createDamageNumber(pos, amount, countered = false, crit = false, text = null) {
     const slot = this._numSprites.find(n => !n.spr.visible);
     if (!slot) return;
-    const c = crit ? '#ffd700' : (countered ? '#66ddff' : (amount >= 35 ? '#ff5533' : '#ffe070'));
+    const c = text ? '#88ddff' : (crit ? '#ffd700' : (countered ? '#66ddff' : (amount >= 35 ? '#ff5533' : '#ffe070')));
     const ctx = slot.ctx;
     if (ctx) {
       ctx.clearRect(0, 0, 128, 64);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      if (crit) {
-        ctx.font = 'bold 20px Segoe UI, sans-serif';
+      if (text) {
+        ctx.font = 'bold 28px Segoe UI, sans-serif';
         ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.85)';
-        ctx.strokeText('暴击', 64, 12);
-        ctx.fillStyle = c; ctx.fillText('暴击', 64, 12);
+        ctx.strokeText(text, 64, 32);
+        ctx.fillStyle = c; ctx.fillText(text, 64, 32);
+      } else {
+        if (crit) {
+          ctx.font = 'bold 20px Segoe UI, sans-serif';
+          ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+          ctx.strokeText('暴击', 64, 12);
+          ctx.fillStyle = c; ctx.fillText('暴击', 64, 12);
+        }
+        ctx.font = 'bold ' + (crit ? 50 : 44) + 'px Segoe UI, sans-serif';
+        ctx.lineWidth = crit ? 7 : 6; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+        ctx.strokeText(amount, 64, crit ? 38 : 32);
+        ctx.fillStyle = c; ctx.fillText(amount, 64, crit ? 38 : 32);
       }
-      ctx.font = 'bold ' + (crit ? 50 : 44) + 'px Segoe UI, sans-serif';
-      ctx.lineWidth = crit ? 7 : 6; ctx.strokeStyle = 'rgba(0,0,0,.85)';
-      ctx.strokeText(amount, 64, crit ? 38 : 32);
-      ctx.fillStyle = c; ctx.fillText(amount, 64, crit ? 38 : 32);
       slot.tex.needsUpdate = true;
     }
     slot.spr.position.copy(pos); slot.spr.visible = true;
-    slot.spr.scale.set(crit ? 1.8 : 1.2, crit ? 0.9 : 0.6, 1);
-    slot.life = 1.4; slot.vy = crit ? 2.4 : 1.8;
+    slot.spr.scale.set(text ? 1.5 : (crit ? 1.8 : 1.2), text ? 0.75 : (crit ? 0.9 : 0.6), 1);
+    slot.life = 1.4; slot.vy = (text || crit) ? 2.4 : 1.8;
   }
 
   setAffixes(a) { this._affixes = a; }
@@ -352,7 +359,9 @@ export class CombatSystem {
         const lost = c.takeDamage(finalDmg, heavy || isBackstab, attacker, now);
         if (lost > 0) {
           _meleeHitCount++;
-          this._emitHit(attacker, c, lost, weapon.name, 0xff3322, combo, heavy, now, isBackstab, branchCrit || this._lastAffixCrit);
+          const blocked = c._blocking && lost < finalDmg * 0.6;
+          if (blocked) this.createDamageNumber(c.position.clone().setY(1.4), 0, false, false, '格挡');
+          else this._emitHit(attacker, c, lost, weapon.name, 0xff3322, combo, heavy, now, isBackstab, branchCrit || this._lastAffixCrit);
           this._affixLeech(attacker, lost);
           c._curVel.addScaledVector(attacker.forward, knock * 2.5 * modKnockMul);
           if (launch) { if (launch.y) c.vy += launch.y; if (launch.rot) c._launchRot = launch.rot; }
@@ -378,9 +387,10 @@ export class CombatSystem {
     if (combo === 2 && weapon.comboLaunch && weapon.comboLaunch[2]?.aoe) {
       this.spawnAoE(attacker.position, weapon.comboLaunch[2].aoe, baseDmg * 0.5, attacker, now);
     }
-    // P1：挥空反馈——未命中任何敌人时通知 HUD 显示「落空」
-    if (_meleeHitCount === 0 && attacker.isLocal) {
-      this.bus.emit(EV.HUD_MISS, {});
+    // P1：挥空反馈——未命中任何敌人时通知 HUD 显示「落空」；命中时闪烁准星 hitmarker
+    if (attacker.isLocal) {
+      if (_meleeHitCount > 0) this.bus.emit(EV.FX_HITMARKER, {});
+      else this.bus.emit(EV.HUD_MISS, {});
     }
   }
 

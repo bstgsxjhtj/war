@@ -11,6 +11,7 @@ export const CLASS_DEFS = {
   warrior: {
     name: '战士',
     desc: '高血量坦克，格挡减伤，重武器控场',
+    tags: ['beginner'],
     stats: { speed: 7.5, sprintMul: 1.6, maxHp: 200, maxStamina: 130 },
     weaponNames: ['剑盾', '枪', '锤'],
     weapons: () => [new SwordShield(), new Spear(), new Warhammer()],
