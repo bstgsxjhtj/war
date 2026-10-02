@@ -43,14 +43,22 @@ export class HUD {
         <div style="background:rgba(0,0,0,.5);border:1px solid #642;border-radius:6px;overflow:hidden;height:12px;">
           <div id="rage" style="width:0;height:100%;background:linear-gradient(90deg,#a30,#fa4);transition:width .1s;"></div>
         </div>
+        <div id="potions" style="margin-top:6px;font-size:13px;color:#ff6644;text-shadow:0 1px 2px #000;">药水 3</div>
+        <div id="manaWrap" style="display:none;">
+          <div style="font-size:11px;color:#a8f;text-shadow:0 1px 2px #000;margin:4px 0 2px;">法力</div>
+          <div style="background:rgba(0,0,0,.5);border:1px solid #426;border-radius:6px;overflow:hidden;height:12px;">
+            <div id="mana" style="width:100%;height:100%;background:linear-gradient(90deg,#63c,#a8f);transition:width .1s;"></div>
+          </div>
+        </div>
       </div>
       <div id="score" style="position:absolute;top:18px;left:50%;transform:translateX(-50%);color:#eee;font-size:18px;text-shadow:0 1px 2px #000;">蓝方 0  |  0 红方</div>
+      <div id="enemyCount" style="position:absolute;top:42px;right:24px;color:#ff6644;font-size:14px;text-shadow:0 1px 2px #000;display:none;">敌人 0</div>
       <div id="round" style="position:absolute;top:42px;left:50%;transform:translateX(-50%);color:#ffd070;font-size:13px;text-shadow:0 1px 2px #000;"></div>
       <div id="modeName" style="position:absolute;top:62px;left:50%;transform:translateX(-50%);color:#8cf;font-size:12px;text-shadow:0 1px 2px #000;">模式：波次</div>
       <div id="dom" style="position:absolute;top:84px;left:50%;transform:translateX(-50%);display:none;color:#fff;font-size:12px;text-shadow:0 1px 2px #000;text-align:center;"></div>
       <div id="wforecast" style="position:absolute;top:106px;left:50%;transform:translateX(-50%);color:#8df;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
       <div id="weapon" style="position:absolute;right:24px;bottom:24px;color:#cde;font-size:14px;text-shadow:0 1px 2px #000;">[1] 刀  [2] 弓</div>
-      <div id="keys" style="position:absolute;right:24px;bottom:48px;color:#bcd;font-size:11px;text-shadow:0 1px 2px #000;opacity:.6;text-align:right;line-height:1.6;">WASD · Shift冲刺 · Space跳<br>Q/双击 闪避 · LMB攻击 · RMB格挡/蓄力 · E处决 · F技能 · T终极 · Tab锁定 · 1-4武器 · M模式</div>
+      <div id="keys" style="position:absolute;right:24px;bottom:48px;color:#bcd;font-size:11px;text-shadow:0 1px 2px #000;opacity:.6;text-align:right;line-height:1.6;">WASD · Shift冲刺 · Space跳<br>Q/双击 闪避 · LMB攻击 · RMB格挡/蓄力 · E处决 · F技能 · T终极 · H药水 · Tab锁定 · 1-4武器 · M模式</div>
       <div id="hint" style="position:absolute;top:62%;left:50%;transform:translateX(-50%);color:#ffd;text-align:center;font-size:15px;text-shadow:0 1px 2px #000;max-width:80%;"></div>
       <div id="kill" style="position:absolute;top:30%;left:50%;transform:translateX(-50%);color:#ffd070;font-size:26px;font-weight:bold;text-shadow:0 2px 4px #000;opacity:0;transition:opacity .2s;"></div>
       <div id="buffbar" style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);display:flex;gap:8px;font-size:12px;text-shadow:0 1px 2px #000;display:none;"></div>
@@ -76,6 +84,10 @@ export class HUD {
     this._postureFill.style.cssText = 'width:0%;height:100%;background:linear-gradient(90deg,#c88,#fa4);transition:width 0.1s;';
     this._postureBar.appendChild(this._postureFill);
     this._score = this.el.querySelector('#score');
+  this._enemyCount = this.el.querySelector('#enemyCount');
+  this._potions = this.el.querySelector('#potions');
+  this._mana = this.el.querySelector('#mana');
+  this._manaWrap = this.el.querySelector('#manaWrap');
     this._round = this.el.querySelector('#round');
     this._modeName = this.el.querySelector('#modeName');
     this._dom = this.el.querySelector('#dom');
@@ -556,6 +568,18 @@ export class HUD {
       this._comboTimer -= dt;
       if (this._comboTimer < 0.5) this._write(this._comboEl, 'opacity', (this._comboTimer / 0.5).toString());
       if (this._comboTimer <= 0) this._write(this._comboEl, 'display', 'none');
+    }
+    if (this._ais && this._player) {
+      const _alive = this._ais.filter(a => a.alive && a.team === 1).length;
+      this._write(this._enemyCount, 'textContent', '敌人 ' + _alive);
+      this._write(this._enemyCount, 'display', _alive > 0 ? 'block' : 'none');
+      this._write(this._potions, 'textContent', '药水 ' + (this._player.potions ? this._player.potions.hp : 0));
+      if (this._player.mana && this._player.mana.max > 0) {
+        this._write(this._manaWrap, 'display', 'block');
+        this._write(this._mana, 'width', Math.round(this._player.mana.cur / this._player.mana.max * 100) + '%');
+      } else {
+        this._write(this._manaWrap, 'display', 'none');
+      }
     }
   }
 

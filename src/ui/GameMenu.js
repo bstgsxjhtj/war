@@ -69,6 +69,28 @@ export class GameMenu {
     }
     panel.appendChild(grid);
 
+    // P1-2 队友数量选择
+    const allyRow = document.createElement('div');
+    Object.assign(allyRow.style, { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', padding: '10px 0', borderTop: '1px solid #2c3a4c', borderBottom: '1px solid #2c3a4c' });
+    const allyLabel = document.createElement('div');
+    Object.assign(allyLabel.style, { fontSize: '13px', fontWeight: '600', opacity: '0.85', minWidth: '70px' });
+    allyLabel.textContent = '队友数量';
+    allyRow.appendChild(allyLabel);
+    this._allyBtns = [];
+    for (let n = 0; n <= 4; n++) {
+      const b = document.createElement('button');
+      Object.assign(b.style, { fontFamily: 'inherit', cursor: 'pointer', borderRadius: '6px', padding: '6px 14px', fontSize: '14px', color: '#e0d8c8', border: '1px solid #3a4a60', background: 'rgba(30,40,55,.9)', transition: 'all .15s', minWidth: '38px' });
+      b.textContent = String(n);
+      b.addEventListener('click', () => { if (this.opts.onAllyCount) this.opts.onAllyCount(n); this._refreshAlly(n); });
+      allyRow.appendChild(b);
+      this._allyBtns.push(b);
+    }
+    const allyHint = document.createElement('div');
+    Object.assign(allyHint.style, { fontSize: '11px', opacity: '0.5', marginLeft: 'auto' });
+    allyHint.textContent = '重开后生效';
+    allyRow.appendChild(allyHint);
+    panel.appendChild(allyRow);
+
     // 其他操作
     const row = document.createElement('div');
     Object.assign(row.style, { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', borderTop: '1px solid #2c3a4c', paddingTop: '18px' });
@@ -115,6 +137,18 @@ export class GameMenu {
       btn.style.borderColor = active ? '#e0b050' : '#3a4a60';
       btn.style.background = active ? 'rgba(60,50,25,.95)' : 'rgba(30,40,55,.9)';
       btn.style.color = active ? '#ffd070' : '#e0d8c8';
+    }
+    const ac = this.opts.getAllyCount ? this.opts.getAllyCount() : 0;
+    this._refreshAlly(ac);
+  }
+
+  _refreshAlly(n) {
+    for (let i = 0; i < this._allyBtns.length; i++) {
+      const active = i === n;
+      const b = this._allyBtns[i];
+      b.style.borderColor = active ? '#4488ff' : '#3a4a60';
+      b.style.background = active ? 'rgba(30,50,80,.95)' : 'rgba(30,40,55,.9)';
+      b.style.color = active ? '#88bbff' : '#e0d8c8';
     }
   }
 

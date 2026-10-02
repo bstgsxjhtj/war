@@ -18,10 +18,10 @@ describe('SettingsMenu 键位重绑', () => {
     menu = new SettingsMenu(bus, audio, kb);
   });
 
-  it('渲染键位区域，包含全部 20 个可重绑动作按钮', () => {
+  it('渲染键位区域，包含全部 21 个可重绑动作按钮', () => {
     const buttons = menu.el.querySelectorAll('[data-bind]');
     expect(buttons.length).toBe(BINDING_ORDER.length);
-    expect(BINDING_ORDER.length).toBe(20);
+    expect(BINDING_ORDER.length).toBe(21);
   });
 
   it('每个按钮显示当前绑定的键码', () => {

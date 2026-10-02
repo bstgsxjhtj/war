@@ -11,6 +11,7 @@ export const DEFAULT_BINDINGS = {
   skill: 'KeyF',
   ultimate: 'KeyT',
   execute: 'KeyE',
+  potion: 'KeyH',
   lock: 'Tab',
   weapon1: 'Digit1',
   weapon2: 'Digit2',
@@ -34,6 +35,7 @@ export const BINDING_LABELS = {
   skill: '技能',
   ultimate: '大招',
   execute: '处决',
+  potion: '药水',
   lock: '锁定',
   weapon1: '武器1',
   weapon2: '武器2',
@@ -48,7 +50,7 @@ export const BINDING_LABELS = {
 
 export const BINDING_ORDER = [
   'forward', 'back', 'left', 'right', 'sprint', 'jump',
-  'dodge', 'skill', 'ultimate', 'execute', 'lock',
+  'dodge', 'skill', 'ultimate', 'execute', 'potion', 'lock',
   'weapon1', 'weapon2', 'weapon3', 'weapon4',
   'skilltree', 'affix', 'mode', 'weather', 'settings'
 ];

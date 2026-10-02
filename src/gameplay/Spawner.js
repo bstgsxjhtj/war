@@ -110,6 +110,22 @@ export class Spawner {
       this._finalize(e, 160 + (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 120, ais);
     }
   }
+
+  spawnBlueAllies(n, ais, spawnPos) {
+    for (let i = 0; i < n; i++) {
+      const cls = randomAIClass();
+      const cfg = AI_CLASS_CONFIG[cls];
+      const wList = cfg.weapons();
+      const e = new AIController({ team: 0, passive: false, classType: cls, classColor: CLASS_DEFS[cls].color, maxHp: Math.round(cfg.maxHp * 1.2), speed: cfg.speed, sprintMul: cfg.sprintMul, maxStamina: cfg.maxStamina });
+      e._aiClassKey = cls;
+      e.setBus(this.bus);
+      e.setWeapons([wList[Math.floor(Math.random() * wList.length)]]);
+      const ox = spawnPos.x + (Math.random() - 0.5) * 8;
+      const oz = spawnPos.z + (Math.random() - 0.5) * 8;
+      this._finalize(e, ox, oz, ais);
+      e.setAudio(this.audio);
+    }
+  }
 }
 
 export function makeAIEnemy({ team = 1, passive = false, hpMul = 1 } = {}) {

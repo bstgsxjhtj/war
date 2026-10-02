@@ -54,6 +54,8 @@ export class Character {
     this.health = new Health(maxHp);
     this._baseMaxHp = maxHp;
     this.stamina = new Stamina(maxStamina);
+    this.potions = { hp: 3 }; // P2-1 药水系统：初始 3 瓶 HP 药水
+    this.mana = { cur: 0, max: 0 }; // P2-3 法力系统：非法师默认 0，法师在 setSkill 中设为 100
     this.weapons = [new Sword(), new Bow()];
     this.weaponIdx = 0;
 
@@ -64,6 +66,7 @@ export class Character {
     this._pendingCombat = null; this._pendingCharge = 1; this._pendingCombo = 0;
     this._charge = 0; this._charging = false;
     this._hurt = 0; this._emisDirty = false; this._lastHurtTime = -1;
+    this._potionCD = 0; // P2-1 药水冷却
     this._dodgeTimer = 0; this._dodgeIFrame = 0; this._dodgeOverride = 0;
     this._iFrame = 0;
     this._stun = 0;
@@ -108,6 +111,17 @@ export class Character {
     return { dmgMul, cdMul, lifesteal };
   }
   get canBeExecuted() { return this.alive && (this.health.ratio < COMBAT.EXECUTE_HP_RATIO + (this._runExecBonus || 0) + (this._skill ? this._skill.branchWarlordExec : 0) || this._postureBroken > 0); }
+
+  // P2-1 药水系统：喝药回血 40% maxHp，消耗 1 瓶，冷却 1.5s
+  drinkPotion() {
+    if (!this.alive || this.potions.hp <= 0 || this._potionCD > 0) return false;
+    const heal = this.health.maxHp * 0.4;
+    this.health.hp = Math.min(this.health.maxHp, this.health.hp + heal);
+    this.potions.hp--;
+    this._potionCD = 1.5;
+    if (this._updateHpBar) this._updateHpBar();
+    return true;
+  }
 
   _build() {
     const teamColor = this.team === 0 ? PALETTE.TEAM.BLUE.PRIMARY : PALETTE.TEAM.RED.PRIMARY;
@@ -587,7 +601,15 @@ export class Character {
   setComboSys(cs) { this._comboSys = cs; }
   setAudio(a) { this._audio = a; }
   setWeaponTrail(t, color = 0) { this._weaponTrail = t; this._weaponTrailColor = color; }
-  setSkill(s) { this._skill = s; if (s) { this._applyAffixMaxHp(); this.health.cur = this.health.maxHp; this.stamina.max += s.maxStaminaBonus; if (s.keystoneOverloadStamina) this.stamina.max *= (1 + s.keystoneOverloadStamina); this.stamina.cur = this.stamina.max; } }
+  setSkill(s) { this._skill = s; if (s) { this._applyAffixMaxHp(); this.health.cur = this.health.maxHp; this.stamina.max += s.maxStaminaBonus; if (s.keystoneOverloadStamina) this.stamina.max *= (1 + s.keystoneOverloadStamina); this.stamina.cur = this.stamina.max; if (this._classType === 'mage') { this.mana.max = 100; this.mana.cur = 100; } } }
+
+  // P2-3 法力系统：消耗法力，不足返回 false
+  spendMana(cost) {
+    if (this.mana.max <= 0 || cost <= 0) return true;
+    if (this.mana.cur < cost) return false;
+    this.mana.cur -= cost;
+    return true;
+  }
 
   setAffixes(a) { this._affixes = a; this._applyAffixMaxHp(); }
   _applyAffixMaxHp() {
@@ -606,6 +628,7 @@ export class Character {
     if (this._executing > 0) { this._tickExecuting(dt, now); return; }
     this._tickTimers(dt);
     this.stamina.regen(dt * ((this._weatherEffects && this._weatherEffects.staminaRegenMul) || 1), this._attacking || this._dodgeTimer > 0 || this._blocking);
+    if (this.mana.max > 0 && this.mana.cur < this.mana.max) this.mana.cur = Math.min(this.mana.max, this.mana.cur + dt * 8);
     if (this._runRegen && this.alive) { this._regenAcc = (this._regenAcc || 0) + dt; if (this._regenAcc >= 1) { this.health.hp = Math.min(this.health.maxHp, this.health.hp + this._runRegen); this._regenAcc -= 1; this._updateHpBar(); } }
     // P1-A/P2-A 冠顶/Duo 回血接线：回复+德鲁伊+守护者，堡垒 Keystone ×2
     if (this._skill && this.alive) {
@@ -675,6 +698,7 @@ export class Character {
     if (this._perfectWindow > 0) this._perfectWindow -= dt;
     if (this._perfectBuff > 0) this._perfectBuff -= dt;
     if (this._counterBonusTimer > 0) this._counterBonusTimer -= dt;
+    if (this._potionCD > 0) this._potionCD -= dt;
   }
 
   _tickDeath(dt) {
@@ -821,6 +845,10 @@ export class Character {
       if (this._skill && this._skill.branchSpellpower > 1) dmg *= this._skill.branchSpellpower;
       if (this._skill && this._skill.keystoneOverloadSpell) dmg *= (1 + this._skill.keystoneOverloadSpell);
       if (this._skill && this._skill.branchPrecision > 1) dmg *= this._skill.branchPrecision;
+        // P2-3 法力消耗：法杖普攻消耗 10 法力，不足则取消攻击
+        if (this.weapon.weaponClass === 'STAFF' && this.mana.max > 0 && !this.spendMana(10)) {
+          this._attacking = false; this._anim = 0; return;
+        }
         this.weapon._perform(this, this._pendingCombat, { combo: this._pendingCombo, charge: this._pendingCharge, now, dmg });
         this.weapon._timer = this.weapon.cooldown * this.killstreakBuffs().cdMul * (this._skill && this._skill.branchAttackSpeedMul ? this._skill.branchAttackSpeedMul : 1) * (this._runAtkSpdMul || 1);
         if (this.weapon.comboLunge) this._curVel.addScaledVector(this.forward, this.weapon.comboLunge[combo] ?? 3);

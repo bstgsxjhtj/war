@@ -47,6 +47,7 @@ import { SettingsMenu } from './ui/SettingsMenu.js';
 import { WaveMode } from './gameplay/WaveMode.js';
 import { ResultScreen } from './ui/ResultScreen.js';
 import { SupplyPoint } from './world/SupplyPoint.js';
+import { GroundItemManager } from './world/GroundItem.js';
 import { MapGenerator } from './world/MapGenerator.js';
 import { MiniMap } from './ui/MiniMap.js';
 import { CLASS_DEFS } from './gameplay/ClassDefinition.js';
@@ -141,6 +142,7 @@ async function bootstrap() {
   water.mesh.position.set(0, 0.2, 0);
   scene.add(water.mesh);
   const supply = new SupplyPoint();
+  const groundItems = new GroundItemManager(scene.scene, bus, terrain);
   const resultScreen = new ResultScreen(bus, {
     onChangeMode: () => gameMenu.show(),
     onExitToMenu: () => mainMenuUI.show(),
@@ -278,6 +280,7 @@ async function bootstrap() {
     hud.flash('单机模式（未连服务器）');
   }
   let mode = new WaveMode(bus);
+  let allyCount = 0; // P1-2 队友数量配置（菜单可调）
   const saveOrch = new SaveOrchestrator({
     bus, state, hud, saveManager, progression, campaign, skills, affixes, daily, skins, achievements,
     getPlayer: () => player,
@@ -288,6 +291,8 @@ async function bootstrap() {
     get runBuffs() { return runBuffs; },
     get upgradePicker() { return upgradePicker; },
     spawnAll: () => spawnAll(),
+    setAllyCount: (n) => { allyCount = Math.max(0, Math.min(4, n | 0)); },
+    getAllyCount: () => allyCount,
     saveNow: () => saveOrch.saveNow(),
     loadMap: (k) => loadMap(k),
     mapName: () => currentMapName,
@@ -307,6 +312,13 @@ async function bootstrap() {
   progressUI.refresh();
 
   const spawner = new Spawner({ scene, camera, terrain, combat, aiManager, formations, weaponTrail, horses, audio, bus, progression, campaign, lod });
+
+  // P0-1 预热线程：预创建各职业角色 mesh 以预热 TextureFactory 缓存，避免 spawnAll 时首次纹理创建卡顿
+  for (const _cls of ['warrior', 'mage', 'archer']) {
+    const _def = CLASS_DEFS[_cls] || CLASS_DEFS.warrior;
+    const _dummy = new AIController({ team: 1, passive: true, classType: _cls, classColor: _def.color, maxHp: 10, speed: 1, maxStamina: 10 });
+    try { _dummy.setWeapons([_def.weapons()[0]]); _dummy.spawn(new THREE.Vector3(0, -999, 0)); if (_dummy.dispose) _dummy.dispose(); } catch (e) {}
+  }
 
   // 辅助系统（src/aux/，独立架构，仅通过 EventBus 通信，不依赖 gameplay 类）
   const tooltip = new Tooltip();
@@ -415,6 +427,11 @@ async function bootstrap() {
     if (player._weaponMesh) weaponTrail.attach(player._weaponMesh, PALETTE.WEAPON.BLADE_EMISSIVE);
     player.setWeaponTrail(weaponTrail, PALETTE.WEAPON.BLADE_EMISSIVE);
     if (player._weaponMesh) skins.applyToWeapon(player._weaponMesh, player.weaponIdx);
+    // P1-2 队友系统：玩家 spawn 后生成蓝方 AI 队友
+    if (allyCount > 0) spawner.spawnBlueAllies(allyCount, ais, lb);
+    // P2-2 装备拾取：清理上回合地面物品 + 生成新地图野生装备
+    groundItems.clear();
+    groundItems.spawnRandom(5 + Math.floor(ais.length * 0.3), MapGenerator.MAPS[currentMapKey].size[0]);
     let redLayout, bossWave = false, spawnModifier = null, stageDifficulty = 1;
     if (mode.name === '战役') { const lay = campaign.spawnLayout(); redLayout = lay.red; stageDifficulty = lay.difficulty || 1; }
     else if (mode.name === '波次' || mode.name === '无尽' || mode.name === '战场') { const lay = mode.spawnLayout(); redLayout = lay.red; bossWave = lay.isBoss; spawnModifier = lay.modifier; }
@@ -549,6 +566,8 @@ async function bootstrap() {
   mainMenuUI.show();
   gameMenu = new GameMenu({
     getModeName: () => mode.name,
+    getAllyCount: () => allyCount,
+    onAllyCount: (n) => { match.setAllyCount(n); gameMenu.refresh(); hud.flash('队友数量：' + n + ' · 重开后生效'); setTimeout(() => hud.clearHint(), 3000); },
     onSelectMode: (name) => {
       inputRouter.applyModeByName(name);
       gameMenu.hide();
@@ -568,6 +587,9 @@ async function bootstrap() {
       const locked = document.pointerLockElement;
       if (locked) document.exitPointerLock();
       classSelectUI.show();
+    }
+    if (e.code === 'KeyH' && !e.repeat && document.pointerLockElement && player) {
+      if (player.drinkPotion()) { audio.playSound('pickup'); hud.flash('喝药'); setTimeout(() => hud.clearHint(), 1500); }
     }
     if (e.code === 'KeyB' && !e.repeat) {
       if (buildReviewUI.visible) { buildReviewUI.hide(); }
@@ -654,6 +676,7 @@ async function bootstrap() {
         water.update(dt, now);
         scene.updateCloud(now);
         supply.update(player, dt, now);
+        groundItems.update(dt, player);
         siege.update(dt, combat, _all);
         // 投石机争夺：靠近自动占领/夺占（每次判定用实时占领方，避免快照过期）
         if (player.alive && siege.trebuchet.team !== player.team && siege.tryOccupy(player)) { hud.flash('已占领投石机！'); pingMap(siege.trebuchet.position, 'assist'); }
@@ -807,6 +830,8 @@ async function bootstrap() {
     );
     requestAnimationFrame(loop);
   }
+  const _ls = document.getElementById('loading-screen');
+  if (_ls) { _ls.classList.add('hidden'); setTimeout(() => _ls.remove(), 600); }
   requestAnimationFrame(loop);
 }
 

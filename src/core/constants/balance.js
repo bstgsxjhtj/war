@@ -1,22 +1,22 @@
 // 平衡数值常量：武器/战斗/相机/处决；事件契约见 05-conventions.md §1
 export const WEAPON_STATS = {
-  SWORD: { name: '刀', damage: 24, range: 2.9, cooldown: 0.27 },
-  SPEAR: { name: '枪', damage: 18, range: 4.2, cooldown: 0.4 },
-  SWORD_SHIELD: { name: '剑盾', damage: 20, range: 2.6, cooldown: 0.32 },
-  WARHAMMER: { name: '重锤', damage: 55, range: 2.4, cooldown: 1.2 },
+  SWORD: { name: '刀', damage: 24, range: 3.0, cooldown: 0.22 },
+  SPEAR: { name: '枪', damage: 18, range: 5.0, cooldown: 0.42 },
+  SWORD_SHIELD: { name: '剑盾', damage: 20, range: 2.6, cooldown: 0.30 },
+  WARHAMMER: { name: '重锤', damage: 70, range: 2.5, cooldown: 1.5 },
   BOW: { name: '弓', damage: 30, range: 70, cooldown: 0.95 },
   STAFF: { name: '法杖', damage: 35, range: 50, cooldown: 0.8 },
-  DAGGER: { name: '匕首', damage: 12, range: 1.8, cooldown: 0.18 }
+  DAGGER: { name: '匕首', damage: 12, range: 1.8, cooldown: 0.13 }
 };
 
 // 战斗反馈：屏幕震动/顿帧/背刺/暴击/处决阈值与伤害
 export const COMBAT = {
-  SHAKE_MAP: [0.16, 0.18, 0.32],
-  SHAKE_MAX: 0.9,
-  HEAVY_SHAKE_BONUS: 0.14,
-  HITSTOP_MAP: [0.04, 0.05, 0.11],
-  HITSTOP_MAX: 0.14,
-  HEAVY_HITSTOP_BONUS: 0.04,
+  SHAKE_MAP: [0.28, 0.35, 0.55],
+  SHAKE_MAX: 1.3,
+  HEAVY_SHAKE_BONUS: 0.22,
+  HITSTOP_MAP: [0.07, 0.09, 0.16],
+  HITSTOP_MAX: 0.22,
+  HEAVY_HITSTOP_BONUS: 0.07,
   BACKSTAB_ANGLE: 0.5,
   CRIT_MUL: 2,
   COUNTER_THRESHOLD: 1.2,
