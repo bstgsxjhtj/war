@@ -293,7 +293,7 @@ export class CombatSystem {
     if (!attacker || !attacker.health || lost <= 0) return;
     let leech = attacker._runLifesteal || 0;
     if (attacker.killstreakBuffs) leech += attacker.killstreakBuffs().lifesteal;
-    if (attacker._skill) leech += attacker._skill.branchLifesteal;
+    if (attacker._skill) leech += (attacker._skill.branchLifesteal || 0) + (attacker._skill.branchDruidLifesteal || 0);
     if (this._affixes && attacker.weapon) {
       leech += this._affixes.affixBonus(attacker.weapon, '吸血') + this._affixes.synergyBonus(attacker.weapon, 'lifesteal');
     }
@@ -308,20 +308,31 @@ export class CombatSystem {
     if (attacker._runDmgMul) baseDmg *= attacker._runDmgMul;
     if (attacker.killstreakBuffs) baseDmg *= attacker.killstreakBuffs().dmgMul;
     if (attacker._skill && attacker._skill.branchDamageMul) baseDmg *= attacker._skill.branchDamageMul;
+    // P1-A/P2-A 冠顶+Duo 伤害接线：军阀/Duo 战神提供额外伤害
+    if (attacker._skill) {
+      const capDmg = (attacker._skill.branchWarlordDmg || 0) + (attacker._skill.duoWarbringerDmg || 0);
+      if (capDmg) baseDmg *= 1 + capDmg;
+    }
     let branchCrit = false;
-    if (attacker._skill && Math.random() < (attacker._skill.branchCritChance || 0)) { baseDmg *= 2; branchCrit = true; }
+    const critChance = attacker._skill ? (attacker._skill.branchCritChance || 0) + (attacker._skill.duoWarbringerCrit || 0) : 0;
+    if (critChance > 0 && Math.random() < critChance) { baseDmg *= 2; branchCrit = true; }
     const knock = weapon.comboKnock ? (weapon.comboKnock[combo] ?? 1) : 1;
     const launch = weapon.comboLaunch ? weapon.comboLaunch[combo] : null;
     const heavy = combo === 2;
+    // P2-B 武器形态改造：SkillTree.weaponMods 改变攻击形态（range/pierce/knock）
+    const weaponMod = attacker._skill?.getWeaponMod?.(attacker.weaponIdx) || null;
+    const effRange = weapon.range * (weaponMod === 'range' ? 1.25 : 1);
+    attacker._modPierce = weaponMod === 'pierce';
+    const modKnockMul = weaponMod === 'knock' ? 1.5 : 1;
     this._ensureSpatial(now);
-    const nearby = this._spatialHash.queryRadius(attacker.position, weapon.range);
+    const nearby = this._spatialHash.queryRadius(attacker.position, effRange);
     for (const c of nearby) {
       if (!c.alive || c.team === attacker.team) continue;
       const dx = c.position.x - attacker.position.x;
       const dz = c.position.z - attacker.position.z;
       const dy = 1.3;
       const dist = Math.sqrt(dx * dx + dz * dz + dy * dy);
-      if (dist > weapon.range || dist < 0.01) continue;
+      if (dist > effRange || dist < 0.01) continue;
       const horiz = Math.sqrt(dx * dx + dz * dz);
       if (horiz < 0.01) continue;
       const dot = (dx * attacker.forward.x + dz * attacker.forward.z) / horiz;
@@ -341,7 +352,7 @@ export class CombatSystem {
         if (lost > 0) {
           this._emitHit(attacker, c, lost, weapon.name, 0xff3322, combo, heavy, now, isBackstab, branchCrit || this._lastAffixCrit);
           this._affixLeech(attacker, lost);
-          c._curVel.addScaledVector(attacker.forward, knock * 2.5);
+          c._curVel.addScaledVector(attacker.forward, knock * 2.5 * modKnockMul);
           if (launch) { if (launch.y) c.vy += launch.y; if (launch.rot) c._launchRot = launch.rot; }
         }
         if (!c.health.alive) this.bus.emit(EV.COMBAT_KILL, { victim: c, team: c.team, killer: attacker });

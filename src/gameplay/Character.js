@@ -107,7 +107,7 @@ export class Character {
     if (k >= 7) { dmgMul = 1.3; lifesteal = 0.05; }
     return { dmgMul, cdMul, lifesteal };
   }
-  get canBeExecuted() { return this.alive && (this.health.ratio < COMBAT.EXECUTE_HP_RATIO + (this._runExecBonus || 0) || this._postureBroken > 0); }
+  get canBeExecuted() { return this.alive && (this.health.ratio < COMBAT.EXECUTE_HP_RATIO + (this._runExecBonus || 0) + (this._skill ? this._skill.branchWarlordExec : 0) || this._postureBroken > 0); }
 
   _build() {
     const teamColor = this.team === 0 ? PALETTE.TEAM.BLUE.PRIMARY : PALETTE.TEAM.RED.PRIMARY;
@@ -507,7 +507,11 @@ export class Character {
       return 0;
     }
     // 格挡判定
-    if (!this._blocking && this._skill && this._skill.branchDodgeChance > 0 && Math.random() < this._skill.branchDodgeChance) return 0;
+    // 被动闪避：分支/冠顶/Duo 叠加；巨像 Keystone 禁闪避
+    if (!this._blocking && this._skill && !this._skill.keystoneNoDodge) {
+      const dodgeChance = this._skill.branchDodgeChance + this._skill.branchTempestDodge + this._skill.duoPhantomDodge;
+      if (dodgeChance > 0 && Math.random() < dodgeChance) return 0;
+    }
     if (this._blocking && attacker) {
       const dx = attacker.position.x - this.position.x;
       const dz = attacker.position.z - this.position.z;
@@ -526,7 +530,7 @@ export class Character {
             if (this._bus) this._bus.emit(EV.FX_PERFECTBLOCK, { char: this });
             return 0;
           }
-          if (!attacker.weapon.armorPierce) {
+          if (!attacker.weapon.armorPierce && !attacker._modPierce) {
             amount *= 0.3;
             blocked = true;
             this._addPosture(POSTURE.BLOCK_TAKEN);
@@ -543,6 +547,11 @@ export class Character {
     if (this._runArmorMul) amount *= this._runArmorMul;
     if (this._skill && this._skill.branchDefenseMul) amount *= this._skill.branchDefenseMul;
     if (this._skill && this._skill.branchIronwall && this._skill.branchIronwall < 1) amount *= this._skill.branchIronwall;
+    // P1-A/P2-A 冠顶+Keystone+Duo 减伤接线（堡垒/巨像/守护者）
+    if (this._skill) {
+      const capDef = this._skill.branchBastionDef + this._skill.keystoneColossusDef + this._skill.duoWardenDef;
+      if (capDef > 0) amount *= (1 - Math.min(0.8, capDef));
+    }
     const wMul = this.getWeaknessMul ? this.getWeaknessMul(attacker) : 1;
     if (wMul > 1) {
       amount *= wMul;
@@ -578,7 +587,7 @@ export class Character {
   setComboSys(cs) { this._comboSys = cs; }
   setAudio(a) { this._audio = a; }
   setWeaponTrail(t, color = 0) { this._weaponTrail = t; this._weaponTrailColor = color; }
-  setSkill(s) { this._skill = s; if (s) { this._applyAffixMaxHp(); this.health.cur = this.health.maxHp; this.stamina.max += s.maxStaminaBonus; this.stamina.cur = this.stamina.max; } }
+  setSkill(s) { this._skill = s; if (s) { this._applyAffixMaxHp(); this.health.cur = this.health.maxHp; this.stamina.max += s.maxStaminaBonus; if (s.keystoneOverloadStamina) this.stamina.max *= (1 + s.keystoneOverloadStamina); this.stamina.cur = this.stamina.max; } }
 
   setAffixes(a) { this._affixes = a; this._applyAffixMaxHp(); }
   _applyAffixMaxHp() {
@@ -598,7 +607,11 @@ export class Character {
     this._tickTimers(dt);
     this.stamina.regen(dt * ((this._weatherEffects && this._weatherEffects.staminaRegenMul) || 1), this._attacking || this._dodgeTimer > 0 || this._blocking);
     if (this._runRegen && this.alive) { this._regenAcc = (this._regenAcc || 0) + dt; if (this._regenAcc >= 1) { this.health.hp = Math.min(this.health.maxHp, this.health.hp + this._runRegen); this._regenAcc -= 1; this._updateHpBar(); } }
-    if (this._skill && this._skill.branchRegen && this.alive) { this.health.hp = Math.min(this.health.maxHp, this.health.hp + this._skill.branchRegen * dt); this._updateHpBar(); }
+    // P1-A/P2-A 冠顶/Duo 回血接线：回复+德鲁伊+守护者，堡垒 Keystone ×2
+    if (this._skill && this.alive) {
+      const regen = (this._skill.branchRegen + this._skill.branchDruidRegen + this._skill.duoWardenRegen) * this._skill.branchBastionRegenMul;
+      if (regen) { this.health.hp = Math.min(this.health.maxHp, this.health.hp + regen * dt); this._updateHpBar(); }
+    }
     if (this._postureBroken > 0) {
       this._postureBroken -= dt;
       if (this._postureBroken <= 0) { this._postureBroken = 0; this._posture = 0; }
@@ -686,7 +699,8 @@ export class Character {
   // 移动限速：攻击分段 + 涉水减速 + 格挡减速
   _calcSpeed(dt) {
     let spd = this.speed * (this._sprint ? this.sprintMul : 1);
-    if (this._skill && this._skill.branchMoveSpeedMul) spd *= this._skill.branchMoveSpeedMul;
+    // P1-A/P2-A 冠顶/Keystone/Duo 移速接线（疾风基座+风暴+幻影，巨像 Keystone 减速）
+    if (this._skill) spd *= this._skill.branchMoveSpeedMul * (1 + this._skill.branchTempestSpeed + this._skill.duoPhantomSpeed + this._skill.keystoneColossusSpeed);
     if (this._attacking) {
       const t = 1 - Math.max(0, this._anim) / this._animDur;
       const hitT = this.weapon.hitFrame ?? 0.35;
@@ -805,6 +819,7 @@ export class Character {
         let dmg = this.weapon.comboDamage ? this.weapon.comboDamage[combo] ?? this.weapon.damage : this.weapon.damage;
         if (this._perfectBuff > 0) dmg *= 1.5;
       if (this._skill && this._skill.branchSpellpower > 1) dmg *= this._skill.branchSpellpower;
+      if (this._skill && this._skill.keystoneOverloadSpell) dmg *= (1 + this._skill.keystoneOverloadSpell);
       if (this._skill && this._skill.branchPrecision > 1) dmg *= this._skill.branchPrecision;
         this.weapon._perform(this, this._pendingCombat, { combo: this._pendingCombo, charge: this._pendingCharge, now, dmg });
         this.weapon._timer = this.weapon.cooldown * this.killstreakBuffs().cdMul * (this._skill && this._skill.branchAttackSpeedMul ? this._skill.branchAttackSpeedMul : 1) * (this._runAtkSpdMul || 1);

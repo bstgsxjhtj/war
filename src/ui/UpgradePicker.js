@@ -16,6 +16,8 @@ export class UpgradePicker {
 
   show(onPick) {
     this._callback = onPick;
+    // P2-A 局内外桥接：抽卡前重新同步局外分支对局内升级权重的影响
+    if (this.modProvider) this.runBuffs.setModifiers(this.modProvider() || {});
     this._picks = this.runBuffs.roll3();
     this._render();
     this.el.style.display = 'flex';

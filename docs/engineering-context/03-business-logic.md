@@ -118,6 +118,7 @@
 - **Duo 组合解锁**：新增 3 个 Duo 节点（warbringer/warden/phantom），需跨系双前置同时满足（如 warbringer 需 berserk≥1 + critical≥1），把"二选一互斥"升级为"互斥+组合解锁第三层"（类 Hades Duo Boon）。
 - **局内外桥接**：SkillTree 新增 `runBuffModifiers()` 返回局外分支对应的局内 RunBuffs 升级权重修正（如 critical 分支→crit 升级 weightMul 提升）；RunBuffs 新增 `setModifiers()`/`_modifiers`，roll3 应用 weightMul，打通 meta↔run 耦合（本工程独有，9 款标杆都没有）。
 - **武器形态改造**：SkillTree 新增 `weaponMods` 字段 + `upgradeWeaponMod(idx, modKey)`（需武器 Lv3 + 2 点，二选一改变攻击形态，类 Daedalus Hammer），serialize/restore 持久化、reset 退款。
+- **接线实现**（第二十一轮修复死代码）：`main_entry` 组合根调 `runBuffs.setModifiers(skills.runBuffModifiers())` + `UpgradePicker.show()` 每次 sync；`CombatSystem` 消费 `branchWarlordDmg`/`duoWarbringerDmg`（伤害乘算）、`duoWarbringerCrit`（暴击叠加）、`branchDruidLifesteal`（吸血）、`getWeaponMod`（range 扩射程/pierce 破格挡/knock 增击退）；`Character` 消费 `branchWarlordExec`（处决阈值）、`branchTempestDodge`+`duoPhantomDodge`+`keystoneNoDodge`（被动闪避叠加与禁闪避）、`branchBastionDef`+`keystoneColossusDef`+`duoWardenDef`（减伤叠加封顶 0.8）、`attacker._modPierce`（格挡穿透）、`keystoneOverloadStamina`（耐力减半）、`keystoneOverloadSpell`（法伤加成）、`branchDruidRegen`+`duoWardenRegen`+`branchBastionRegenMul`（回血叠加）、`branchTempestSpeed`+`duoPhantomSpeed`+`keystoneColossusSpeed`（移速叠加）。`SkillTreeUI` 武器 Lv3 满级后显示 WEAPON_MODS 形态选择按钮。
 
 ### 6.5 装备续深（P2-B）
 

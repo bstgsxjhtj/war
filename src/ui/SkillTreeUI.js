@@ -1,5 +1,6 @@
 import { EV } from '../core/constants/events.js';
 import { UIStack } from './UIStack.js';
+import { WEAPON_MODS } from '../gameplay/SkillTree.js';
 // 技能树 UI v3：拖拽排序 + localStorage 持久化 + 渐变+图标+进度圆点+Tab+悬停预览+升级动画+重置
 export class SkillTreeUI {
   constructor(bus, skill, kb = null) {
@@ -168,6 +169,15 @@ export class SkillTreeUI {
         const costTxt = maxed ? '\u5df2\u6ee1\u7ea7' : '\u6d88\u8017 2 \u70b9';
         const costClr = maxed ? '#4ade80' : (can ? '#fa8' : '#666');
         const next = maxed ? '' : '<div style="font-size:10px;color:#8ac;margin-top:4px;">\u4e0b\u7ea7\uff1a+' + (lv * 25 + 25) + '%</div>';
+        // P2-B 武器形态改造：Lv3 满级后二选一形态（range/pierce/knock）
+        const modKey = this.skill.getWeaponMod(i);
+        const modInfo = modKey ? WEAPON_MODS.find(m => m.key === modKey) : null;
+        let modHtml = '';
+        if (maxed) {
+          modHtml = modInfo
+            ? '<div style="font-size:10px;color:#4ade80;margin-top:6px;">\u5f62\u6001\uff1a' + modInfo.name + '</div>'
+            : '<div style="display:flex;gap:4px;margin-top:6px;justify-content:center;flex-wrap:wrap;">' + WEAPON_MODS.map(m => '<button class="sk-mod" data-wpmod="' + i + '" data-mod="' + m.key + '" title="' + m.desc + '" style="padding:3px 7px;background:#2a3a4a;border:1px solid #4a6a8a;border-radius:5px;color:#9cf;font-size:10px;cursor:pointer;font-family:inherit;">' + m.name + '</button>').join('') + '</div>';
+        }
         html += '<div class="sk-card" data-wp="' + i + '" data-idx="' + oi + '" data-border="' + border + '" style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:14px;cursor:' + cursor + ';box-shadow:' + glow + ';transition:all .15s;text-align:center;">'
           + '<div style="font-size:28px;margin-bottom:6px;">' + (this._icons[i] || '\u2753') + '</div>'
           + '<div style="font-size:14px;font-weight:700;">' + this.skill.weaponNames[i] + '</div>'
@@ -175,6 +185,7 @@ export class SkillTreeUI {
           + '<div style="font-size:11px;color:#bcd;margin-top:4px;">+' + ((lv - 1) * 25) + '% \u4f24\u5bb3</div>'
           + next
           + '<div style="font-size:11px;margin-top:6px;color:' + costClr + ';font-weight:600;">' + costTxt + '</div>'
+          + modHtml
           + '</div>';
       }
       this._listEl.innerHTML = html;
@@ -183,6 +194,16 @@ export class SkillTreeUI {
         el.addEventListener('mouseenter', () => { if (pts >= 2 && this.skill.weaponLevel[parseInt(el.dataset.wp)] < 3) el.style.transform = 'translateY(-2px)'; });
         el.addEventListener('mouseleave', () => el.style.transform = 'none');
         el.addEventListener('click', () => { if (this.skill.upgradeWeapon(parseInt(el.dataset.wp))) this._flash(el); this._render(); });
+      });
+      // P2-B 武器形态改造：选择形态（点击不冒泡到卡片升级）
+      this._listEl.querySelectorAll('.sk-mod').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (this.skill.upgradeWeaponMod(parseInt(el.dataset.wpmod), el.dataset.mod)) {
+            this.bus.emit(EV.HUD_FLASH, { text: '\u6b66\u5668\u5f62\u6001\u5df2\u6539\u9020' });
+            this._render();
+          }
+        });
       });
     }
     const resetBtn = this.el.querySelector('#sk-reset');

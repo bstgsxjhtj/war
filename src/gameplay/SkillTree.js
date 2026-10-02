@@ -1,5 +1,13 @@
 import { LS } from '../core/constants/storage-keys.js';
 
+// P2-B 武器形态改造目录：武器 Lv3 后二选一改变攻击形态（类 Daedalus Hammer）；
+// 效果由 CombatSystem 消费：range=攻击范围 +25%，pierce=无视格挡，knock=击退 +50%
+export const WEAPON_MODS = [
+  { key: 'range',  name: '延展', desc: '攻击范围 +25%' },
+  { key: 'pierce', name: '贯穿', desc: '攻击无视格挡' },
+  { key: 'knock',  name: '重击', desc: '击退 +50%' },
+];
+
 // 技能树 + 武器升级：4 技能 + 4 武器等级 + 拖拽排序 + localStorage 持久化
 export class SkillTree {
   constructor() {

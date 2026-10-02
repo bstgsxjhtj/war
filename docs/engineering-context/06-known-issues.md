@@ -487,3 +487,22 @@
 | P2-C | 相克续深 | CombatSystem.js + Character.js | 命中部位乘区（_hitPartMul 头/身/腿 ×1.5/1.0/0.8，类 M&B）+ 动态克制（完美格挡后 _counterBonusTimer 2s 克制 ×1.5，复用已有状态零结构改动）+ _counterMulFull 返回 dynamicMul |
 
 测试总量：1337 → 1353（+16），125 个测试文件全绿。
+
+### 第二十一轮：P2-A 死代码接线修复（2026-10-02）
+
+> 来源：对 P2-A（第二十轮）做审计发现全部能力 getter 在 `src` 仅有定义、无任何调用者——组合根未接线，属隐蔽失效（与 G2 同类缺陷）。修复方式：不新增能力，只接通已有定义到消费点。
+
+| # | 问题 | 严重级 | 状态 |
+|---|---|---|---|
+| I1 | P2-A 局内外桥接死代码——`runBuffModifiers`/`setModifiers` 在 `src` 无调用者，局外分支对局内升级权重无影响 | P1 | ✅已修：`main_entry` 组合根调 `runBuffs.setModifiers(skills.runBuffModifiers())` + `UpgradePicker` 每次 `show()` 前 sync `modProvider()` |
+| I2 | P2-A Duo/Tier3 数值 getter 死代码——`duoWarbringerDmg`/`duoWarbringerCrit`/`branchWarlordDmg`/`branchDruidLifesteal`/`branchBastionDef`/`keystoneColossusDef`/`duoWardenDef`/`branchTempestDodge`/`duoPhantomDodge`/`keystoneNoDodge`/`branchWarlordExec`/`keystoneOverloadStamina`/`keystoneOverloadSpell`/`branchDruidRegen`/`duoWardenRegen`/`branchTempestSpeed`/`duoPhantomSpeed`/`keystoneColossusSpeed` 全部无 src 调用者——玩家投资技能树无回报 | P1 | ✅已修：`CombatSystem` 消费伤害/暴击/吸血/武器形态，`Character` 消费闪避/减伤/格挡穿透/处决阈值/耐力/法伤/回血/移速 |
+| I3 | P2-B 武器形态改造死代码——`upgradeWeaponMod`/`getWeaponMod`/`WEAPON_MODS` 在 `src` 无消费者，玩家选了形态无效果 | P1 | ✅已修：`CombatSystem.resolveMelee` 消费 `getWeaponMod`（range 射程×1.25/pierce 设 `_modPierce` 破格挡/knock 击退×1.5）；`SkillTreeUI` Lv3 满级后显示形态选择按钮 |
+| I4 | `CombatSystem` Duo getter 对 mock skill 产生 NaN——`branchCritChance + duoWarbringerCrit` 当 mock 缺字段时 `1+undefined=NaN`，暴击恒不触发 | P2 | ✅已修：Duo getter 加 `\|\| 0` 防御（与既有 `branchDamageMul` truthy 检查模式一致） |
+
+### 回归测试
+
+| 修复 | 测试文件 | 新增用例 |
+|---|---|---|
+| I1-I4 | p2-wiring.test.js（新建） | 23（Character 闪避 3+减伤 3+格挡穿透 2+处决阈值 2+overload 耐力 2；CombatSystem 伤害 2+暴击 1+吸血 2+武器形态 pierce/range/knock 6） |
+
+测试总量：1379 → 1402（+23），126 个测试文件全绿。

@@ -476,7 +476,9 @@ async function bootstrap() {
   const affixesUI = new AffixesUI(affixes, player, keyBindings);
   const achievementsUI = new AchievementsUI(achievements);
   const runBuffs = new RunBuffs();
-  const upgradePicker = new UpgradePicker(runBuffs, player, bus, audio);
+  // P2-A 局内外桥接：局外 SkillTree 分支影响局内 RunBuffs 升级出现权重（meta↔run 耦合）
+  runBuffs.setModifiers(skills.runBuffModifiers());
+  const upgradePicker = new UpgradePicker(runBuffs, player, bus, audio, () => skills.runBuffModifiers());
   state.transit(States.PLAYING);
   audio.playSound('bgmStart', { intensity: 0 });
   let _bgmCombatSet = true;
