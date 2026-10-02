@@ -567,7 +567,7 @@ async function bootstrap() {
   gameMenu = new GameMenu({
     getModeName: () => mode.name,
     getAllyCount: () => allyCount,
-    onAllyCount: (n) => { match.setAllyCount(n); gameMenu.refresh(); hud.flash('队友数量：' + n + ' · 重开后生效'); setTimeout(() => hud.clearHint(), 3000); },
+    onAllyCount: (n) => { allyCount = Math.max(0, Math.min(4, n | 0)); gameMenu.refresh(); hud.flash('队友数量：' + n + ' · 重开后生效'); setTimeout(() => hud.clearHint(), 3000); },
     onSelectMode: (name) => {
       inputRouter.applyModeByName(name);
       gameMenu.hide();
